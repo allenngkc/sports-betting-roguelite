@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
+using SBR.Engine;
 using SBR.Game;
 using TMPro;
 using UnityEngine;
@@ -1317,6 +1318,199 @@ namespace SBR.Tests.EditMode
         /// single width: the DD's cell asks for the longest RENDERABLE form and says explicitly that
         /// the box is "the quantity in doubt", so answering with the box would answer the wrong
         /// question.</para></summary>
+        /// <summary>THE POOL↔CODE EDGE, which `T158` STRUCTURALLY CANNOT SEE — and the sixth phantom
+        /// it was pre-positioned to become.
+        ///
+        /// <para>The counter's form lives in THREE places: the code's format string
+        /// (<c>TvSweatScreen.RenderPregame</c> / <c>RenderEvent</c>), the `T84` pool
+        /// (<c>TvExtentSweep.Cases</c>), and this file's measured-fixture table. **`T158` asserts the
+        /// third against the second.** Update those two, miss the code, and it stays GREEN while
+        /// measuring a string the surface can never render — which is exactly how the fifth phantom
+        /// (<c>TICKET n OF m</c>, the header's format, pooled but never emitted) survived.</para>
+        ///
+        /// <para>So this drives the real render and asserts what the code ACTUALLY EMITS is in the
+        /// pool for its slot. It closes the one edge of the triangle nothing else checks.</para>
+        ///
+        /// <para>Like `T158`, a lookup that fails must FAIL rather than skip: a guard that passes
+        /// while blind is the defect class this exists to close.</para></summary>
+        [Test]
+        public void T165_the_counter_the_code_emits_is_in_the_pool()
+        {
+            var go = new GameObject("T165PoolVsCode");
+            try
+            {
+                TvSweatScreen s = BuildScreen(go);
+                Ticket ticket = CounterTicket("T165-POOL-VS-CODE");
+                RenderPregameFor(s, ticket);
+
+                TMP_Text leg = FindChild<TMP_Text>(s, "Leg");
+                Assert.IsNotNull(leg, "Leg not found");
+                string emitted = leg.text;
+                Assert.IsNotEmpty(emitted,
+                    "the counter rendered EMPTY on a live ticket — nothing to check, and a pin that "
+                    + "checks nothing must fail rather than pass");
+
+                System.Type sweep = System.Type.GetType("SBR.EditorTools.TvExtentSweep, SBR.Game.Editor");
+                Assert.IsNotNull(sweep,
+                    "could not load TvExtentSweep — the pin cannot see the pool and must fail rather "
+                    + "than pass");
+                FieldInfo casesField = sweep.GetField("Cases", BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.IsNotNull(casesField, "TvExtentSweep.Cases not found by reflection — renamed?");
+                var cases = (System.Array)casesField.GetValue(null);
+                Assert.IsNotNull(cases, "TvExtentSweep.Cases read as null");
+
+                var pooled = new HashSet<string>();
+                foreach (object row in cases)
+                {
+                    System.Type rt = row.GetType();
+                    var slot = (string)rt.GetField("Item1").GetValue(row);
+                    var strings = (string[])rt.GetField("Item3").GetValue(row);
+                    if (slot != "Leg" || strings == null) continue;
+                    foreach (string str in strings) pooled.Add(str);
+                }
+                Assert.Greater(pooled.Count, 0, "the 'Leg' slot has NO POOL AT ALL — nothing to check");
+
+                Debug.Log($"[T165-POOL] code emitted '{emitted}'; pool holds "
+                          + string.Join(", ", pooled.OrderBy(x => x).Select(x => $"'{x}'")));
+
+                Assert.IsTrue(pooled.Contains(emitted),
+                    $"the counter emits '{emitted}', which is NOT in the T84 pool for 'Leg'. Either "
+                    + "the code's format changed without the pool, or the pool changed without the "
+                    + "code — and T158 cannot see either, because it only compares the measured "
+                    + "fixture against the pool. Pooled: "
+                    + string.Join(", ", pooled.OrderBy(x => x).Select(x => $"'{x}'")));
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        /// <summary>Drives the real <c>RenderPregame</c> so the counter is produced by the CODE, not
+        /// by a fixture string. Reflected because the seam is private — and reflected seams are
+        /// invisible to the compiler, so a rename here throws at run time rather than failing the
+        /// build (this lane broke two suites that way in one day).</summary>
+        /// <summary>A locked two-leg ticket. Local to this file rather than shared with the
+        /// palette suite's own builder: a test fixture reached across class boundaries is a
+        /// dependency between suites, and these two want to move independently.</summary>
+        private static Ticket CounterTicket(string runId)
+        {
+            var run = new Run(runId, new RunConfig());
+            Ticket t = run.PlaceTicket(new[]
+            {
+                new Pick(0, MarketSelection.Moneyline(Side.Home)),
+                new Pick(1, MarketSelection.Moneyline(Side.Home)),
+            }, 10);
+            run.LockRound();
+            return t;
+        }
+
+        private static void RenderPregameFor(TvSweatScreen s, Ticket ticket)
+        {
+            typeof(TvSweatScreen).GetField("_ticket", BindingFlags.NonPublic | BindingFlags.Instance)
+                .SetValue(s, ticket);
+            MethodInfo render = typeof(TvSweatScreen).GetMethod("RenderPregame",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(render, "TvSweatScreen.RenderPregame not found by reflection — renamed?");
+            render.Invoke(s, System.Array.Empty<object>());
+        }
+
+        /// <summary>`T165` STEP 3's MEASUREMENT, REPORT-ONLY — what the counter may say once its
+        /// referent is the FIXTURE rather than the leg.
+        ///
+        /// <para>`LEG n/m` counting fixtures is FALSE on a same-match ticket: four legs, three
+        /// tellings, a counter reading `2/3` beside a column showing four rows. So the word has to
+        /// move, and `T165` leaves the form to TV with no width asserted — *"only measurement
+        /// decides."* This supplies the numbers that decision needs and rules nothing.</para>
+        ///
+        /// <para>DELIBERATELY NOT PART OF THE `T158` FIXTURE TABLE. That pin asserts every MEASURED
+        /// fixture is in the `T84` pool for its slot, and these candidates are by definition NOT in
+        /// the pool — the surface cannot render them yet. Adding them there to make this measurable
+        /// would manufacture exactly the phantom the pin exists to catch. A candidate is priced
+        /// here; only the form that WINS earns a pool entry, in the same diff that teaches the code
+        /// to emit it.</para>
+        ///
+        /// <para>The ink math is copied from `T91`'s own block below rather than re-derived, so the
+        /// numbers are commensurable with the ones `T91-cl` ruled on.</para></summary>
+        [Test]
+        public void T165_price_the_fixture_counter_candidates_against_the_ticket_header()
+        {
+            var go = new GameObject("T165CounterForms");
+            try
+            {
+                var screen = BuildScreen(go);
+                TMP_Text leg = FindChild<TMP_Text>(screen, "Leg");
+                TMP_Text header = FindChild<TMP_Text>(screen, "TicketHeader");
+                Assert.IsNotNull(leg, "Leg not found — T91-cl moved it into BuildTicketColumn");
+                Assert.IsNotNull(header, "TicketHeader not found — Leg's neighbour since T91-cl");
+                Assert.IsNotNull(leg.font, "no font resolved — a measurement in the fallback face is void");
+                Assert.IsTrue(leg.font.name.Contains("Encode"),
+                    $"measured in '{leg.font.name}', not Encode Sans — the same mistake T20 made once");
+
+                Canvas canvasComp = screen.GetComponentInChildren<Canvas>(true);
+                Assert.IsNotNull(canvasComp, "no Canvas under the screen — nothing to measure against");
+                var canvas = canvasComp.transform as RectTransform;
+
+                (float lo, float hi, float yLo, float yHi) Ink(TMP_Text t, string form)
+                {
+                    var cs = new Vector3[4];
+                    t.rectTransform.GetWorldCorners(cs);
+                    float bl = float.MaxValue, br = float.MinValue, y0 = float.MaxValue, y1 = float.MinValue;
+                    for (int i = 0; i < 4; i++)
+                    {
+                        Vector3 lp = canvas.InverseTransformPoint(cs[i]);
+                        bl = Mathf.Min(bl, lp.x); br = Mathf.Max(br, lp.x);
+                        y0 = Mathf.Min(y0, lp.y); y1 = Mathf.Max(y1, lp.y);
+                    }
+                    float w = t.GetPreferredValues(form, 100000f, 0f).x;
+                    bool centred = t.alignment == TextAlignmentOptions.Top
+                                || t.alignment == TextAlignmentOptions.Center
+                                || t.alignment == TextAlignmentOptions.Bottom;
+                    bool right = t.alignment == TextAlignmentOptions.TopRight
+                              || t.alignment == TextAlignmentOptions.Right
+                              || t.alignment == TextAlignmentOptions.BottomRight;
+                    float lo = centred ? (bl + br) * 0.5f - w * 0.5f : right ? br - w : bl;
+                    return (lo, lo + w, y0, y1);
+                }
+
+                const float InkFloor = 2f; // T90-am's floor, generalised by T91-cl to any y-sharing pair
+                (float hLo, float hHi, float hY0, float hY1) = Ink(header, "TICKET 2/2");
+                Debug.Log($"[T165-INK] neighbour TicketHeader align={header.alignment} widest "
+                          + $"'TICKET 2/2' INK x {hLo:0.0}..{hHi:0.0}  y {hY0:0.0}..{hY1:0.0}");
+
+                // MaxLegs is 4 and FixtureCount <= Legs.Count, so n/m never exceeds 4/4; the digits
+                // are tabular (T82's atlas working), so 4/4 measures equal to 1/1 and is the widest
+                // form of every candidate. `LEG 4/4` is the incumbent, priced for comparison.
+                // `LEG 4/4` is GONE from this set, not merely deprioritised: T165-am retired it and
+                // the pool no longer holds it, so measuring it here would be measuring a string the
+                // surface can no longer emit — a phantom, and the exact thing T158 exists to catch.
+                // Its 66.9px is preserved in route-t165-counter-form-2026-08-24.md for the record.
+                foreach (string form in new[]
+                {
+                    "MATCH 4/4", "GAME 4/4", "FIXTURE 4/4", "TELLING 4/4",
+                })
+                {
+                    (float lo, float hi, float y0, float y1) = Ink(leg, form);
+                    bool yMeet = y0 < hY1 && y1 > hY0;
+                    string left = hLo <= lo ? "TicketHeader" : "Leg";
+                    float clearance = left == "TicketHeader" ? lo - hHi : hLo - hi;
+                    float width = hi - lo;
+                    Debug.Log($"[T165-FORM] {form,-12} ink {width,6:0.0}px  x {lo:0.0}..{hi:0.0}  "
+                              + $"clearance to TicketHeader {clearance,6:0.0}px  "
+                              + $"y {(yMeet ? "SHARED" : "disjoint")}  "
+                              + (!yMeet ? "floor N/A (different rows)"
+                                 : clearance >= InkFloor ? "FITS" : $"** FAILS the {InkFloor:0.0}px floor **"));
+                }
+
+                Debug.Log("[T165-FORM] report only — no form is ruled here. The word goes to the DD "
+                          + "on these numbers; the winner earns its T84 pool entry in the build diff.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
         [Test]
         public void T91_the_two_numbers_owed_since_batch_63()
         {
@@ -1434,7 +1628,11 @@ namespace SBR.Tests.EditMode
                     // 2"), not invented here; both are 13 characters and the digit is tabular
                     // (T82's atlas working), so they measure equal and either is the widest.
                     ("TicketHeader", "TICKET 2/2"),
-                    ("Leg", "LEG 4/4"),
+                    // T165-am (batch 178): `MATCH n/m`, not `LEG n/m` — the referent is the FIXTURE.
+                    // This string, TvExtentSweep's pool for this slot, and the code's format are ONE
+                    // fact in three places; T158 compares this against the pool but CANNOT see the
+                    // code, which is what T165_the_counter_the_code_emits_is_in_the_pool closes.
+                    ("Leg", "MATCH 4/4"),
                     ("Matchup", "BRICKLAYERS 0 \u2014 MIDDLEMEN 0"),
                     ("Clock", "90'+9"),
                 })
@@ -1578,6 +1776,24 @@ namespace SBR.Tests.EditMode
              + "headroom than the incumbent PAYS), but NOT adopted: batch 108 rejected it for "
              + "colliding at the root with PAY $60, and that copy call is still open with the DD. "
              + "The surface cannot emit it, and that is correct."),
+
+            // T165's three REJECTED words, registered so they cannot rot silently. All three were
+            // priced against the real face and all three FIT — GAME 84.6px, TELLING 108.2px,
+            // FIXTURE 109.4px, against 149.7px of available ink — so width rejected none of them.
+            // T165-am ruled MATCH on vocabulary: MATCH is already shipped copy on this surface
+            // (`THE MATCH ENDS LEVEL`; the scoreline slot is `Matchup`), GAME appears in no shipped
+            // copy at all, and FIXTURE/TELLING are engine words the player has never seen.
+            ("Leg", "GAME 4/4",
+             "T165 candidate, priced at 84.6px ink / 69.1px clearance — FITS. Not adopted: GAME "
+             + "appears in NO shipped copy, so it would be a second word for a concept the surface "
+             + "already names (T94's family). T165-am ruled MATCH."),
+            ("Leg", "FIXTURE 4/4",
+             "T165 candidate, priced at 109.4px ink / 44.3px clearance — FITS. Not adopted: engine "
+             + "vocabulary. T165-am ruled MATCH."),
+            ("Leg", "TELLING 4/4",
+             "T165 candidate, priced at 108.2px ink / 45.6px clearance — FITS. Not adopted: "
+             + "`telling` is the session contract's word and the player has never seen it. "
+             + "T165-am ruled MATCH."),
         };
 
         /// <summary>EVERY STRING A LAYOUT TEST MEASURES MUST BE RENDERABLE IN THE SLOT IT IS MEASURED

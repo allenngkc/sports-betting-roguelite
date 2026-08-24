@@ -134,6 +134,205 @@ what that clause forbids.
 
 ---
 
+## 0-U15. STEP 4 — THE SHAPE THE TV NEEDS FROM THE ENGINE'S ANCHOR TABLE · 2026-08-24
+
+**Allen ruled the ENGINE owns the backed-side table and the TV consumes it.** This is the consumer's
+side of that contract, written here because the engine lane could not find it at HEAD — it existed
+only in a seat report. **`T163`'s three branches and the §6b subject sites are BLOCKED on this.**
+
+### ⚠ THE TV DOES NOT NEED `EventText.BackedSide`. IT NEEDS A SECOND FUNCTION.
+
+`game-console/EventText.cs:138` already answers *which side did the player BACK*, exhaustive over
+fifteen kinds, throwing rather than guessing (`K17-cl`, gated by `SweatAnchorGateTests`). **Shipping
+that to the TV as-is would be wrong**, and its own doc comment says why:
+
+> *"The player markets … this still answers NEITHER, because the question is which side he BACKED: a
+> man can score in a 3–1 defeat and the leg wins, so his club is not the player's side. **The TV's
+> `PickedHomeForPresentation` does anchor these on `PlayerSide` — that is the other question answered
+> correctly for itself, and the divergence is the two shapes working as ruled.**"*
+
+**Two questions, two answers, and `T163` needs the second.** The anchor controls which club the PROSE
+names, not which side pays. `T163` branch (1) states its own compatibility test — *"this subsumes
+today's single-leg case exactly, so nothing on screen changes before arm A lands"* — and today an
+`AnytimeScorer` leg anchors on `PlayerSide`. **A table answering NEITHER there would change the
+screen and break `T163`'s own claim.**
+
+### THE SHAPE — `Side?` per LEG, and it must take a `Leg`, not a `MarketSelection`
+
+Player markets need `Matchup.PlayerSide(PlayerIndex)`, which is not reachable from the selection.
+
+| kind | anchor answer | why |
+|---|---|---|
+| `Moneyline` | Home / Away / **null** on Draw | the draw is not a team, ever (DD batch 49, `T96`) |
+| `Handicap` | Home / Away | the line is applied TO THE BACKED SIDE; read `Choice` back |
+| `DoubleChance` | `HomeOrDraw`→Home, `AwayOrDraw`→Away, `HomeOrAway`→**null** | the backed side is the ONE club in the union; 12 holds both, so neither |
+| `TeamTotalGoals` / `Corners` / `Cards` | `Selection.Team` | it is a NAMED field; read it, do not decode it |
+| `AnytimeScorer` / `PlayerMultiScorer` | **`Matchup.PlayerSide(PlayerIndex)`** | **THE DIVERGENCE.** The prose anchors on the club the man plays for. `BackedSide` answers null here and is right for its own question. |
+| `TotalGoals`, `BothTeamsToScore`, `TotalCorners`, `TotalCards`, `CorrectScore`, `WinningMargin`, `TotalGoalsOddEven` | **null** | `T163` branch (3) names this set outright |
+| a sixteenth kind | **THROW** | a `default:` that guesses a side IS `K17-cl`. Never a fallback. |
+
+### WHAT THE TV COMPOSES ON TOP — `T163`'s fixture rule, not the engine's to build
+
+Over the fixture's LIVE legs, collect the non-null answers: **all the same side → that side is
+`picked`; two different sides → NEITHER; none at all → NEITHER.**
+
+### WHY THIS IS NOT A REFACTOR — `PickedHomeForPresentation` IS WRONG TODAY, ON SHIPPING TICKETS
+
+`SweatFlavor.cs:403` returns **HOME unconditionally for every kind except Moneyline and
+AnytimeScorer**. So on a totals, BTTS, correct-score, corners, cards, margin, odd/even,
+DoubleChance, team-total **or `PlayerMultiScorer`** leg, the flavour already names the home club as
+`{picked}` when no side is backed at all — **on ordinary single-leg tickets, today.**
+
+**Steps 1–3 were no-ops on the shipping shape. STEP 4 IS NOT.** It changes shipped copy on tickets
+that exist now, so it needs evidence beyond a green suite. Check the docked `dd-import` sets for a
+totals-leg sweat before asking for a capture window.
+
+### WHAT LANDED AHEAD OF THE TABLE
+
+`SweatFlavor.NeitherLine` + the four club-free tables (spec §5.2, twelve lines) and
+`SweatFlavorNeitherBranchTests`. **Authored but NOT WIRED** — nothing calls `NeitherLine` until the
+anchor rule exists. Pinned so the transcription cannot drift from the spec, which is the `K21`/`C60`
+failure in miniature: rows that were ruled in batches 174–175 and unfindable in `docs/` because
+transcription lagged from batch 154.
+
+**§5.1's casing was left to this lane and is answered: lowercase with a terminal period**, this
+file's own club-free convention (`"off the bar and away."`), NOT the casing of the table each line
+joins — that rule is what split a branch two-capitalised/two-lowercase elsewhere.
+
+### STILL OWED ON STEP 4
+
+- **The direction re-base (part C)** — `SweatPresentationModel.RecordBeat` and `SweatFlavor.For` both
+  compute direction off `evt.WinProbAfter`; the spec's §1 note says a single `up`/`down` exists ONLY
+  because the displayed probability is the TICKET's. **Blast radius measured and it is small:**
+  outside `MagnitudeBand`, `delta` is used only as a SIGN test (the band-reconcile's `delta >= 0.0`),
+  and sign survives the re-base. `T166` rules the `MagnitudeBand` thresholds STAY.
+  **Two cautions:** `RecordBeat` has four test callers and `SweatPresentationModelTests` PINS the
+  current leg-scoped semantics, so that pin re-bases with it; and the comment at
+  `SweatPresentationModel.cs:336` (*"their |delta| ≥ 0.07 means they are never actually flat"*) goes
+  numerically FALSE under the re-base while its conclusion survives — a stale citation to fix, not a
+  behaviour to preserve.
+- **`impliedLead` must stay LEG-scoped.** It compares `probAfter` against the reconcile bands, and
+  `probAfter` is `evt.LegProbs[0]` by step 1's class-B split. Re-point it to the ticket and a
+  parlay's product reconciles the scoreline wrongly on every multi-leg ticket.
+
+---
+
+## 0-U14. THE TV's `onFinalLeg` TWIN — AND THE MUTATION THAT AUDITED THE GATE · 2026-08-24
+
+**EditMode 325/324/0/1 · PlayMode 149/124/0/25.** +2 on step 3: the two twin gates.
+
+### A SCOPE CORRECTION THIS SEAT OWES, because it ranked this wrong first
+
+Step 2 reported `onFinalLeg` as *"a live defect, worse than its §6b placement suggests"* and this seat
+ranked it the most urgent of the three. **Read properly it is NARROWER than the console twin.**
+`TvSweatScreen`'s `onFinalLeg` feeds ONLY `PacingFor`'s final-telling slowdown, and it sits inside the
+`_stage == null` branch — the theaterless fallback. On the shipping theater path `PlaySweat` hands off
+to `TheaterBeat`, which owns pacing and never calls `PacingFor`.
+
+**The console twin gated a stated RULE on the shipping path** (no fast-forward through the final
+match). **This one loses pacing on a fallback path.** Both real; only one was reachable in a shipped
+sweat. Fixed for correctness and symmetry, not urgency.
+
+### THE FIX
+
+`TvSweatScreen.OnFinalFixture(e, session)` — `e.FixtureIndex == session.FixtureCount - 1`. PUBLIC for
+the same reason `SweatLines` is public in the console: the value is computed inside a coroutine that
+sleeps, waits on seating and plays scenes, so a test that could only reach it by driving that loop is
+a test that cannot run. Dead `lastLeg` removed.
+
+### ⚠ THE MUTATION FOUND A HOLE IN THE GATE, NOT ONLY IN THE CODE — READ THIS ONE
+
+The mutant killed the interleaved gate as intended. **It also PASSED the compatibility test**, which
+is how that test was exposed as vacuous.
+
+The ordinary-ticket fixture took the first two-leg ticket it could build. **That ticket busted on leg
+0**, so the sweat never reached leg 1, so NEITHER predicate ever fired — `4 beats, 4 in agreement`
+was four comparisons of `false == false`. It would have gone green against any predicate that never
+fires, including the one it exists to rule out.
+
+Armed: the fixture now searches for a ticket that reaches its final leg AND asserts the predicate
+actually fires there. **4 beats → 10 beats, predicate true on 6.** The moved beat count IS the
+evidence the search did something.
+
+**A GATE THAT PASSED FIRST TIME IS UNAUDITED.** Two gates this seat added are proven able to fail
+because they DID fail first — step 2's interleaved gate (its precondition) and the pool↔code pin (the
+incomplete pool). The rest passed on their first run, which is exactly the state this one was in.
+**Owed: mutate them.**
+
+### THE PATTERN BEHIND THREE SEPARATE FAILURES TODAY
+
+Step 2's gate failed its precondition (`LockRound` does not settle a ticket); the console gate's first
+fixture busted at fixture 0; this one agreed vacuously for the same reason. **All three are one
+shape: THE DRAMA ENDED BEFORE THE CASE UNDER TEST COULD OCCUR.** A fixture that does not survive far
+enough is indistinguishable from a passing test. **Every sweat-driving fixture needs an explicit
+"and it got that far" assertion**, not just "and it ran".
+
+---
+
+## 0-U13. STEP 3 — §6d / `T165`, THE COUNTER COUNTS MATCHES · SHIPPED 2026-08-24
+
+**EditMode 323/322/0/1 · PlayMode 149/124/0/25.** EditMode is +2 on step 2: the width probe and the
+pool↔code pin. Verified BY NAME.
+
+### THE WORD WAS RULED ON MEASUREMENT THAT DECIDED NOTHING
+
+`T165` left the form to TV — *"only measurement decides."* **It didn't.** All five candidates cleared
+`T91-cl`'s 2px ink floor:
+
+| form | ink | clearance |
+|---|---|---|
+| `LEG 4/4` (retired) | 66.9px | 86.8px |
+| **`MATCH 4/4`** | **96.5px** | **57.2px** |
+| `GAME 4/4` | 84.6px | 69.1px |
+| `TELLING 4/4` | 108.2px | 45.6px |
+| `FIXTURE 4/4` | 109.4px | 44.3px |
+
+`Leg` is RIGHT-ALIGNED: its ink edge is pinned at x −233.0 and grows LEFTWARD to `TicketHeader`'s ink
+at −386.7, so **~149.7px is available** and the widest candidate spends 109.4px.
+
+**THIS LANE PREDICTED `MATCH` WOULD FAIL, AND WAS WRONG BY 55px** — it subtracted an ink WIDTH from a
+CLEARANCE and called the difference headroom. `T144`'s lesson with the sign flipped: reasoning where
+an instrument exists is the error, whichever way it lands. `T165-am` (batch 178) ruled `MATCH` on
+vocabulary — it is already shipped copy here (`THE MATCH ENDS LEVEL`; the scoreline slot is
+`Matchup`), where `GAME` appears in NO shipped copy and `FIXTURE`/`TELLING` are engine words.
+
+### ⚠ THE SIXTH PHANTOM — AND IT IS THE OTHER KIND
+
+`T158`'s own dichotomy: *"either the fixture is a phantom or the pool is incomplete — BOTH are
+findings."* All five phantoms before this were the first kind. **This is the first of the second.**
+
+The new pin caught it on its FIRST run: the code emits `MATCH 1/2` on a two-leg ticket; the pool held
+only `4/4`, `1/4`, `1/1`. **The `LEG` forms it replaced had the IDENTICAL gap, since the slot was
+created.** It could not surface because `T158` compares the measured fixture against the pool and
+**nothing had ever compared the pool against the CODE.** Now enumerated in full — `m ∈ 1..MaxLegs`,
+`n ∈ 1..m`, ten forms. Digits are tabular, so no measured number moved.
+
+**The gate that found it was added in the same diff that created the risk.** That is the argument for
+writing the pin with the change rather than after it.
+
+### WHAT SHIPPED
+
+- Both counter sites read `evt.FixtureIndex + 1` / `FixtureTotal()`; the denominator is
+  `SweatSession.FixtureCount` — **the same grouping the joint price uses**, so the surface and the
+  price cannot disagree about what a match is — falling back to leg count only with no session.
+- `T165_the_counter_the_code_emits_is_in_the_pool`: drives the real `RenderPregame` and asserts the
+  EMITTED string is pooled. **Closes the one edge of code↔pool↔instrument that `T158` cannot see.**
+- The three rejected words are registered in `MeasuredCandidates` with their measured widths. That
+  table's assertion is INVERTED — adopting one fails the pin rather than passing silently.
+- `LEG 4/4` is out of the probe entirely: the surface can no longer emit it, so measuring it would
+  itself be a phantom.
+
+### OWED — AND THE GREEN DOES NOT COVER IT
+
+- **NO TEST RENDERS THE COUNTER ON A SAME-MATCH TICKET.** Every fixture in both suites is ordinary,
+  where fixture count equals leg count and `MATCH n/m` renders exactly what `LEG n/m` did —
+  `evt.FixtureIndex` never diverges from `evt.LegIndex`. **The ruling exists for the shape no test
+  builds.** Wants the `[A,B,A]` treatment step 2's gate got.
+- **`onFinalLeg`'s TV twin is still unfixed** (`TvSweatScreen.cs:1718`) — same referent, same class,
+  and the console half is now fixed while this one is not.
+
+---
+
 ## 0-U12. STEP 2 — §6a, N GRADES AT ONE WHISTLE · SHIPPED 2026-08-24
 
 **EditMode 321/320/0/1 · PlayMode 149/124/0/25.** EditMode is +1 on baseline: the interleaved gate.

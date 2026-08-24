@@ -1697,7 +1697,6 @@ namespace SBR.Game
         private IEnumerator PlaySweat()
         {
             RenderPregame();
-            int lastLeg = _ticket.Legs.Count - 1;
 
             while (_session != null && !_session.IsComplete)
             {
@@ -1715,7 +1714,9 @@ namespace SBR.Game
                     continue;
                 }
 
-                bool onFinalLeg = evt.LegIndex == lastLeg;
+                // T140 arm A: the FIXTURE is the unit — see OnFinalFixture for why the old
+                // `evt.LegIndex == lastLeg` cannot fire on an interleaved ticket.
+                bool onFinalLeg = OnFinalFixture(evt, _session);
                 if (evt.Type == DramaEventType.LegFinal)
                     yield return ResolveBeat(evt);
 
@@ -2744,7 +2745,13 @@ namespace SBR.Game
             if (_ticket == null || _ticket.Legs.Count == 0) return;
             Leg leg = _ticket.Legs[0];
             _tMatchup.text = MatchupLine(leg);
-            _tLeg.text = $"LEG 1/{_ticket.Legs.Count}";
+            // T165 / T165-am (batch 178): the counter counts TELLINGS, and says so. Under T140 arm A
+            // the unit of broadcast is the (ticket, FIXTURE) — two legs can ride one match — so a
+            // counter reading LEG n/m would print a leg total the column contradicts: four rows
+            // against `LEG 2/3`. The word is ruled MATCH on vocabulary the surface already owns
+            // (`THE MATCH ENDS LEVEL`, and the scoreline slot is `Matchup`); all five candidates
+            // cleared T91-cl's 2px ink floor, so width did not decide it.
+            _tLeg.text = $"MATCH 1/{FixtureTotal()}";
             _tClock.text = "PRE";
             // T44 casing: CF puts state words in tracked uppercase, and every sibling state line on
             // this element is (VAR — NO GOAL, THE TOTEM BURNS, LEG n — WON). Lowercase sentence case
@@ -3044,6 +3051,18 @@ namespace SBR.Game
         /// rendering LIVE. Bounds-safe for the same reason as <see cref="IsPresentedResolved"/>: a
         /// row index with no leg behind it is simply not in the set.</summary>
         private bool IsLiveShown(int i) => _liveLegsShown.Contains(i);
+
+        /// <summary>The counter's DENOMINATOR — how many tellings this ticket has (`T165`).
+        ///
+        /// <para>The session is the authority: <c>FixtureCount</c> is the grouping the joint price
+        /// itself uses, so the surface and the price cannot disagree about what a match is. Falls
+        /// back to the leg count only when there is no session — the pregame/ticket-card boundary,
+        /// where the two coincide anyway on every ticket without a same-match pair, and where a
+        /// counter is better slightly generous than absent.</para></summary>
+        private int FixtureTotal()
+            => _session != null ? _session.FixtureCount
+             : _ticket != null ? _ticket.Legs.Count
+             : 0;
 
         /// <summary>The legs LIVE right now per the session — the honest referent for a repaint that
         /// re-asserts the current telling (the mulligan and the whistle) rather than choosing a new
@@ -3727,7 +3746,10 @@ namespace SBR.Game
         {
             Leg leg = _ticket.Legs[evt.LegIndex];
 
-            _tLeg.text = $"LEG {evt.LegIndex + 1}/{_ticket.Legs.Count}";
+            // T165 / T165-am: the FIXTURE is the referent — see RenderPregame's note. `evt.LegIndex`
+            // is only the telling's ANCHOR after arm A, so counting it would name one leg of a
+            // shared telling and skip the other.
+            _tLeg.text = $"MATCH {evt.FixtureIndex + 1}/{FixtureTotal()}";
 
             if (evt.LegIndex != _flavorLegSeen)
             {
@@ -5128,8 +5150,32 @@ namespace SBR.Game
 
         // ---------------------------------------------------------------- pacing / waits
 
+        /// <summary>Whether this beat belongs to the LAST telling on the ticket — what
+        /// <see cref="PacingFor"/>'s final-leg slowdown keys on.
+        ///
+        /// <para>WAS <c>evt.LegIndex == _ticket.Legs.Count - 1</c>, AND THAT CANNOT FIRE ON AN
+        /// INTERLEAVED TICKET. After <c>T140</c> arm A a telling is a (ticket, FIXTURE) and
+        /// <c>DramaEvent.LegIndex</c> is its ANCHOR — the lowest ticket-order leg on that fixture.
+        /// Fixture grouping is first-appearance (<c>JointModel.GroupByMatchup</c>) and a fixture's
+        /// legs need not be contiguous, so on <c>[matchA, matchB, matchA]</c> the anchors are only
+        /// ever 0 and 1 — never 2, the last leg index. The ticket's closing telling then paces like
+        /// any other beat.</para>
+        ///
+        /// <para><b>Scope, stated so it is not read as larger than it is:</b> this is the theaterless
+        /// fallback's pacing only. On the shipping theater path <c>TheaterBeat</c> owns pacing and
+        /// <see cref="PacingFor"/> is never called. The console's twin gates a stated RULE (no
+        /// fast-forward through the final match); this one does not.</para>
+        ///
+        /// <para>PUBLIC because a gate asserts it, for the same reason <c>SweatLines</c> is public in
+        /// the console: the value is computed inside a coroutine that sleeps, polls seating and drives
+        /// a scene, so a test that could only reach it by driving that loop is a test that cannot
+        /// run.</para></summary>
+        public static bool OnFinalFixture(DramaEvent e, SweatSession session)
+            => e.FixtureIndex == session.FixtureCount - 1;
+
         /// <summary>The pacing table (ported from SweatRenderer.PacingFor): base delay by tension tag, an
-        /// extra beat right before a leg's final whistle, and everything slowed on the ticket's final leg.</summary>
+        /// extra beat right before a leg's final whistle, and everything slowed on the ticket's final
+        /// TELLING (<c>T140</c> arm A — see <see cref="OnFinalFixture"/>).</summary>
         private float PacingFor(DramaEvent e, bool isFinalLeg)
         {
             float ms = e.Tag switch

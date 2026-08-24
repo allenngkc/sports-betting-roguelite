@@ -1,6 +1,30 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-24, cycle 467 (heartbeat).** The
+**Keeper-era heartbeat stamp: 2026-08-24, cycle 470 (heartbeat).** Quiet
+hold: the campaign mid-run (ETA ~60-70 min; silence is its normal state,
+the seat's watcher armed on the report file and the process); TV's
+suite queued behind it; DD standing by. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 469 (heartbeat).** The
+DoubleChance removal is BUILT (6f4bf67 - three offers go, the kind
+stays) and its ruled campaign runs at 16 workers; TV's twin fix merged
+(fa3b367), step 4 planned, the backed-side table ruled TO THE ENGINE
+(single source; TV consumes); TV's suite held behind the campaign.
+HELD: Allen's 'campaign's done' - the shell still runs and no roster
+exists; engine asked for a one-line status; veto window open. WITH
+ALLEN: the carve-out bookkeeping, the hold's structure, research 8-9,
+B9's sitting.
+
+*(prior stamp, cycle 468 (heartbeat).** STEP 3
+AND THE CONSOLE FIX ARE MERGED (b9c5c30 + f5bd516 via 17c0829 - the
+counter counts MATCHES with a pool-to-code pin; the interleaved
+final-telling predicate fixed). TV on its own onFinalLeg twin
+(mutation-proving the gate before commit); the register transcribed
+through 181 (1794bb4); the engine mid-removal-build (steps 0-4, the
+campaign held for a protected window). WITH ALLEN: the carve-out
+bookkeeping, the hold's structure, research 8-9, B9's sitting.
+
+*(prior stamp, cycle 467 (heartbeat).** The
 counter word ruled MATCH n/m (batch 178; queued to TV to fold into step
 3 behind its K21 fix); the sizing brief (batch 180: player-facing goes,
 internal stays) with the engine seat - two survey agents running.
