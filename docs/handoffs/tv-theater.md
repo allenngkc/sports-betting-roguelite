@@ -134,6 +134,70 @@ what that clause forbids.
 
 ---
 
+## 0-U16. STEP 4 PART C — THE DIRECTION RE-BASE · SHIPPED 2026-08-24
+
+**EditMode 331/330/0/1 · PlayMode 149/124/0/25.** No case-count change — part C adds no tests, it
+re-bases existing ones. All 55 cases across the four affected suites pass.
+
+### THERE WERE TWO DIRECTION RULES, AND ONE OF THEM WAS ABOUT TO BE WRONG
+
+`SweatPresentationModel`'s own summary said *"the shared rule — one authority."* It was not:
+`SweatFlavor.For` derived its OWN `up` from a `_prevProb` that `TvSweatScreen` tracked separately.
+Two copies can disagree, and after `T164` **they would have** — the model's is the TICKET's move, a
+local recomputation off `WinProbAfter` is the ANCHOR LEG's. `For` now TAKES `up`; `_prevProb` and
+`_flavorLegSeen` are deleted as dead. The reorder in `RenderEvent` (record, then flavour) is what
+makes one authority true rather than merely claimed.
+
+### THE PER-TELLING RE-ANCHOR IS GONE, AND ITS ABSENCE IS THE SUBSTANTIVE CHANGE
+
+It existed because a new leg's `WinProbAfter` starts at that leg's own price, so differencing across
+the seam compared two different legs' numbers. **The TICKET's probability has no such seam** — it
+moves continuously across a fixture boundary, and a leg resolving IS a real move of it. The anchor is
+now taken ONCE at `ResetForTicket(ticketProbAtStart)` and simply tracks. The seed must be a real
+number, not the old `0.0`: with no re-anchor, a zero seed makes the first beat's delta the whole
+probability.
+
+### WHY THE PINS SURVIVED, AND WHAT EACH SUITE NEEDED
+
+- **`SweatPresentationModelTests`** uses SINGLE-LEG tickets, where `T164` says in terms *"a one-leg
+  ticket's win probability IS that leg's probability"* — so the assertions hold unchanged and only
+  the referent is named honestly.
+- **`ScoreLedgerTests` / `TheaterChoreographerTests`** drive `BuildTicketPaths` **one LEG at a time**,
+  so they now `ResetForTicket(leg.TrueProb)` per leg to keep measuring each leg's own move. **That is
+  also why their green does NOT exercise this change** — the explicit reset reproduces their old
+  inputs deliberately.
+- **`SweatFlavorLeadChangeTests`** got strictly clearer: it already had `up` in scope and was
+  manufacturing probabilities to straddle an anchor purely to communicate it.
+
+### THE BLAST RADIUS, MEASURED RATHER THAN ASSUMED
+
+Outside `MagnitudeBand`, `delta` is used **only as a SIGN test** — the band-reconcile's
+`delta >= 0.0` / `<= 0.0`, whose own comment says *"SIGN-COMPATIBILITY, not the tie-broken bool."*
+The ticket's probability is a product of positive factors, so it is monotone in each: **while one
+telling is live the sign of the ticket delta equals the sign of the moving leg's.** Score attribution
+and band reconciliation are therefore untouched. Only MAGNITUDE compresses, and `T166` ruled
+`MagnitudeBand`'s thresholds STAY.
+
+**And `impliedLead` stays LEG-scoped** — it compares `probAfter` against the reconcile bands, and
+`probAfter` is `evt.LegProbs[0]` by step 1's class-B split. **Step 1's split is what protects this:**
+re-pointed to the ticket, a parlay's product would reconcile the scoreline wrongly on every
+multi-leg ticket.
+
+**One comment corrected, not deleted:** `SweatPresentationModel.cs`'s *"their |delta| ≥ 0.07 means
+they are never actually flat"* was true of a LEG's move. The NUMBER is now false on a multi-leg
+ticket; **the CONCLUSION survives** — a non-zero leg move times positive factors is still non-zero.
+A stale number in a comment is trusted exactly as far as a fresh one.
+
+### ⚠ WHAT THE GREEN DOES NOT COVER
+
+**No fixture in either suite builds a same-match ticket**, so the case this re-base EXISTS for — two
+legs on one telling wanting opposite things, a goal helping one and killing the other — **is
+unproven by test.** The green establishes that sign is preserved and nothing regressed on the
+shipping shape; the N-live behaviour rests on the monotonicity argument, not on a fixture. Pairs with
+step 3's same-match counter gap; both want the `[A,B,A]` treatment once parts A/D can be built.
+
+---
+
 ## 0-U15. STEP 4 — THE SHAPE THE TV NEEDS FROM THE ENGINE'S ANCHOR TABLE · 2026-08-24
 
 **Allen ruled the ENGINE owns the backed-side table and the TV consumes it.** This is the consumer's

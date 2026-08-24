@@ -255,10 +255,15 @@ namespace SBR.Tests.EditMode
                 for (int legIx = 0; legIx < paths.Count; legIx++)
                 {
                     Leg leg = ticket.Legs[legIx];
+                    // T164 re-based the model's anchor to the TICKET and dropped the per-telling
+                    // re-anchor, because the ticket's probability has no seam at a fixture boundary.
+                    // THIS FIXTURE DOES: it drives one LEG's path at a time, so it re-anchors here
+                    // to keep measuring each leg's own move — the behaviour it has always asserted.
+                    model.ResetForTicket(leg.TrueProb);
                     var ledger = new ScoreLedger();
                     foreach (DramaEvent evt in paths[legIx])
                     {
-                        bool up = model.RecordBeat(evt, leg);
+                        bool up = model.RecordBeat(evt, evt.WinProbAfter);
                         double delta = model.Beats[model.Beats.Count - 1].Delta;
                         if (evt.Type == DramaEventType.LegFinal)
                         {

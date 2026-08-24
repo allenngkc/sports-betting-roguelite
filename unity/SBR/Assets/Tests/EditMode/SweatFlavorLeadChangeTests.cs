@@ -70,10 +70,13 @@ namespace SBR.Tests.EditMode
                 // `up` is the sign of the move against the anchor, so the two probabilities
                 // straddle it — this is what walks both halves of every base table.
                 double after = up ? 0.62 : 0.38;
+                // T164: direction is no longer derived inside SweatFlavor from a prevProb — the
+                // model decides it once and hands it down, so the loop's own `up` IS the input now.
+                // Strictly clearer here: the fixture already knew the direction it was walking.
                 string tagged = SweatFlavor.For(
-                    new DramaEvent(0, step, 12, type, after, TensionTag.LeadChange), leg, prev);
+                    new DramaEvent(0, step, 12, type, after, TensionTag.LeadChange), leg, up);
                 string plain = SweatFlavor.For(
-                    new DramaEvent(0, step, 12, type, after, TensionTag.Calm), leg, prev);
+                    new DramaEvent(0, step, 12, type, after, TensionTag.Calm), leg, up);
 
                 // THE PRECONDITION BEFORE THE PROPERTY — a "no words were added" assertion passes
                 // vacuously when no line was produced at all, which is the shape that went green

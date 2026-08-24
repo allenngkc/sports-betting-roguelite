@@ -676,8 +676,6 @@ namespace SBR.Game
         private Ticket _ticket;
         private string _idleKey; // last idle/verdict render, so per-phase screens paint once
         private int _eventsEmitted;
-        private int _flavorLegSeen = -1;
-        private double _prevProb;
         private float _probTarget; // data-only now (RevealedView.WinProbability) — Layout B carries
                                     // no standalone win% visual; DESIGN.md §7's component list has no
                                     // slot for one, and the ticket column's NEED/LIVE copy is the
@@ -2683,8 +2681,10 @@ namespace SBR.Game
         private void ResetForNewSession()
         {
             _eventsEmitted = 0;
-            _flavorLegSeen = -1;
-            _presModel.ResetForTicket();
+            // T164: the anchor is the TICKET's sold probability, taken ONCE. The model no
+            // longer re-anchors per telling, so a zero seed would make the first beat's delta
+            // the whole probability.
+            _presModel.ResetForTicket(_session != null ? _session.TicketWinProbability : 0.0);
             CleanupConfetti();
             StopCashOutAnimation();
             _hasCashOutShown = false;
@@ -3751,12 +3751,17 @@ namespace SBR.Game
             // shared telling and skip the other.
             _tLeg.text = $"MATCH {evt.FixtureIndex + 1}/{FixtureTotal()}";
 
-            if (evt.LegIndex != _flavorLegSeen)
-            {
-                _flavorLegSeen = evt.LegIndex;
-                _prevProb = leg.TrueProb; // pre-event anchor for this leg's first beat
-            }
-            string flavor = SweatFlavor.For(evt, leg, _prevProb);
+            // THE DIRECTION IS DECIDED FIRST, AND THAT ORDERING IS THE POINT. The model owns the
+            // rule (one authority); the flavour used to derive its OWN `up` from a local _prevProb,
+            // which is a second implementation of the same rule and — after T164 re-based the
+            // number to the TICKET — would have been a second implementation of a DIFFERENT rule.
+            // Recording the beat first and handing the answer down leaves exactly one.
+            _lastBeatUp = _presModel.RecordBeat(
+                evt, _session != null ? _session.TicketWinProbability : 0.0);
+            SweatPresentationModel.BeatRecord beat = _presModel.Beats[_presModel.Beats.Count - 1];
+            _lastBeatDelta = beat.Delta;
+
+            string flavor = SweatFlavor.For(evt, leg, _lastBeatUp);
 
             // T87-am (batch 68) — THE DRAWN MATCH'S CLOSING LINE.
             //
@@ -3778,12 +3783,6 @@ namespace SBR.Game
             if (evt.Type == DramaEventType.LegFinal && _ledger.Picked == _ledger.Opponent)
                 flavor = "THE MATCH ENDS LEVEL";
 
-            _prevProb = evt.WinProbAfter;
-
-            // The stage speaks the same beat (model owns the direction rule — one authority).
-            _lastBeatUp = _presModel.RecordBeat(evt, leg);
-            SweatPresentationModel.BeatRecord beat = _presModel.Beats[_presModel.Beats.Count - 1];
-            _lastBeatDelta = beat.Delta;
             // T16: a non-final beat's dot lands at its reveal (RevealBeatChrome), never here —
             // looking away must never spoil a beat.
             _pendingTapeBeat = evt.Type != DramaEventType.LegFinal;

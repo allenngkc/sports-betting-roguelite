@@ -45,28 +45,42 @@ namespace SBR.Game
         }
 
         private readonly List<BeatRecord> _beats = new List<BeatRecord>();
-        // Which TELLING the pre-event anchor was last taken for. Keyed on the FIXTURE, not the leg,
-        // since T140 arm A: a telling is a (ticket, FIXTURE) and the anchor is a per-telling fact —
-        // it should reset once when a new match starts being told, not once per leg riding it. On a
-        // ticket with at most one leg per matchup fixture and leg are the same number, so this is
-        // exactly equivalent to what it replaces; on a shared telling it is the honest referent.
-        private int _anchorFixture = -1;
         private double _prevProb;
 
         public IReadOnlyList<BeatRecord> Beats => _beats;
 
-        /// <summary>Records a beat and returns its direction (the shared rule — one authority).</summary>
-        public bool RecordBeat(DramaEvent evt, Leg leg)
+        /// <summary>Records a beat and returns its direction — <b>the shared rule, one authority.</b>
+        /// <paramref name="ticketProbAfter"/> is <c>SweatSession.TicketWinProbability</c> after this
+        /// beat.
+        ///
+        /// <para><b>THE DIRECTION IS THE TICKET's, NOT A LEG's</b> (`T164`, and
+        /// `spec-neither-branch-lines-2026-08-21.md` §1). Under `T140` arm A two legs can ride one
+        /// telling and WANT OPPOSITE THINGS — one on a clean sheet, another on a total — so a goal
+        /// helps one and kills the other. **There is a single `up`/`down` to select a flavour table
+        /// ONLY because the displayed probability is the ticket's.** Were this still per-leg, legs in
+        /// disagreement would have no single direction and no line could be written at all.</para>
+        ///
+        /// <para><b>THE PER-TELLING RE-ANCHOR IS GONE, and its absence is the point.</b> This used to
+        /// reset <c>_prevProb</c> to <c>leg.TrueProb</c> whenever the telling changed, because a new
+        /// leg's <c>WinProbAfter</c> starts from that leg's own price and differencing across the
+        /// seam compared two different legs' numbers. The TICKET's probability has no such seam — it
+        /// moves continuously across a fixture boundary, and a leg resolving IS a real move of it. So
+        /// the anchor is taken once, at <see cref="ResetForTicket"/>, and simply tracks.</para>
+        ///
+        /// <para>The <c>leg</c> parameter went with it: its only use was that re-anchor.</para>
+        ///
+        /// <para><b>Sign is preserved on every ticket shipping today.</b> The ticket's probability is
+        /// a product of positive per-leg factors, so it is monotone in each — while one telling is
+        /// live, the sign of the ticket's delta equals the sign of the moving leg's. What changes is
+        /// MAGNITUDE, compressed by the other legs' probabilities, and `T166` (batch 173) ruled
+        /// <see cref="MagnitudeBand"/>'s thresholds STAY: a two-leg ticket's moment genuinely moves
+        /// the ticket less, and the tape quietening on it is TRUE, not a defect to compensate.</para></summary>
+        public bool RecordBeat(DramaEvent evt, double ticketProbAfter)
         {
-            if (evt.FixtureIndex != _anchorFixture)
-            {
-                _anchorFixture = evt.FixtureIndex;
-                _prevProb = leg.TrueProb; // the pre-event anchor, exactly EventText's rule
-            }
-            double delta = evt.WinProbAfter - _prevProb;
+            double delta = ticketProbAfter - _prevProb;
             bool up = delta >= 0.0;
-            _prevProb = evt.WinProbAfter;
-            _beats.Add(new BeatRecord(evt.LegIndex, evt.Step, evt.Type, evt.Tag, up, delta, evt.WinProbAfter));
+            _prevProb = ticketProbAfter;
+            _beats.Add(new BeatRecord(evt.LegIndex, evt.Step, evt.Type, evt.Tag, up, delta, ticketProbAfter));
             return up;
         }
 
@@ -79,12 +93,18 @@ namespace SBR.Game
             return 2;
         }
 
-        /// <summary>New ticket — beat history and the direction anchor reset.</summary>
-        public void ResetForTicket()
+        /// <summary>New ticket — beat history cleared and the direction anchor taken ONCE, from
+        /// <paramref name="ticketProbAtStart"/> (the ticket's sold probability, which is
+        /// <c>SweatSession.TicketWinProbability</c> at t=0: exactly <c>Π TrueProb</c> on an ordinary
+        /// ticket and within a few ulp of the joint on a same-match one).
+        ///
+        /// <para>It must be a real number rather than the 0.0 this used to reset to: with no
+        /// per-telling re-anchor, a zero seed would make the FIRST beat's delta the whole
+        /// probability.</para></summary>
+        public void ResetForTicket(double ticketProbAtStart)
         {
             _beats.Clear();
-            _anchorFixture = -1;
-            _prevProb = 0.0;
+            _prevProb = ticketProbAtStart;
         }
     }
 
@@ -332,8 +352,17 @@ namespace SBR.Game
 
             if (typeGoal)
             {
-                // Type goals keep the original direction rule (ties up — EventText's law);
-                // their |delta| ≥ 0.07 means they are never actually flat.
+                // Type goals keep the original direction rule (ties up — EventText's law); they are
+                // never actually flat.
+                //
+                // THE NUMBER THAT USED TO STAND HERE IS RETIRED, NOT DELETED: this read "their
+                // |delta| ≥ 0.07", which was true while delta was a LEG's move. Delta is the
+                // TICKET's now (T164), compressed by the other legs' probabilities, so 0.07 is no
+                // longer the floor on a multi-leg ticket. THE CONCLUSION SURVIVES INTACT — a
+                // non-zero leg move times positive factors is still non-zero, so a type goal still
+                // never ties and the ties-up rule is still never reached here. Corrected rather
+                // than left, because a stale number in a comment is trusted exactly as far as a
+                // fresh one.
                 // SpendableTargetPicked, not _targetPicked (T17): on a scorer leg the last
                 // backed-side goal is reserved for the reveal, so a beat that would spend it
                 // stages CHALKED-OFF instead. The beat still plays; only the commit is withheld.

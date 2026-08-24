@@ -146,10 +146,14 @@ namespace SBR.Tests.EditMode
             double anchor = leg.TrueProb;
 
             var upEvt = new DramaEvent(0, 1, 4, DramaEventType.Score, anchor + 0.05, TensionTag.Swing);
-            Assert.IsTrue(model.RecordBeat(upEvt, leg), "a move above the TrueProb anchor is up");
+            model.ResetForTicket(anchor);
+            // ON A ONE-LEG TICKET THE TICKET'S PROBABILITY IS THE LEG'S (T164 says so in terms:
+            // "a one-leg ticket's win probability IS that leg's probability"), so these fixtures
+            // assert exactly what they always asserted — only the referent is named honestly now.
+            Assert.IsTrue(model.RecordBeat(upEvt, upEvt.WinProbAfter), "a move above the ticket anchor is up");
 
             var downEvt = new DramaEvent(0, 2, 4, DramaEventType.Score, anchor - 0.10, TensionTag.Swing);
-            Assert.IsFalse(model.RecordBeat(downEvt, leg), "a move below the previous beat is down");
+            Assert.IsFalse(model.RecordBeat(downEvt, downEvt.WinProbAfter), "a move below the previous beat is down");
 
             Assert.AreEqual(2, model.Beats.Count);
             Assert.IsTrue(model.Beats[0].Up);
@@ -178,10 +182,11 @@ namespace SBR.Tests.EditMode
 
             var model = new SweatPresentationModel();
             double anchor = leg.TrueProb;
-            model.RecordBeat(new DramaEvent(0, 1, 4, DramaEventType.Score, anchor + 0.08, TensionTag.Swing), leg);
-            model.RecordBeat(new DramaEvent(0, 2, 4, DramaEventType.Score, anchor - 0.02, TensionTag.Swing), leg);
+            model.ResetForTicket(anchor);
+            model.RecordBeat(new DramaEvent(0, 1, 4, DramaEventType.Score, anchor + 0.08, TensionTag.Swing), anchor + 0.08);
+            model.RecordBeat(new DramaEvent(0, 2, 4, DramaEventType.Score, anchor - 0.02, TensionTag.Swing), anchor - 0.02);
 
-            Assert.AreEqual(0.08, model.Beats[0].Delta, 1e-9, "first beat measures from the TrueProb anchor");
+            Assert.AreEqual(0.08, model.Beats[0].Delta, 1e-9, "first beat measures from the ticket anchor");
             Assert.AreEqual(-0.10, model.Beats[1].Delta, 1e-9, "later beats measure from the previous beat");
         }
 
@@ -194,13 +199,15 @@ namespace SBR.Tests.EditMode
             Leg leg = ticket.Legs[0];
 
             var model = new SweatPresentationModel();
-            model.RecordBeat(new DramaEvent(0, 1, 4, DramaEventType.Momentum, 0.9, TensionTag.Calm), leg);
-            model.ResetForTicket();
+            model.ResetForTicket(leg.TrueProb);
+            model.RecordBeat(new DramaEvent(0, 1, 4, DramaEventType.Momentum, 0.9, TensionTag.Calm), 0.9);
+            model.ResetForTicket(leg.TrueProb);
             Assert.AreEqual(0, model.Beats.Count);
 
-            // After reset the anchor is TrueProb again, not the stale 0.9.
+            // After reset the anchor is the seed again, not the stale 0.9.
             bool up = model.RecordBeat(
-                new DramaEvent(0, 1, 4, DramaEventType.Momentum, leg.TrueProb + 0.01, TensionTag.Calm), leg);
+                new DramaEvent(0, 1, 4, DramaEventType.Momentum, leg.TrueProb + 0.01, TensionTag.Calm),
+                leg.TrueProb + 0.01);
             Assert.IsTrue(up);
         }
     }

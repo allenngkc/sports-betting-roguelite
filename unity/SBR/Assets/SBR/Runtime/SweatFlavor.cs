@@ -15,14 +15,22 @@ namespace SBR.Game
     /// </summary>
     public static class SweatFlavor
     {
-        public static string For(DramaEvent e, Leg leg, double prevProb)
+        /// <summary><paramref name="up"/> is the beat's DIRECTION, computed once by
+        /// <see cref="SweatPresentationModel.RecordBeat"/> and handed here.
+        ///
+        /// <para><b>This used to take <c>prevProb</c> and derive its own <c>up</c> from
+        /// <c>e.WinProbAfter</c> — a SECOND implementation of a rule the model's own summary already
+        /// claimed as "the shared rule, one authority".</b> Two copies of a direction rule can
+        /// disagree, and after `T164` they would have: the model's is the TICKET's move and a local
+        /// recomputation off <c>WinProbAfter</c> is the ANCHOR LEG's. The parameter is the fix — the
+        /// caller passes what the authority decided.</para></summary>
+        public static string For(DramaEvent e, Leg leg, bool up)
         {
             if (e.Type == DramaEventType.LegFinal) return "FINAL WHISTLE";
 
             bool pickedHome = PickedHomeForPresentation(leg);
             string picked = Short(pickedHome ? leg.Matchup.Home.Name : leg.Matchup.Away.Name);
             string other = Short(pickedHome ? leg.Matchup.Away.Name : leg.Matchup.Home.Name);
-            bool up = e.WinProbAfter >= prevProb;
 
             // Count lines are keyed by the SELECTION's sense of an increment (Over hopes,
             // Under dreads), never the beat's prob direction (Sol, F_0.4.0 P3 r2). These are
