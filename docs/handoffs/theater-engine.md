@@ -622,3 +622,62 @@ unwired in TV's tree already.
 **Open:** the name. `AnchorSide` is this lane's proposal, chosen so it cannot be misread as
 `BackedSide`. If TV or the DD wants the ruled vocabulary (`picked` / prose anchor) in the identifier,
 say so before I build — renaming a public engine member afterwards costs both lanes.
+
+
+---
+
+# ANCHOR TABLE — BUILT. `MatchModel.AnchorSide(Leg) -> Side?`
+
+**Landed 2026-08-24 against the contract published above.** Purely additive to the engine surface:
+nothing outside `engine/` calls it yet, so **nothing breaks on the day it lands.** Suites:
+`engine.tests` **329 passed / 0 / 1 skipped** (+5), `game-console.tests` **24 / 0 / 0**. `sim` and
+`game-console` build clean in Release. `SBR.Engine.dll` rebuilt clean and committed.
+
+## What it answers, and what it is not
+
+`null` means **NEITHER** — an answer, not a missing one. `DoubleChance` keeps its arm despite leaving
+the offered set, for the same reason `EventText.BackedSide` keeps its: the enum member stays so
+in-flight legs still grade. An unlisted kind **throws**; there is no `default:` arm.
+
+**`EventText.BackedSide` is NOT superseded** and must not be deleted. It answers which side PAYS;
+this answers which club the PROSE names. They diverge on the player markets and both are right — see
+the contract's §1.
+
+## THE CALL SITES THIS SUPERSEDES — named, not fixed (they are `unity/`, TV's)
+
+`SweatFlavor.PickedHomeForPresentation` (`unity/…/SweatFlavor.cs:489`) is the function this replaces.
+**This lane did not touch any of them.** TV's own report measures the defect: that function returns
+HOME unconditionally for every kind except Moneyline and AnytimeScorer.
+
+**Live call sites — 16:**
+
+| file | lines |
+|---|---|
+| `SBR/Runtime/TvSweatScreen.cs` | `176`, `2252`, `2829`, `2893`, `2933`, `2996`, `4186`, `4309`, `4783` |
+| `SBR/Runtime/SweatFlavor.cs` | `22`, `245`, `289`, `299` (and the definition at `489`) |
+| `SBR/Runtime/SweatPresentationModel.cs` | `278` |
+| `Tests/EditMode/SweatFlavorDrawAnchorTests.cs` | `45`, `50`, `51` |
+
+**`SweatFlavorDrawAnchorTests.cs:45` is the one to look at first.** It asserts
+`PickedHomeForPresentation(draw)` is TRUE — i.e. it PINS the draw anchoring on HOME. `AnchorSide`
+answers **NEITHER** there, on `T96`'s ground that the draw is not a team. **That test pins the defect,
+so it cannot survive the migration unchanged** — it is the clearest single marker of what the move
+costs, and it is TV's to re-point.
+
+**Comment-only references that will go stale** (no behaviour, but they cite the old function as the
+authority): `SweatActiveLegModel.cs:163,196` · `SweatPresentationModel.cs:271,479` ·
+`TheaterChoreographer.cs:87` · `TheaterStage.cs:2078` · `TvSweatScreen.cs:2960` ·
+`Tests/EditMode/ScoreLedgerTests.cs:734` · `Tests/PlayMode/TheaterStageAttributionTests.cs:41`.
+
+## What this lane pinned, so TV inherits evidence rather than assertions
+
+- Every kind answered with its **ruled value** — not merely "does not throw" — plus a coverage check
+  that the fixture spans the enum, so a kind cannot go unasserted.
+- A kind outside the enum **throws** (`K17-cl`), and a null leg is rejected.
+- The player-market divergence, over every roster index on both sides.
+- **The disagreement set with `PickedHomeForPresentation`, asserted as an intended list.** Where the
+  two agree the migration is a no-op; where they differ, that difference IS the shipped-copy change,
+  and the test names `Moneyline/Draw`, `Handicap/Away`, `TotalGoals/Over` and `PlayerMultiScorer`
+  explicitly. **If anyone "fixes" `AnchorSide` back to the old behaviour, that test fails.**
+
+`T163`'s composition over a fixture's live legs is still TV's and is not built here.
