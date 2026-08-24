@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-24, cycle 467 (heartbeat).** The
+**Keeper-era heartbeat stamp: 2026-08-24, cycle 468 (heartbeat).** STEP 3
+AND THE CONSOLE FIX ARE MERGED (b9c5c30 + f5bd516 via 17c0829 - the
+counter counts MATCHES with a pool-to-code pin; the interleaved
+final-telling predicate fixed). TV on its own onFinalLeg twin
+(mutation-proving the gate before commit); the register transcribed
+through 181 (1794bb4); the engine mid-removal-build (steps 0-4, the
+campaign held for a protected window). WITH ALLEN: the carve-out
+bookkeeping, the hold's structure, research 8-9, B9's sitting.
+
+*(prior stamp, cycle 467 (heartbeat).** The
 counter word ruled MATCH n/m (batch 178; queued to TV to fold into step
 3 behind its K21 fix); the sizing brief (batch 180: player-facing goes,
 internal stays) with the engine seat - two survey agents running.
