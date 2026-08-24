@@ -198,7 +198,7 @@ namespace SBR.Tests.PlayMode
             Ticket ticket = laptop.director.Run.Tickets[0];
             Assert.AreEqual(2, ticket.Legs.Count);
             RevealedView view = laptop.tv.RevealedView;
-            InvokeView(view, "Reset", laptop.director.Run, ticket, 0);
+            InvokeView(view, "Reset", laptop.director.Run, ticket, 0, TicketProbAtStart(ticket));
             yield return WaitForRebuild();
 
             // PENDING is the leg-level word for "released by the TV, not yet started", and it is the
@@ -2112,6 +2112,18 @@ namespace SBR.Tests.PlayMode
                 UnityEngine.Object.DestroyImmediate(image);
                 UnityEngine.Object.DestroyImmediate(target);
             }
+        }
+
+        /// <summary>T164: the mirror's pregame seed is the TICKET's probability, never a leg's —
+        /// the product of the legs' TrueProb, which IS SweatSession.TicketWinProbability at t=0.
+        /// <see cref="RevealedView.Reset"/> takes it as an argument because the view holds no
+        /// session handle. The honest value matters here specifically: these are the SIX TRUTHFUL
+        /// states, and a state seeded with a number the engine would never produce is not one.</summary>
+        private static double TicketProbAtStart(Ticket ticket)
+        {
+            double p = 1.0;
+            foreach (Leg leg in ticket.Legs) p *= leg.TrueProb;
+            return p;
         }
 
         private static void InvokeView(

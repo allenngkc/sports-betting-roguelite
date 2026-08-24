@@ -134,6 +134,86 @@ what that clause forbids.
 
 ---
 
+## 0-U11. STEP 1 — §6c, THE PROBABILITY SITES · SHIPPED 2026-08-24
+
+**EditMode 320/319/0/1 · PlayMode 149/124/0/25 — both at baseline.** Engine gate green at
+`324/1/0` before the change and NOT re-run after: step 1 touched zero files under `engine/`, and
+EditMode's `DeterminismEditModeTests.Golden_seed_event_stream_is_pinned` is the Unity-side mirror
+of the same pin.
+
+### THE SHAPE THAT MATTERS: §6c'S SITE LIST MIXES TWO QUANTITIES
+
+The contract lists six sites under *"displays a LEG's probability."* They are not one thing, and
+building them as one would have been wrong:
+
+- **CLASS A — the displayed number → `SweatSession.TicketWinProbability`.** `RevealedView.Reset`'s
+  seed (the site `T164` names), the pregame and ticket-card seeds, the `_pendingProb` stash, the
+  theaterless branch.
+- **CLASS B — the picked side's per-match prob → `evt.LegProbs[0]`.** `_stage.SetLiveProb` and the
+  three `TheaterChoreographer` sites. `TheaterStage._prob` is *"picked side's last revealed win prob
+  — territory truth"* (`TheaterStage.cs:83`), driving `PitchLayout.TerritoryX` and the possession
+  share. **Pointing territory at a parlay's product would pin the pitch to one end for the whole
+  sweat.** The contract's own rubric for the choreographer applies verbatim; `SetLiveProb` is the
+  same animal and belongs here, not in class A.
+
+**CLASS B SHIPS ZERO BEHAVIOUR CHANGE AND THAT IS PROVABLE.** `DramaEvent.cs:54-58` materialises
+`LegProbs => _legProbs ?? new[] { WinProbAfter }`, and the shared-telling ctor
+(`DramaGenerator.cs:243`) passes the anchor's prob as `WinProbAfter` with `legProbs[0]` the same
+anchor. **`evt.LegProbs[0] ≡ evt.WinProbAfter` on every event, shared or not.** Class B is a
+statement of intent that becomes load-bearing at step 2.
+
+### ONE SITE THE CONTRACT DOES NOT NAME, AND IT WAS WRONG
+
+`FinalSlam` snapped `_probTarget` to `1f` on a won leg. Under a ticket-level number **one leg winning
+does not make the ticket certain** — that was announcing a certainty the ticket does not have, mid-
+ticket. Now reads the session. The engine already lands exactly `1.0` when every leg is won and
+exactly `0.0` on a revealed dead leg with no save held (`engine.tests/TicketWinProbabilityTests`), so
+the terminal values are unchanged where they were already right. **The `Won`/`Lost` guard shape is
+load-bearing** — VOID must fall through and keep its pre-kill number.
+
+### THE DEFECT THIS SEAT PUT IN AND CAUGHT — TIMING, NOT VALUE
+
+Re-pointing the crowd-tension bed looked like a one-line no-op. It was not. The bed read
+`RevealedView.WinProbability`, which lands **at the reveal**; a referent set in `RenderEvent` moves
+when the beat is CONSUMED. **The crowd would have swelled before the pitch showed the story** — and
+on a dangerous scene the mirror's number is pinned to hold (`LaptopOsTests`, *"the reveal owns it"*)
+while the bed would not. An audible tell, M-T3.1 exactly.
+
+Fixed by stashing (`_pendingTensionProb`) and landing at the same instant `_probTarget` lands. **The
+referent now moves on exactly the mirror's six seams and no others** — `Reset`, both `Clear`s,
+`FinalSlam`, the theaterless branch, `RevealBeatChrome`. Verify by grepping both lists and diffing
+them; they must stay one-to-one. `TheaterStage`'s territory keeps its own pre-existing early timing
+(scene playback supersedes it) and is deliberately NOT folded in.
+
+### ⚠ THE TRAP WORTH INHERITING: A REFLECTED SEAM IS INVISIBLE TO THE COMPILER
+
+Adding a parameter to `RevealedView.Reset` compiled clean in **both** assemblies and then failed two
+PlayMode cases at runtime with `TargetParameterCountException`.
+`SureThingMyBetsTests.cs:37` and `SureThingVisualCaptureTests.cs:201` reach that seam through
+`InvokeView(view, "Reset", …)` — reflection by method-name string.
+
+**Before changing ANY `internal` signature on `RevealedView`, grep `Assets/**` for the method name as
+a STRING LITERAL, not just as a call.** `grep -rn '"Reset"'` finds in one second what a green build
+will not tell you. Exactly two reflected callers exist today; both now pass the ticket product via a
+documented `TicketProbAtStart` helper. **This is the same family as the phantom fixtures: a green
+compile proving something it never checked.**
+
+### OWED FROM THIS STEP
+
+- **`T164-cl` may be wrong**, and it changes what step 1 owed. Nothing in `Assets/**` renders this
+  float — `_probTarget` is *"data-only … no standalone win% visual"*, `SportsbookApp`/`LaptopOs` never
+  read `WinProbability`, and `SweatFlavor.cs:50` calls it *"the deleted win-prob numeral."* Its only
+  runtime consumer was the tension bed. Routed:
+  `docs/5-orchestration/route-t164-visibility-2026-08-24.md`. **The RULING is untouched either way.**
+- **`T163-am` does NOT come for free with `T164`** — same route doc, finding 2. The direction that
+  selects the flavour table is computed at `SweatPresentationModel.cs:56-64` and `SweatFlavor.cs:25`,
+  both off `evt.WinProbAfter`, neither of them the displayed number. **Step 4 must build that
+  re-base.** `T166` (batch 173) has since ruled the `MagnitudeBand` thresholds STAY: the tape's
+  quietening on multi-leg tickets is true, not a defect to compensate.
+- **The tension referent is a lane decision, not a ruling.** Recorded in the route doc.
+
+---
+
 ## 0-ROT. SEAT ROTATION 2026-08-19 — READ THIS FIRST
 
 Everything below `0-ROT` is the record of what shipped. **This section is what a fresh seat needs

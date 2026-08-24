@@ -60,7 +60,10 @@ namespace SBR.Game
         public bool MarketSuspended { get; internal set; }
         public IReadOnlyList<RevealedTicket> Tickets => _tickets;
 
-        internal void Reset(Run run, Ticket current, int currentIndex)
+        /// <summary>Rebuilds the mirror for a new session. <paramref name="ticketWinProb"/> is the
+        /// session's TICKET-level live win probability (T164) — this class holds no session handle,
+        /// so the pregame seed is passed in rather than derived here.</summary>
+        internal void Reset(Run run, Ticket current, int currentIndex, double ticketWinProb)
         {
             var previous = new List<RevealedTicket>(_tickets);
             _tickets.Clear();
@@ -73,7 +76,10 @@ namespace SBR.Game
             CurrentTicketIndex = currentIndex;
             TicketCount = _tickets.Count;
             HasTicket = current != null && current.Legs.Count > 0;
-            WinProbability = HasTicket ? (float)current.Legs[0].TrueProb : 0f;
+            // T164: the seed is the TICKET's probability, never a leg's — T143 governs (no leg's
+            // probability is ever shown alone), and after the fixture restructure two or more legs
+            // can be live at once, so a leg-derived seed is a visible lie the moment N > 1.
+            WinProbability = HasTicket ? (float)ticketWinProb : 0f;
             ScoreText = string.Empty;
             ClockText = "PRE";
             MarketSuspended = false;
@@ -676,6 +682,22 @@ namespace SBR.Game
                                     // no standalone win% visual; DESIGN.md §7's component list has no
                                     // slot for one, and the ticket column's NEED/LIVE copy is the
                                     // PRD-sanctioned channel for "what does the leg still need".
+        // T164: the picked side's live prob — the tension bed's referent. Distinct from _probTarget,
+        // which is the displayed TICKET number: crowd tension is a per-MATCH dramatic fact (exactly
+        // like TheaterStage's territory), and driving it off a multi-leg ticket's product would sit
+        // it far from the coin-flip peak forever, flattening the bed on every parlay.
+        //
+        // IT MOVES ONLY ON THE MIRROR'S OWN SEAMS, AND THAT IS THE WHOLE POINT OF THE PAIR BELOW.
+        // Before T164 the bed read RevealedView.WinProbability, which lands at the REVEAL
+        // (RevealBeatChrome / FinalSlam / Reset / Clear) and never at RenderEvent — the causal
+        // reveal law, M-T3.1. A referent set when the beat is CONSUMED would swell the crowd before
+        // the pitch has shown the story: an audible tell on a dangerous scene, where the mirror's
+        // number is pinned to hold (LaptopOsTests, "the reveal owns it") but the bed would not.
+        // So the leg's number is STASHED at RenderEvent and LANDED at the same instant _probTarget
+        // is, sample for sample. TheaterStage's territory keeps its own pre-existing early timing —
+        // scene playback supersedes it during a scene — and is deliberately not folded in here.
+        private float _tensionProb = 0.5f;
+        private float _pendingTensionProb = 0.5f;
         private float _flavorScale = 1f;
         private double _lastCashOutAmount;
         private double _cashOutShown;
@@ -2050,8 +2072,21 @@ namespace SBR.Game
             RevealedView.SetClock(_tClock.text);
             _finalSequenceActive = false;
             _clockTicking = false;
-            if (grade == LegGrade.Won) _probTarget = 1f;
-            else if (grade == LegGrade.Lost) _probTarget = 0f;
+            // T164: the number is the TICKET's, so a WON leg no longer snaps it to 1 — one leg
+            // winning does not make the ticket certain, and 1f was announcing a certainty the
+            // ticket does not have mid-ticket. The terminal values are unchanged where they were
+            // already right: the engine lands exactly 1.0 when every leg is won and exactly 0.0 on
+            // a revealed dead leg with no save held (pinned by engine.tests/TicketWinProbabilityTests).
+            // The GUARD SHAPE is preserved — VOID still falls through untouched, keeping its
+            // pre-kill number, exactly as the doc above says.
+            if (grade == LegGrade.Won || grade == LegGrade.Lost)
+            {
+                _probTarget = (float)_session.TicketWinProbability;
+                // The bed lands on the same seam and keeps its OWN pre-T164 values: this match is
+                // over, so tension goes to its floor exactly as it did when the mirror carried the
+                // leg's number. VOID falls through here too, holding the bed as it holds the bar.
+                _tensionProb = grade == LegGrade.Won ? 1f : 0f;
+            }
             RevealedView.SetProbability(_probTarget);
             RevealedView.ResolveLeg(evt.LegIndex, grade);
             _tape?.ResolveLeg(evt.LegIndex, grade); // T16: collapses the strip to its resolution cap
@@ -2621,8 +2656,16 @@ namespace SBR.Game
             _stoppageGoalCount = 0;
             _marketSuspended = false;
             _scorerRevealedForActiveLeg = false;
+            // T164: the bed's pregame seed is the value the mirror used to carry here — leg 0's own
+            // number, NOT the ticket's — so the crowd opens exactly as it opened before this change.
+            _tensionProb = _pendingTensionProb =
+                _ticket != null && _ticket.Legs.Count > 0 ? (float)_ticket.Legs[0].TrueProb : 0f;
+            // T164: the mirror's pregame number is the SESSION's ticket probability. _session is
+            // already adopted in PresentRound before this runs, but this is a session boundary, so
+            // the read is guarded rather than assumed.
             RevealedView.Reset(director != null ? director.Run : null, _ticket,
-                director != null ? director.SweatIndex : 0);
+                director != null ? director.SweatIndex : 0,
+                _session != null ? _session.TicketWinProbability : 0.0);
             _tInterventionPrompt.enabled = false;
             _stage?.Show(false);
             // T16: fresh ticket, fresh tape — a stale strip from the last ticket must not survive.
@@ -2661,7 +2704,9 @@ namespace SBR.Game
             // this element is (VAR — NO GOAL, THE TOTEM BURNS, LEG n — WON). Lowercase sentence case
             // is for the beat corpus's running text, which this is not.
             _tFlavor.text = "THE BOARD IS SET";
-            _probTarget = (float)leg.TrueProb; // data only — RevealedView, no visible bar
+            // T164: data only — RevealedView, no visible bar — and the number is the TICKET's, not
+            // leg 0's. Guarded: this is a session boundary (see ResetForNewSession's caller note).
+            _probTarget = (float)(_session != null ? _session.TicketWinProbability : 0.0);
             // The ticket-card takeover copy clears the instant the live sweat begins.
             _tTakeoverTitle.text = string.Empty;
             _tTakeoverSub.text = string.Empty;
@@ -3292,7 +3337,9 @@ namespace SBR.Game
             SetEventStrip(flavorColor);
             _tFlavor.text = $"${Money(_ticket.Stake)} TO WIN ${Money(_ticket.PotentialPayout)}";
 
-            _probTarget = (float)_ticket.Legs[0].TrueProb; // data only
+            // T164: data only, and the TICKET's number rather than leg 0's. Guarded — the card is a
+            // session boundary (see ResetForNewSession's caller note).
+            _probTarget = (float)(_session != null ? _session.TicketWinProbability : 0.0);
         }
 
         /// <summary>The round's settle card short of a run end (payment model): PAYMENT MADE green,
@@ -3354,6 +3401,9 @@ namespace SBR.Game
             _session = null;
             _ticket = null;
             RevealedView.Clear();
+            // T164: the bed empties with the mirror — Clear() zeroed WinProbability, which is what
+            // this line read before, so the crowd falls silent on exactly the same frame.
+            _tensionProb = _pendingTensionProb = 0f;
 
             ClearToBlankScreen();
             _tAttract.enabled = true;
@@ -3380,6 +3430,9 @@ namespace SBR.Game
             _session = null;
             _ticket = null;
             RevealedView.Clear();
+            // T164: the bed empties with the mirror — Clear() zeroed WinProbability, which is what
+            // this line read before, so the crowd falls silent on exactly the same frame.
+            _tensionProb = _pendingTensionProb = 0f;
 
             ClearToBlankScreen();
             _tAttract.enabled = true;
@@ -3520,13 +3573,27 @@ namespace SBR.Game
                 // Causal reveal (M-T3.1): identity chrome may update now, but the win-prob,
                 // flavor, and clock are STASHED — they land at the scene's payoff
                 // (RevealBeatChrome / FinalSlam), never before the pitch has shown the story.
-                _pendingProb = (float)evt.WinProbAfter;
+                // T164: the stashed number is the TICKET's, the only probability presentation may
+                // display (T143). Reading the session here is no earlier a reveal than reading the
+                // beat's own WinProbAfter was — the engine has already consumed the beat at this
+                // point either way, and the stash is still landed only at RevealBeatChrome.
+                _pendingProb = (float)_session.TicketWinProbability;
                 _pendingFlavor = flavor;
                 TraceFlavor($"RenderEvent stash {evt.Type}", flavor);
 
                 if (evt.LegIndex != _stageLeg || _stageBeatCount != evt.TotalSteps)
                     BeginStageLeg(evt.LegIndex, leg, evt.TotalSteps);
-                _stage.SetLiveProb((float)evt.WinProbAfter);
+                // THE PITCH AND THE CROWD STAY LEG-SCOPED. TheaterStage._prob is the PICKED SIDE's
+                // territory truth (TheaterStage.cs:83, driving PitchLayout.TerritoryX and the
+                // possession share) — a per-MATCH dramatic fact, not the displayed number — so it
+                // reads LegProbs, never the ticket's product (which would pin the pitch to one end
+                // on any multi-leg ticket) and never WinProbAfter, which after the fixture
+                // restructure is only the ANCHOR leg's and would silently show one leg's number for
+                // every leg. Value-identical today: LegProbs[0] == WinProbAfter on every event.
+                // The tension bed takes its referent from the SAME read, so territory and crowd
+                // never disagree about which match they are describing.
+                _pendingTensionProb = (float)evt.LegProbs[0];
+                _stage.SetLiveProb(_pendingTensionProb);
                 UpdateScorebug(leg); // colored identity + running score (M-T3 scorebug)
             }
             else
@@ -3535,7 +3602,11 @@ namespace SBR.Game
                 SetEventStrip(flavorColor);
                 _tFlavor.text = flavor;
                 _flavorScale = 1.12f; // punch
-                _probTarget = (float)evt.WinProbAfter;
+                // T164: the theaterless fallback displays the same TICKET number the staged path
+                // stashes. The tension bed still needs its per-match referent, so it is driven here
+                // too — this branch has no stage, but the crowd is still playing.
+                _probTarget = (float)_session.TicketWinProbability;
+                _tensionProb = (float)evt.LegProbs[0];
                 _tMatchup.text = MatchupLine(leg);
                 RevealedView.SetProbability(_probTarget);
                 RevealedView.SetClock(_tClock.text);
@@ -3584,6 +3655,7 @@ namespace SBR.Game
                 _pendingTapeBeat = false;
             }
             _probTarget = _pendingProb; // data only — RevealedView
+            _tensionProb = _pendingTensionProb; // T164: the bed lands on the same seam, never earlier
             RevealedView.SetProbability(_probTarget);
             RevealedView.SetClock(_tClock.text);
             SetEventStrip(flavorColor);
@@ -4543,7 +4615,12 @@ namespace SBR.Game
                 _audio.masterVolume = masterVolume;
                 _audio.crowdVolume = crowdVolume;
                 _audio.stingVolume = stingVolume;
-                _audio.SetTension(1f - Mathf.Abs(2f * (RevealedView.WinProbability) - 1f), _audioUrgency);
+                // T164: the bed reads _tensionProb, not RevealedView.WinProbability — that mirror now
+                // carries the TICKET's number, and a parlay's product sits far from the coin-flip
+                // peak, so this would have gone flat and stayed flat on every multi-leg ticket. This
+                // preserves today's audible bed EXACTLY (it is the same picked-side number this line
+                // read before T164 moved WinProbability to the ticket) and stays correct under N-live.
+                _audio.SetTension(1f - Mathf.Abs(2f * _tensionProb - 1f), _audioUrgency);
                 bool dread = !_seated || (_session != null && _session.HasPendingLoss);
                 _audio.Duck(dread, dread ? 0.15f : 0.8f);
             }

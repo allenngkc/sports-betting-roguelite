@@ -34,7 +34,7 @@ namespace SBR.Tests.PlayMode
 
             Ticket ticket = PlaceTwoLegTicket(laptop);
             RevealedView view = laptop.tv.RevealedView;
-            InvokeView(view, "Reset", laptop.director.Run, ticket, 0);
+            InvokeView(view, "Reset", laptop.director.Run, ticket, 0, TicketProbAtStart(ticket));
             yield return WaitForRebuild();
 
             Transform mirrorTicket = Required(Required(App(laptop), "MyBetsBoard"), "MirrorTicket0");
@@ -177,6 +177,19 @@ namespace SBR.Tests.PlayMode
             Ticket ticket = laptop.Slip.Place();
             Assert.AreEqual(2, ticket.Legs.Count);
             return ticket;
+        }
+
+        /// <summary>T164: the mirror's pregame seed is the TICKET's probability, never a leg's —
+        /// the product of the legs' TrueProb, which IS SweatSession.TicketWinProbability at t=0.
+        /// <see cref="RevealedView.Reset"/> takes it as an argument because the view holds no
+        /// session handle. Passed here rather than left to default because this seam is REFLECTED:
+        /// arity is not checked by the compiler, so the argument list is the only thing keeping
+        /// these tests honest about the seam's real shape.</summary>
+        private static double TicketProbAtStart(Ticket ticket)
+        {
+            double p = 1.0;
+            foreach (Leg leg in ticket.Legs) p *= leg.TrueProb;
+            return p;
         }
 
         private static void InvokeView(RevealedView view, string methodName, params object[] args)
