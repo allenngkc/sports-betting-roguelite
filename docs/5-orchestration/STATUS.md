@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-24, cycle 466 - THE DOUBLECHANCE
+**Keeper-era heartbeat stamp: 2026-08-24, cycle 467 (heartbeat).** The
+counter word ruled MATCH n/m (batch 178; queued to TV to fold into step
+3 behind its K21 fix); the sizing brief (batch 180: player-facing goes,
+internal stays) with the engine seat - two survey agents running.
+Note for the log: my batch-180 commit message mislabeled it as the
+counter ruling; the file is the sizing brief - content binds. WITH
+ALLEN: the carve-out bookkeeping, the hold's structure, research 8-9,
+B9's sitting.
+
+*(prior stamp, cycle 466 - THE DOUBLECHANCE
 ARC IS IN MOTION.** Allen restated (b) - DoubleChance leaves the offered
 set; the DD's removal spec + taxonomy ruling are landed (batches
 176-179, spec-doublechance-removal); the ENGINE SEAT IS KEPT (Allen) and
