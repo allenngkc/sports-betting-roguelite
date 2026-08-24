@@ -1,6 +1,18 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-24, cycle 465 (heartbeat).** STEP 2
+**Keeper-era heartbeat stamp: 2026-08-24, cycle 466 - THE DOUBLECHANCE
+ARC IS IN MOTION.** Allen restated (b) - DoubleChance leaves the offered
+set; the DD's removal spec + taxonomy ruling are landed (batches
+176-179, spec-doublechance-removal); the ENGINE SEAT IS KEPT (Allen) and
+resumed to size the sim's exposure - the last unknown before I assign
+the build lane. Also this cycle: the step-3 counter word measured (all
+candidates fit; TV recommends MATCH n/m on vocabulary; DD ruling); TV
+fixing the console's onFinalLeg fast-forward (K21) under a logged
+one-time ownership grant. Watcher v56 (bgz481xbw). WITH ALLEN: the
+carve-out bookkeeping, the hold's structure, research 8-9, B9's
+sitting.
+
+*(prior stamp, cycle 465 (heartbeat).** STEP 2
 MERGED (9d7735e via 9f09566): N grades at one whistle, the per-leg
 presented-resolved set, and the interleaved [A,B,A] gate committed
 together - the high-water mark is retired. TV planning step 3 (the leg
