@@ -408,7 +408,39 @@ and the Whistle's roll need a per-leg number, not because anything should displa
 
 ---
 
-# THE PLUGIN DLL WANTS A CLEAN RELEASE BUILD — a trap this lane walked into
+# CORRECTED 2026-08-24 — THE SECTION BELOW DIAGNOSED THE WRONG CAUSE
+
+**Read this first; the section under it is kept because its conclusion is still safe practice, but
+its REASON is wrong and the wrong reason is the part that misleads.**
+
+`SBR.Engine.dll` embeds `AssemblyInformationalVersion = 1.0.0+<the git commit SHA of HEAD>` — the
+SDK's automatic `SourceRevisionId`. Read it out of any copy with
+`strings SBR.Engine.dll | grep -aoE "1\.0\.0\+[0-9a-f]{40}"`.
+
+**So the DLL's bytes are a function of (source, HEAD).** Three consequences, and the first is the one
+that cost this lane two investigations:
+
+1. **A committed DLL can NEVER reproduce after its own commit.** Building it at HEAD `X` embeds `X`;
+   committing it makes HEAD `Y`; rebuilding now embeds `Y`. **It chases its own tail forever, and the
+   tracked file reads dirty immediately after every commit that contains it. That is EXPECTED, not
+   staleness.** Restore it with `git checkout` and move on. Do not re-commit to "fix" it.
+2. **The churn at `45b8224` → `0f00122` was this, not stale intermediates.** That commit's message
+   says the earlier DLL "came from an INCREMENTAL Release build layered over intermediates left by
+   Debug builds". **That diagnosis is wrong.** The two builds simply ran at different HEADs. Verified
+   here: the working copy carried `1.0.0+6f4bf67…` (= HEAD) while the committed copy had been built
+   at `ecc021b…` (= HEAD's parent).
+3. **The determinism measurement was sound but did not test what it looked like it tested.** Two
+   clean builds back to back ARE byte-identical — because HEAD did not move between them. It is
+   deterministic *for a fixed HEAD*, which is not the same claim.
+
+**The rule that survives:** build the plugin DLL from a clean Release build before committing it
+(cheap, and it removes one variable), commit it whenever engine source changes, and then **expect it
+to read modified forever after** — restore with `git checkout`, never re-commit it on its own.
+Comparing its hash against a previous commit's proves nothing unless both were built at the same HEAD.
+
+---
+
+# THE PLUGIN DLL WANTS A CLEAN RELEASE BUILD — a trap this lane walked into (REASON CORRECTED ABOVE)
 
 **The rule:** an engine-owning lane must build `SBR.Engine.dll` with a **clean** Release build before
 committing it — wipe `engine/obj/Release` and `engine/bin/Release` first. Never commit the output of
