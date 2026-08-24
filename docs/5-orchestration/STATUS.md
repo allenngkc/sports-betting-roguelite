@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-24 09:40, cycle 463 (INCIDENT -
+**Keeper-era heartbeat stamp: 2026-08-24, cycle 464 (heartbeat).** STEP 1
+MERGED (f44ab44 - the displayed win-prob becomes the TICKET's; suites
+green at baseline after TV fixed its own re-point bug). TV building
+STEP 2 with the per-leg presented-resolved set (Allen approved the
+bigger-correct shape over the rotation doc's unsafe scalar - a fixture's
+legs need not be contiguous). K21 (the console's twin of that
+assumption): settled on quoted source, its GATE pinned into the markets
+handoff for the next seating; B9+K21 = one real-terminal sitting.
+WITH ALLEN: the DoubleChance restatement, carve-out bookkeeping, engine
+retire/keep, the hold's structure, research 8-9, the B9+K21 sitting.
+
+*(prior stamp, cycle 463 (INCIDENT -
 overnight halt ~9h; seats down, results survived).** Recovery: monitors
 first (heartbeat b1m8sp0oa, watcher v55 bf86hf7tv); TV resumed by
 --continue (both step-1 suite XMLs landed overnight - the seat died
