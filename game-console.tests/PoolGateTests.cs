@@ -194,8 +194,10 @@ public class PoolGateTests
         _output.WriteLine("");
         _output.WriteLine($"WORST = {ranked[0].Name.Length} chars, {ranked[0].Bucket}: {ranked[0].Name}");
         _output.WriteLine(
-            $"(bucket count: {ranked.Count} of 17 expected -- 15 MarketKinds, with Moneyline and "
-            + "DoubleChance each split team/fixed-phrase, matching GEOMETRY.txt's own bucketing)");
+            $"(bucket count: {ranked.Count} of 15 expected -- 14 OFFERED MarketKinds, with Moneyline "
+            + "split team/fixed-phrase, matching GEOMETRY.txt's own bucketing. Was 17: DoubleChance "
+            + "left the offered set 2026-08-24 and took BOTH its buckets -- team and fixed-phrase -- "
+            + "with it; spec-doublechance-removal-2026-08-24.md)");
 
         // Loose structural sanity only -- the per-row TEXT is reported above for a human diff
         // against docs/design/dd-import/console-read-2026-08-19/GEOMETRY.txt, not re-asserted here.
@@ -204,7 +206,10 @@ public class PoolGateTests
         // depends on MarketSheet's own row order, not on anything this test controls -- a
         // different printed line at an IDENTICAL length is not a disagreement. A different length
         // would be, and that is what CorrectChampionLength below still checks.
-        Assert.Equal(17, ranked.Count);
+        // 15, down from 17: DoubleChance left the offered set 2026-08-24 and it carried TWO buckets
+        // (HomeOrAway's fixed phrase and the two team-named choices). Asserted rather than relaxed —
+        // the count is the point of this gate, and a bucket vanishing unnoticed is what it catches.
+        Assert.Equal(15, ranked.Count);
         Assert.Equal(44, ranked[0].Name.Length);
     }
 

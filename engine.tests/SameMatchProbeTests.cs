@@ -199,10 +199,11 @@ public class SameMatchProbeTests
                 MarketSelection.Moneyline(Side.Home),
                 MarketSelection.TotalGoals(cfg.GoalLines[0], true),
             },
-            // 2 — the result spine: a one-goal home win, said four ways.
+            // 2 — the result spine: a one-goal home win, said THREE ways. Narrowed from four
+            // 2026-08-24 with the sim's own entry 2 — DoubleChance(HomeOrDraw) left the offered set
+            // and a leg that is not offered throws out of Matchup.Odds before any rule can refuse it.
             new[]
             {
-                MarketSelection.DoubleChance(MarketChoice.HomeOrDraw),
                 MarketSelection.Handicap(Side.Away, cfg.HandicapLines[0]),
                 MarketSelection.WinningMargin(1),
                 MarketSelection.Moneyline(Side.Home),
@@ -265,7 +266,7 @@ public class SameMatchProbeTests
     ///
     /// <para>It also pins the two things that make the coverage real rather than nominal: every
     /// composite PLACES (a slip the board refuses covers nothing, and the restrictive kinds — a
-    /// correct score pins one cell, a double chance overlaps the moneyline — are exactly the ones a
+    /// correct score pins one cell — are exactly the ones a
     /// naive catalogue gets refused on), and none of them prices at the NO-LABEL FALLBACK, which is
     /// the silent money leak G7-SGP's third half asserts zero of.</para>
     /// </summary>
@@ -299,7 +300,26 @@ public class SameMatchProbeTests
             foreach (Leg leg in ticket.Legs) covered.Add(leg.Selection.Kind);
         }
 
-        MarketKind[] missing = Enum.GetValues<MarketKind>().Where(k => !covered.Contains(k)).ToArray();
+        // GUARD OVERRIDE, 2026-08-24 — the third of three roll-calls this removal reaches, and
+        // treated exactly like the other two (sim/Analysis.cs's sgpExcluded and JointModelTests'
+        // deliberatelyUnoffered): an EXPLICIT list of one, never a weakened criterion.
+        //
+        // DoubleChance left the OFFERED SET (spec-doublechance-removal-2026-08-24), so no slip can
+        // put one in a same-match ticket. Its enum member stays, on purpose, so it cannot leave this
+        // roll-call by disappearing. The exemption is listed rather than the assertion relaxed,
+        // because "every kind the probe happens to reach" would pass over the NEXT kind that stops
+        // being offered — which is the failure this test exists to catch.
+        var deliberatelyUnoffered = new HashSet<MarketKind> { MarketKind.DoubleChance };
+
+        // The exemption is asserted in both directions: if an exempt kind is reached again, the list
+        // is stale and must be pruned rather than silently over-covering.
+        foreach (MarketKind exempt in deliberatelyUnoffered)
+            Assert.False(covered.Contains(exempt),
+                $"{exempt} is listed as deliberately unoffered but the probe reached it — the "
+                + "exemption is stale");
+
+        MarketKind[] missing = Enum.GetValues<MarketKind>()
+            .Where(k => !covered.Contains(k) && !deliberatelyUnoffered.Contains(k)).ToArray();
         Assert.True(missing.Length == 0,
             "market kinds the probe never puts in a same-match ticket: "
             + string.Join(", ", missing));
@@ -391,21 +411,31 @@ public class SameMatchProbeTests
         Assert.Equal(RelationKind.SharedCount, r.Kind);
     }
 
-    /// <summary>The EXCLUSION slip — the one refusal cause on the board that is a set complement
-    /// rather than an arithmetic conflict. "12" is precisely "not the draw", so the draw beside it
-    /// wins on no outcome whatever; this is the overlap double chance was expected to produce once it
-    /// joined the board, and it is unreachable without a three-way moneyline. The remedy drops the
-    /// last leg and leaves 12 beside a corners leg, so the slot still sells a same-match ticket.</summary>
+    /// <summary>The EXCLUSION slip — a refusal that is a SET COMPLEMENT rather than an arithmetic
+    /// conflict. Odd and even partition the goal total, so a slip asking for both wins on no outcome
+    /// whatever. The remedy drops the last leg and leaves ODD beside a corners leg, so the slot still
+    /// sells a same-match ticket.
+    ///
+    /// <para><b>RE-AUTHORED 2026-08-24, and it corrects the claim it used to make.</b> This test was
+    /// <c>12</c> beside the draw, and DoubleChance left the offered set
+    /// (<c>spec-doublechance-removal-2026-08-24.md</c>). Its old summary called that pair "the one
+    /// refusal cause on the board that is a set complement" and "unreachable without a three-way
+    /// moneyline". <b>Both were false when written.</b> <c>MarketPricingTests</c>'
+    /// <c>Market_true_probability_is_the_complement_of_its_other_side</c> pins four exact complements
+    /// — TotalGoals, TotalCorners and TotalCards over/under a line, plus BTTS yes/no — by asserting
+    /// their true probabilities sum to 1.0; odd/even is a fifth by the same construction, and none of
+    /// them needs a three-way outcome. The class was never scarce, so removing DoubleChance costs it
+    /// nothing.</para></summary>
     [Fact]
-    public void Refusal_the_double_chance_exclusion_refuses_and_its_remedy_places()
+    public void Refusal_a_set_complement_slip_refuses_and_its_remedy_places()
     {
         var run = new Run("sgp-probe-exclusion", ProbeConfig());
         RunConfig cfg = run.Config;
         Pick[] picks =
         {
-            new Pick(0, MarketSelection.DoubleChance(MarketChoice.HomeOrAway)),
+            new Pick(0, MarketSelection.TotalGoalsOddEven(true)),
             new Pick(0, MarketSelection.TotalCorners(cfg.CornerLines[0], true)),
-            new Pick(0, MarketSelection.Moneyline(MatchResult.Draw)),
+            new Pick(0, MarketSelection.TotalGoalsOddEven(false)),
         };
 
         TicketRefusedException ex =

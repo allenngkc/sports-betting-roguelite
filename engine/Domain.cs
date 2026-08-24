@@ -27,8 +27,23 @@ public enum MarketKind
     // ---- F_0.5.0 V1, the pre-game vocabulary. Every kind below grades as a predicate over the
     // EXISTING MatchStatLine: no sampler change, no new RNG draw, no golden re-pin. That property
     // is what makes this slice cheap and it must not be traded away without saying so out loud.
-    /// <summary>1X / X2 / 12. Dead under the no-draws constraint (1X was the moneyline exactly and
-    /// 12 priced at 1.000); alive since Allen lifted it 2026-08-12.</summary>
+    /// <summary>1X / X2 / 12. <b>DEAD TWICE, AND BOTH DEATHS ARE THE SAME DEATH: it stops being
+    /// OFFERED, and the kind stays.</b>
+    /// <list type="bullet">
+    /// <item>Dead under the no-draws constraint (1X was the moneyline exactly and 12 priced at
+    /// 1.000); alive since Allen lifted it 2026-08-12.</item>
+    /// <item><b>Dead again 2026-08-24</b> — Allen's ruling of option (b),
+    /// <c>spec-doublechance-removal-2026-08-24.md</c>. The three offers leave
+    /// <c>MatchModel.BuildOffers</c>; nothing else goes. It is the only market whose requirement the
+    /// theatre could not state (<c>T161-am</c>: the shortest authorable predicate missed the NEED
+    /// band by 70.9px), so it was removed rather than shortened again.</item>
+    /// </list>
+    /// <para><b>The member itself must not be deleted, and the reason is not sentiment.</b> An
+    /// in-flight run's DoubleChance legs must still GRADE — removing an offer is not removing a
+    /// market's ability to settle, and conflating the two strands every ticket already placed. And
+    /// <c>EventText.BackedSide</c> is exhaustive over the kinds and THROWS on an unknown one
+    /// (<c>K17-cl</c>, chosen over a silent default on purpose): deleting a member turns that safety
+    /// into a crash. Death-by-not-offering is the precedent this kind set itself.</para></summary>
     DoubleChance,
     /// <summary>Goal handicap, ±1.5 ONLY. ±0.5 duplicates the 1X2 home price (the margin is never
     /// 0 for the backed side to matter) and ±2.5 CRASHES — its favourite side reaches p 0.984

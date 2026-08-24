@@ -18,7 +18,10 @@ public class MarketPricingTests
         // kinds are asserted exactly; the floored ones are asserted on their FLOOR instead.
         Assert.Equal(3, m.Markets.Count(x => x.Selection.Kind == MarketKind.Moneyline));
         Assert.Equal(1, m.Markets.Count(x => x.Selection.Choice == MarketChoice.Draw));
-        Assert.Equal(3, m.Markets.Count(x => x.Selection.Kind == MarketKind.DoubleChance));
+        // ZERO, and asserted rather than deleted: DoubleChance left the OFFERED SET 2026-08-24
+        // (spec-doublechance-removal). Dropping the line would have let the three offers come
+        // back unnoticed; pinning it at 0 makes the removal a fact this board test holds.
+        Assert.Equal(0, m.Markets.Count(x => x.Selection.Kind == MarketKind.DoubleChance));
         Assert.Equal(4, m.Markets.Count(x => x.Selection.Kind == MarketKind.Handicap));
         Assert.Equal(8, m.Markets.Count(x => x.Selection.Kind == MarketKind.TeamTotalGoals));
         Assert.Equal(4, m.Markets.Count(x => x.Selection.Kind == MarketKind.TeamTotalCorners));

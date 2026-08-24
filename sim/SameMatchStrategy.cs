@@ -413,17 +413,23 @@ public sealed class SameMatchStrategy : IStrategy
                 };
             }
 
-            // 2 — THE RESULT SPINE: a one-goal home win, said four ways. The double chance CONTAINS
-            // it (1X ⊇ 1), the away side's +line covers a one-goal loss, the margin bucket is exactly
-            // one, and the moneyline is the result itself. Heavy overlap is deliberate — these four
-            // kinds all read the same scoreline, which is precisely the correlation the joint exists
-            // to price, and the naive product would sell it at a large multiple of its worth.
+            // 2 — THE RESULT SPINE: a one-goal home win, said THREE ways. The away side's +line
+            // covers a one-goal loss, the margin bucket is exactly one, and the moneyline is the
+            // result itself. Heavy overlap is deliberate — these kinds all read the same scoreline,
+            // which is precisely the correlation the joint exists to price, and the naive product
+            // would sell it at a large multiple of its worth.
+            //
+            // NARROWED FROM FOUR 2026-08-24, and it is named rather than quietly lost: the fourth
+            // way was `DoubleChance(HomeOrDraw)` — `1X ⊇ 1` — and DoubleChance left the offered set
+            // (`spec-doublechance-removal-2026-08-24.md`). The widest overlap the joint is tested
+            // against is now three kinds, not four. It could NOT simply be left in place: a
+            // selection that is no longer offered throws `ArgumentException` out of `Matchup.Odds`
+            // when `LegsFor` builds the leg, before any refusal rule runs — a crash, not a decline.
             case 2:
             {
                 if (cfg.HandicapLines.Length < 1) return null;
                 return new List<Pick>
                 {
-                    new Pick(i, MarketSelection.DoubleChance(MarketChoice.HomeOrDraw)),
                     new Pick(i, MarketSelection.Handicap(Side.Away, cfg.HandicapLines[0])),
                     new Pick(i, MarketSelection.WinningMargin(1)),
                     new Pick(i, MarketSelection.Moneyline(Side.Home)),
@@ -642,17 +648,31 @@ public sealed class SameMatchStrategy : IStrategy
                     new Pick(i, MarketSelection.TotalCorners(cfg.CornerLines[0], true)),
                 };
 
-            // IMPOSSIBLE, by EXCLUSION: 12 is precisely "not the draw", so the draw beside it wins on
-            // no outcome at all. This is the overlap double chance was expected to produce and the
-            // one refusal cause on the board that is a set-complement rather than an arithmetic
-            // conflict. The remedy leaves 12 beside a corners leg — a cross-family pair.
+            // IMPOSSIBLE, by EXCLUSION: odd and even partition the goal total, so a slip asking for
+            // both wins on no outcome at all. A set-complement refusal rather than an arithmetic
+            // conflict. The remedy leaves ODD beside a corners leg — a cross-family pair.
+            //
+            // RE-AUTHORED 2026-08-24. This case was `12` + the draw, and DoubleChance left the
+            // offered set. TWO CORRECTIONS ARE RECORDED HERE because the old comment asserted both
+            // and both were wrong:
+            //   (1) It called itself "the one refusal cause on the board that is a set-complement".
+            //       IT WAS NOT, and not even before the removal. `MarketPricingTests`'
+            //       `Market_true_probability_is_the_complement_of_its_other_side` pins FOUR exact
+            //       complements — TotalGoals, TotalCorners, TotalCards over/under a line, and BTTS
+            //       yes/no — by asserting their true probabilities sum to 1.0. Odd/even is a fifth,
+            //       by the same construction. The claim was false when written.
+            //   (2) It called itself "unreachable without a three-way moneyline". Also false of the
+            //       class: odd/even, BTTS and every over/under pair need no three-way outcome.
+            // ODD/EVEN was chosen over BTTS deliberately — variant 1 already exercises BTTS, and
+            // `TotalGoalsOddEven` is a kind the rest of the catalogue reaches thinly, so the probe's
+            // coverage IMPROVES rather than merely surviving.
             case 3:
                 if (cfg.CornerLines.Length < 1) return null;
                 return new List<Pick>
                 {
-                    new Pick(i, MarketSelection.DoubleChance(MarketChoice.HomeOrAway)),
+                    new Pick(i, MarketSelection.TotalGoalsOddEven(true)),
                     new Pick(i, MarketSelection.TotalCorners(cfg.CornerLines[0], true)),
-                    new Pick(i, MarketSelection.Moneyline(MatchResult.Draw)),
+                    new Pick(i, MarketSelection.TotalGoalsOddEven(false)),
                 };
 
             // IMPOSSIBLE, by a FIXED TOTAL: a correct-score cell settles the goal total exactly, so

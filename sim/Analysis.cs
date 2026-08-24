@@ -700,7 +700,30 @@ public sealed class GateData
             // seam that keeps the next uncoverable market from being handled by weakening the
             // criterion. Do NOT add a kind here because it currently reads zero legs; zero legs is
             // what this arm is for.
-            var sgpExcluded = new Dictionary<MarketKind, string>();
+            //
+            // GUARD OVERRIDE, 2026-08-24 — recorded here rather than only in a commit message,
+            // because the comment above forbids the move this makes and a reader needs the
+            // distinction at the site.
+            //
+            // The bar above is "Do NOT add a kind here because it currently reads zero legs; zero
+            // legs is what this arm is for." THAT BAR IS NOT WHAT THIS IS. It guards against a kind
+            // the probe's catalogue merely FAILS TO REACH — a coverage hole dressed up as an
+            // exemption. DoubleChance is a different fact: it reads zero legs because it is NO
+            // LONGER OFFERED ON ANY BOARD (`spec-doublechance-removal-2026-08-24.md`, Allen's
+            // ruling of option (b)). No catalogue can reach it, and no amount of probe work would.
+            //
+            // The two cases are distinguishable by a question this seam should keep asking: COULD a
+            // better probe reach it? For a coverage hole the answer is yes and the exemption is a
+            // lie. Here the answer is no, and the roll-call would otherwise fail forever on a market
+            // the game does not offer. The kind stays in `MarketKind` on purpose (in-flight legs
+            // must still grade), so it cannot be dropped from the roll-call by disappearing.
+            var sgpExcluded = new Dictionary<MarketKind, string>
+            {
+                [MarketKind.DoubleChance] =
+                    "left the OFFERED SET 2026-08-24 (spec-doublechance-removal): the enum member "
+                    + "stays so in-flight legs still grade, but no board offers it, so no same-match "
+                    + "ticket can contain one. Not a coverage hole — unreachable by construction",
+            };
 
             var sgpUncovered = new List<MarketKind>();
             foreach (MarketKind kind in Enum.GetValues(typeof(MarketKind)))
