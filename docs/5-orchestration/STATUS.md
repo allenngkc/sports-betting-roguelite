@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-24, cycle 475 (heartbeat).** The
+**Keeper-era heartbeat stamp: 2026-08-24, cycle 476 - PAUSE. Allen:
+"stop and hold."** All three seats ordered to park safely and stand
+down; NOTHING DISPATCHES - no builds, no merges of new work, no fires -
+until Allen's EXPLICIT resume (any session reading this: the pause
+binds you too). In-flight at the pause: TV was reporting frame B and
+about to run both suites for the armless-kind fix (its shell parks
+safely, nothing abandoned mid-Unity); frame A shot, dock not yet made;
+DD holding for the dock; engine standing by. Monitors stay armed
+watch-only. State fully pushed through 6a3cda9.
+
+*(prior stamp, cycle 475 (heartbeat).** The
 anchor capture found a real defect: Handicap had NO ARM - a silent
 default rendered blank, so frame B could not exist. Allen approved the
 proper fix (a real arm, no silent default, T130's gate extended to
