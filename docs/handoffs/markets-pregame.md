@@ -188,3 +188,8 @@ unusable.** `SureThingEntryTests` pins that ring rect at 176×48.
 
 - **Still owed to the ORIGINAL charter, never started:** the match theater has no drawn ending —
   TV's lane, routed to the DD, three questions named in `docs/1-plans/F_0.5.0_*` §12.7.
+
+> **From integration (2026-08-24): the K21 GATE binds the next seat.** Before any console build touches
+> `SweatRenderer.cs`, read batches 174-175: the leg-contiguity assumption is unsafe ([A, B, A] fixtures)
+> and the TV lane already built the per-leg presented-resolved set for it. Pair the K21 capture with B9's
+> colour capture if a real-terminal session is scheduled - same class, one sitting.
