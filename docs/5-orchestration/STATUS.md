@@ -1,6 +1,19 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 505.** TOLD TO ALLEN,
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 506 - THE CITY-ONLY
+FINDING IS CONFIRMED, AND WORSE.** TV's re-run report is merged
+(968a250): the team-total NEED fallback's DISTINCTIVE WORD NEVER
+SURVIVES, and the CONTROL COLLIDES TOO. Routed to the DD for T156/T168
+rulings, the batch-187 amendment, and the scope-call framing - which
+is now WIDER than 'four pairs per match'. TV on the pending-window
+build (option 3 + copy + T143/S85 consumption). TV also recorded two
+of its own errors reaching a report this round, caught by reading, not
+by gates - a gate-gap worked example for the DD. WITH ALLEN: the
+team-total scope call (wait for the DD's reframing), the veto, the
+carve-out bookkeeping, the hold's structure, research 8-9, B9's
+sitting.
+
+*(prior stamp, cycle 505.** TOLD TO ALLEN,
 FLAGGED UNCONFIRMED (his word): TV's first measurement pass found a
 CITY-ONLY SURVIVOR on the two-word-city case - the fallback keeps the
 city and drops the distinctive word, the inverse of T69's shipped
