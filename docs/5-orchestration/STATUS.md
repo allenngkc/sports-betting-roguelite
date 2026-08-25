@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 532 - T94's seam BUILT
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 533 heartbeat - DD's
+early take on the gate re-base: expects ACCEPT (invariant, not widening;
+StakeWord is a pure function so two seeds certify it completely - not a
+precedent for splitting a gate that tests a real transition) and ENDORSE
+(the dropped blind warm-up); one citation it could not verify - I located
+it: ruling-t108-trigger-2026-08-17.md §5, cited in the gate's own
+comments. TV's seam commit still pending its run. WITH ALLEN:
+unchanged.**
+
+*(prior stamp, cycle 532 - T94's seam BUILT
 (uncommitted; TV's confirming run in flight) and it INVALIDATED a C29
 gate's premise: the footer-word gate's two state-2 frames were T94's
 artefact itself (leg 1 lit while the stage was on leg 0). TV re-based
