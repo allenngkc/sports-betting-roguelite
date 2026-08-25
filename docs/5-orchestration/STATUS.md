@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 496 (heartbeat).** Merged
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 497.** THE REGISTER SCAN
+IS AN INSTRUMENT NOW: tools/register-scan.js committed (1eff981 - cell
+count, inline-aware duplicate IDs, files-to-log reconciliation in one
+command) and the DD's charter updated to run it at every seating,
+'never by eye or by a hand-written awk' (bd3339e). TV building part C's
+gate (Allen), EditMode to follow; the height-ruling consumption build
+and the NEED-copy build queued behind it. DD's desk clean. WITH ALLEN:
+the verified-not-built veto, the carve-out bookkeeping, the hold's
+structure, research 8-9, B9's sitting.
+
+*(prior stamp, cycle 496 (heartbeat).** Merged
 from TV: the same-match coverage gate (f711f97 - the first same-match
 fixture in either suite) + the verified-not-built doc. Landed from the
 DD (497ebf1): the NEED-copy + club-naming spec (the seven kinds + T168)
