@@ -1,6 +1,20 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 519 (heartbeat) - CI IS
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 520 - WRAP-UP FOR THE
+TRANSITION (Allen).** (1) RESEARCH WORKTREE DROPPED on Allen's order:
+0 ahead, merged, clean, no seat; worktree + branch deleted; registry
+updated; items 8-9 lapse unless re-raised. (2) CI RED DIAGNOSED: one
+console gate (SweatAnchorGateTests: 'the two shapes still differ')
+asserted the pre-unification difference that AnchorSide's single
+source made false - a stale gate, not a product defect; a bounded fix
+agent is rewriting it to assert the single-source contract (markets'
+seat is empty - integration deviation, logged); I push and re-poll CI.
+(3) TV told to finish its current build, refresh its handoff and STOP
+(T94's seam stays queued for the next seat); the DD's held read fires
+on that merge. WITH ALLEN: the team-total scope call, the veto, the
+carve-out bookkeeping, the hold's structure, B9's sitting, Linear setup.
+
+*(prior stamp, cycle 519 (heartbeat) - CI IS
 RED.** Run 32813184040 on b1b9743: build green, engine tests green,
 CONSOLE TESTS FAIL (the earlier run on 59485da was cancelled by the
 follow-up push - concurrency, normal). Reproducing the console tests
