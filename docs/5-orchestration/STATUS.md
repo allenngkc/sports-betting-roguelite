@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 490 - RESUME. Allen:
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 491 - THEATER-ENGINE
+RETIRED (Allen: remove worktrees with no work pending).** Verified 0
+ahead, fully merged, tree clean; seat stood down; worktree + branch
+deleted; registry updated. KEPT with reasons: markets-pregame (the K21
+gate + console docket pinned for its next seat), research (Allen's 8-9
+pending), tv-theater (active). The Documents checkout is the base repo
+hosting .git - not removable. TV: EditMode running for the armless-kind
+fix, PlayMode auto-fires on its landing (TV rightly refused my early
+PlayMode order - its launch guard would refuse a lock-squat).
+
+*(prior stamp, cycle 490 - RESUME. Allen:
 "continue" (his resume word, as before - stated here for veto).** The
 pause lifts; seats re-seating (TV + engine by --continue, DD by session
 ID); Unity 0. Found at resume: TV's armless-kind fix is UNCOMMITTED in
