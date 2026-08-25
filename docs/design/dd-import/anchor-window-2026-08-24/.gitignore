@@ -1,0 +1,3 @@
+# Frame sets stay UNTRACKED — README commits, the rolls never do.
+# 320MB across two bursts; the 487MB incident (2026-08-16) is why.
+*.png
