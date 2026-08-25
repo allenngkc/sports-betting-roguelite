@@ -20,8 +20,12 @@ CKPT = f"{DIR}/checkpoint.json"
 
 def gql(query, variables=None):
     key = os.environ.get("LINEAR_API_KEY")
+    if not key:  # fallback: a key file outside the repo, never pasted into chat
+        kp = os.path.join(os.path.expanduser("~"), ".linear_api_key")
+        if os.path.exists(kp):
+            key = io.open(kp, encoding="utf-8").read().strip()
     if not key:
-        sys.exit("LINEAR_API_KEY not set")
+        sys.exit("LINEAR_API_KEY not set and ~/.linear_api_key missing")
     body = json.dumps({"query": query, "variables": variables or {}}).encode()
     req = urllib.request.Request(API, body, {"Content-Type": "application/json", "Authorization": key})
     for attempt in range(5):
