@@ -155,6 +155,29 @@ posted to the issue on merge). Rebuilding the runtime buys nothing.
 3. Go on (a) the 10-row dry-run migration and (b) wiping + rebuilding the
    Claude Design project from repo canon.
 
+## Progress log
+
+- **2026-08-25 — Linear connected, dry run DONE.** Workspace: one team `SBR`,
+  default workflow. `tools/register-export.py` exports the register: 580
+  rows, 0 problems, 0 duplicate IDs; 51 rows classified as laws (stay in the
+  constitution, never become tickets); 16 need a human eye. Ten sampled rows
+  were imported by a headless session through the Linear MCP into the
+  isolated project **"Register migration — dry run (2026-08-25)"** as
+  SBR-5…SBR-14 (`docs/design/linear-dryrun-result.txt` holds the old-ID →
+  identifier map). Decisions embedded in the dry run:
+  - **State mapping onto Linear's default workflow** (no custom states yet):
+    Exploration/Candidate/Parked → Backlog · Approved → Todo · In Build →
+    In Progress · Implemented → In Review (awaiting DD verification) ·
+    Design-verified/Closed → Done · Struck → Canceled.
+  - **Lifecycle nuance rides as labels** (`design-verified`, `parked`,
+    `implemented`…) plus a surface label (`tv`, `laptop`, `room`,
+    `cross-surface`, `console`, `phone`). The 12 labels were auto-created.
+  - **Full import can run through the MCP in batches** by a headless session
+    — no Linear API key required unless it proves too slow.
+  - Awaiting Allen: review the dry-run project, then go/no-go on the full
+    580-row import (minus laws), and whether to add custom workflow states
+    (e.g. a real "Design-verified" column) in Linear settings or keep labels.
+
 ## Phases
 
 - P1 — connect MCP, write the export script, dry-run import, charter updates.
