@@ -5,6 +5,74 @@
 
 ---
 
+## 0-ROT3. SEAT ROTATION 2026-08-25 — READ THIS FIRST
+
+Rotating at 97%. **Phases 2-3 are DONE and merged — all four steps, both `onFinalLeg` twins, the
+anchor split, the neither-branch set, and the pending window.** The tree is clean but `URP.png`
+(permanent phantom). No editor running. Engine DLL clean.
+
+### THE CHAIN, IN ORDER
+
+1. **NEED-copy build — NEXT, NOT STARTED.** `docs/design/spec-need-copy-and-club-naming-2026-08-24.md`
+   + `T168`. **Read it, MEASURE, then build** — that order, not the reverse. This seat was told to
+   plan each before building and every measurement changed the plan.
+2. **`T94`'s seam** — batch 188. `T94-am3`: arm A narrowed the multi-fixture desync to ONE window and
+   PRESERVED it deliberately; **the gate discharges but the ITEM does not.** `T140-am3` binds what
+   must NOT change: **the pre-emption is right, the MISSING BOUNDARY is the defect.**
+   > **A CONNECTION WORTH CHECKING BEFORE PLANNING IT SEPARATELY:** `T165` bound the counter and
+   > §6.7's interstitial to ONE event — *"the boundary is where the counter increments."* Item `1.1`
+   > (that interstitial) has been HELD since rotation 2. **If `T94`'s defect is the missing boundary,
+   > `1.1` and `T94`'s seam may be the same absent thing seen from two sides** — plan them together
+   > or the boundary gets built twice, which is what `T165` warned about.
+
+### RULINGS FOLDED IN THIS SEAT — the two that change how you BUILD
+
+**BATCH 192 (`T143-am5`) — BUILD TO THE RULING, NOT THE BUILD STATE.** `T168-am` is RULED and
+UNBUILT. A new surface that imitates today's unbuilt behaviour **has to be fixed twice**. Apply the
+ruled form at your own call site. Concretely: do NOT reach a club name through `LegStatement`, whose
+`default:` goes `SheetName` → `MarketSheet` → the FULL club name.
+
+**BATCH 194 (`T143-am7`) — A PLACEHOLDER'S ERROR IS ASYMMETRIC.** A placeholder LONGER than the
+authored copy fails in ONE direction only: **a `FITS` conclusion survives** (the real string is
+shorter, so it holds a fortiori) and **an `OVERRUNS` conclusion does NOT** — the overrun may be the
+placeholder's own length. **Ask which direction a width was used in before relying on it.** Two
+widths in this seat's own `route-pending-window-height-2026-08-24.md` fail that test (`699.5`,
+`870.4`); the two `FITS` conclusions stand.
+
+### ⚠ THE TRAPS THIS SEAT PAID FOR — in the order they cost most
+
+1. **A GATE THAT RAN WHILE ITS CASE DID NOT — four separate times.** `T130` green for weeks without
+   ever rendering its market; the TV twin's compatibility test that an off-by-one mutant PASSED; the
+   part-C fixture whose first legal combination could not distinguish the two rules; and a counter
+   fixture that would have rendered a FALLBACK. **A green is not coverage.** Assert the case occurred
+   — and when it cannot, FAIL, do not pass.
+2. **`_session` UNSET RENDERS A FALLBACK AND PASSES.** `FixtureTotal()` is
+   `_session != null ? _session.FixtureCount : _ticket.Legs.Count`; `AnchorForTelling` and the pending
+   window read the session too. A fixture that sets only `_ticket` tests the fallback.
+3. **A SPLICE BETWEEN A DOC COMMENT AND ITS `[Test]` ORPHANS THE DOC — and it COMPILES GREEN.**
+   Done once in `TvSweatScreenLayoutGridTests.cs`, shipped, found only because an unrelated compile
+   error made this seat look. **Anchor above the doc, never between doc and method.**
+4. **`.git` IS A FILE IN A WORKTREE**, holding `gitdir:`. Any tool reading `HEAD` must handle it —
+   this lane always works in a worktree, so the file form is the NORMAL case here.
+5. **A RULING CAN SUPERSEDE A TEST'S PREMISE.** Three re-based this seat: `SweatFlavorDrawAnchorTests`
+   (`T163`), `SweatPresentationModelTests` (`T164`), `T88`'s prompt pin (`T143`). **Re-base to what the
+   ruling makes INVARIANT** — `T88` now pins `N LET` … `DIE`, not a club name that varies by seed.
+
+### OPEN, ROUTED, NOT BLOCKING
+
+- **The `N>=2` composition is a deliberate TODO** in `PendingWindowBeat` (batch 193 cited in place).
+  Its number is TAKEN — two bare names + separator = **631.6 vs 635.0, FITS, 3.4px spare**, reading
+  (A) — so `T143` stands unamended at every reachable N. **The copy is the DD's to author.**
+- **Club-only collisions in that future list**: two dead legs on the SAME club print identical names.
+  `T156`'s shape in a second place. Lands the moment §3 does.
+- **`T156` is LIVE and wider than it names** — `route-team-total-fallback-measured-2026-08-25.md`. The
+  distinctive word never survives; a two-word city truncates to the CITY ALONE, colliding across every
+  market that club appears in. **And the CONTROL collides**: corners' unshared line cannot protect it,
+  because the line is dropped three words before the survivor.
+- **Seven offered kinds still have no authored NEED copy** — they name the bet, not the requirement.
+
+---
+
 ## 0-ROT2. SEAT ROTATION 2026-08-24 — READ THIS FIRST
 
 Rotating at 97% context, with **phases 2–3 planned and none of it started**. Section 1 of the
