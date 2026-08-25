@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 512 - TV ROTATION ORDERED
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 513 - THE PENDING WINDOW
+IS BUILT AND MERGED (d66710c): it names its dead leg, T143/S85 are
+consumed, batches 192/194 folded in, 631.6 vs 635.0 (reading A), the
+>=3 hole closed on batch 193's number - THE LAST N-LIVE SITE OF THE
+ONE-TELLING ENDING. TV rotated on its handoff (6ede668: phases 2-3
+done, the chain, five traps); fresh seat launching for the NEED-copy
+build then T94's seam. The DD's held read fired. WITH ALLEN: the
+team-total scope call (two fixes), the veto, the carve-out bookkeeping,
+the hold's structure, research 8-9, B9's sitting.
+
+*(prior stamp, cycle 512 - TV ROTATION ORDERED
 (97% context).** The seat finishes the pending-window number, commits
 the build if both suites are green, then writes its handoff (the chain:
 NEED-copy build, T94's seam; batches 192/194 folded in) and stands
