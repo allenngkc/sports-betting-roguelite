@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 487 (heartbeat - the
+**Keeper-era heartbeat stamp: 2026-08-25 10:40, cycle 488 (restart under
+the pause - THE PAUSE HOLDS).** My session restarted; heartbeat re-armed
+(bhu1chzl9). Census: all three lead seats are DOWN (bare shells only;
+one claude.exe = me); Unity procs 0; main == origin; no branch ahead;
+nothing uncommitted. Nothing re-seated and nothing dispatched - the
+pause binds until Allen's explicit resume. RESUME CHECKLIST: re-seat
+TV + engine by --continue in their worktrees, DD by --resume 9f5a0cff
+(identify by content first); Unity is already 0; then re-arm the
+capture arc (frame B re-shoot + suites + dock) where TV parked it.
+
+*(prior stamp, cycle 487 (heartbeat - the
 pause holds, quiet).**
 
 *(prior stamp, cycle 486 (heartbeat - the
