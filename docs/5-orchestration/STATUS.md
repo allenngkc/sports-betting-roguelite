@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 524 - TV's CHAIN IS DONE
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 525.** Allen re-activated
+TV for one item: the T156 team-total fallback RE-TAKE now that T168's
+club form is built (the earlier number was conditional on it; the ask
+doc binds). DD reading the NEED-copy build with the two routed
+questions. CI on the merge push still running. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 524 - TV's CHAIN IS DONE
 EXCEPT T94 (merged: 64b3f70 the NEED copy + T168's club form + T169's
 four arms + the pending window's name + Section 3; c9fd2c6 the seat
 wrap). Risk named in the handoff: _pickedScorerGoals unproven on a beat
