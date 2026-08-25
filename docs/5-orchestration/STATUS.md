@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 495 - AUTONOMOUS DECISION
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 496 (heartbeat).** Merged
+from TV: the same-match coverage gate (f711f97 - the first same-match
+fixture in either suite) + the verified-not-built doc. Landed from the
+DD (497ebf1): the NEED-copy + club-naming spec (the seven kinds + T168)
+and THE HEIGHT RULING - option 3, the copy shares a row; TV's two-leg
+residual dissolves (at two-plus dead the spending rows do not render,
+T143-am2). TV now on part C's N-live direction (Allen), with the T143/
+S85 consumption build and the NEED-copy build queued behind it. DD's
+desk clean. WITH ALLEN: the verified-not-built veto, the carve-out
+bookkeeping, the hold's structure, research 8-9, B9's sitting.
+
+*(prior stamp, cycle 495 - AUTONOMOUS DECISION
 (veto window).** Allen ordered 'build the once-per-whistle
 verification'; TV declined with a reason I accepted: on every ticket
 shipping today exactly one leg dies per whistle, so a TV gate could
