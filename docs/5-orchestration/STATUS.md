@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 526.** THE NEED-COPY BUILD
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 527 - T94 REVERSED
+(batch 197, b8d25af).** The DD found its own T140-am3 protected the very
+behaviour T94 is about: the pre-emption is not a feature to preserve
+around the defect - IT IS THE DEFECT. TV corrected before it reaches
+the seam (its chain: T156 re-take -> bucket 1 -> T94's seam, now built
+to 197). CI green on 86d433b. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 526.** THE NEED-COPY BUILD
 IS ACCEPTED (batch 196, 0ad725d - T169-am: four arms, zero coined copy;
 it corrected two of the DD's own numbers, one caught by the DD's own
 law). Rulings: WinningMargin bucket 1 AUTHORED (T151-am3 - queued to TV
