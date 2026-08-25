@@ -1,6 +1,18 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 523 (heartbeat).** CI green
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 524 - TV's CHAIN IS DONE
+EXCEPT T94 (merged: 64b3f70 the NEED copy + T168's club form + T169's
+four arms + the pending window's name + Section 3; c9fd2c6 the seat
+wrap). Risk named in the handoff: _pickedScorerGoals unproven on a beat
+(no PlayMode fixture drives a multi-scorer leg through a goal). The
+DD's held read FIRED with two routed questions (WinningMargin bucket 1
+offered with no copy - renders '1 GOAL'; {n} in CLEAR BY {n} undefined,
+built as goals-to-flip). TV STOPPED per Allen (transition); T94's seam
+stays queued for the next seat. CI poll on this merge pending. WITH
+ALLEN: the team-total scope call, the veto, the carve-out bookkeeping,
+the hold's structure, B9's sitting, Linear setup.
+
+*(prior stamp, cycle 523 (heartbeat).** CI green
 held on the checklist commit too (dd6e9e9). TV finishing its wrap-up
 build (step A merged at b7fdaa3; the rest + handoff pending); DD
 holding for that merge. Nothing ahead, nothing to land. WITH ALLEN:
