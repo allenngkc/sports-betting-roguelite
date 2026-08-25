@@ -1318,6 +1318,102 @@ namespace SBR.Tests.EditMode
         /// single width: the DD's cell asks for the longest RENDERABLE form and says explicitly that
         /// the box is "the quantity in doubt", so answering with the box would answer the wrong
         /// question.</para></summary>
+        /// <summary>THE SHAPE `T165` WAS RULED FOR, WHICH NO TEST HAD EVER RENDERED.
+        ///
+        /// <para>`T165`/`T165-am` moved the counter's referent from the LEG to the FIXTURE, and its
+        /// word from `LEG n/m` to `MATCH n/m`. The reason is `T140` arm A: a telling is a
+        /// (ticket, FIXTURE) and two legs can ride ONE match, so a counter reading `LEG 2/3` beside a
+        /// column showing THREE rows on TWO tellings prints a leg total the ticket column
+        /// contradicts.</para>
+        ///
+        /// <para><b>Every fixture this suite builds is an ORDINARY ticket</b> — one leg per match, so
+        /// <c>FixtureCount == Legs.Count</c> and <c>evt.FixtureIndex</c> never diverges from
+        /// <c>evt.LegIndex</c>. On that shape `MATCH n/m` renders the exact digits `LEG n/m` did, and
+        /// the ruling's whole subject goes unobserved: the referent could regress to the leg and every
+        /// pin in this file would stay green. This builds the interleaved ticket instead.</para>
+        ///
+        /// <para><b>⚠ THE <c>_session</c> REFLECTION IS LOAD-BEARING, NOT SETUP.</b>
+        /// <c>FixtureTotal()</c> falls back to <c>_ticket.Legs.Count</c> when <c>_session</c> is null,
+        /// and the shared <see cref="RenderPregameFor"/> sets ONLY <c>_ticket</c> — so a test written
+        /// on that helper would render `MATCH 1/3` off the FALLBACK, pass, and prove nothing whatever
+        /// about the fixture referent. That is the vacuous-gate failure this lane has been bitten by
+        /// repeatedly, which is why <see cref="RenderPregameWithSessionFor"/> exists rather than an
+        /// extra argument on the shared helper.</para>
+        ///
+        /// <para><b>Assertion 5 is what makes this a gate rather than a restatement.</b> Asserting the
+        /// counter equals `MATCH 1/{FixtureCount}` passes under BOTH referents on an ordinary ticket,
+        /// so on its own it only re-types the format string. Asserting it is NOT
+        /// `MATCH 1/{Legs.Count}` is the half that FAILS if the referent regresses to the leg — and it
+        /// can only fail here, on a ticket where those two totals are different numbers.</para></summary>
+        [Test]
+        public void T165_the_counter_counts_TELLINGS_on_a_same_match_ticket()
+        {
+            (Ticket ticket, SweatSession session) = FindSameMatchCounterTicket(
+                "T165-SAMEMATCH-A", "T165-SAMEMATCH-B", "T165-SAMEMATCH-C", "T165-SAMEMATCH-D");
+            Assert.IsNotNull(ticket,
+                "no legal interleaved [A, B, A] ticket collapsed to fewer tellings than legs on these "
+                + "seeds. The shape T165 was ruled for is then unreachable from this pool and this "
+                + "gate would be vacuous — widen the seeds rather than relax the assertions");
+
+            var go = new GameObject("T165SameMatchCounter");
+            try
+            {
+                TvSweatScreen s = BuildScreen(go);
+
+                // 1. ANTI-VACUITY, BEFORE ANYTHING IS RENDERED. If the ticket does not carry FEWER
+                //    tellings than legs, the two referents COINCIDE on it and no assertion below can
+                //    tell them apart — the test would be measuring a distinction it cannot see.
+                Assert.Less(session.FixtureCount, ticket.Legs.Count,
+                    $"FixtureCount {session.FixtureCount} is not below Legs.Count {ticket.Legs.Count} — "
+                    + "this ticket has one telling per leg, so the FIXTURE referent and the retired LEG "
+                    + "referent print the same digits and this gate cannot distinguish them");
+
+                // 2. And that it is interleaved in the shape claimed: legs 0 and 2 on ONE matchup,
+                //    leg 1 on another. Reference identity, not index equality — the fixture grouping
+                //    the session builds is over the Matchup objects themselves.
+                Assert.AreSame(ticket.Legs[0].Matchup, ticket.Legs[2].Matchup,
+                    "legs 0 and 2 are not on the same matchup — the ticket is not the [A, B, A] shape "
+                    + "this gate claims to have found");
+                Assert.AreNotSame(ticket.Legs[0].Matchup, ticket.Legs[1].Matchup,
+                    "leg 1 shares matchup A — the ticket collapsed to ONE telling, not the two-telling "
+                    + "interleave the counter has to count");
+
+                // 3. The counter written by the REAL RenderPregame, with the REAL locked session
+                //    behind it (see the helper: this is the load-bearing part, not plumbing).
+                RenderPregameWithSessionFor(s, ticket, session);
+                TMP_Text leg = FindChild<TMP_Text>(s, "Leg");
+                Assert.IsNotNull(leg, "Leg not found");
+                string rendered = leg.text;
+
+                // Logged HERE, ahead of the verdicts, rather than after them: a Debug.Log that sits
+                // below a failing assert never runs, and the point of this line is that the evidence
+                // survives a FAILURE, not that it decorates a pass. TV-FINALFIX's own precedent.
+                Debug.Log($"[T165-SAMEMATCH] legs {ticket.Legs.Count} · fixtures {session.FixtureCount} "
+                          + $"· counter rendered '{rendered}'");
+
+                // 4. THE BINARY: the counter's denominator is the TELLING count.
+                Assert.AreEqual($"MATCH 1/{session.FixtureCount}", rendered,
+                    $"the counter rendered '{rendered}' on a ticket of {ticket.Legs.Count} legs across "
+                    + $"{session.FixtureCount} tellings. T165's referent is the FIXTURE: the session is "
+                    + "the authority on what a match is, because FixtureCount is the same grouping the "
+                    + "joint price uses");
+
+                // 5. THE DISCRIMINATOR. Assertion 4 alone would pass under EITHER referent on an
+                //    ordinary ticket, where the two totals are the same number; this is the one that
+                //    fails if the referent regresses from the fixture back to the leg, because on
+                //    THIS ticket `MATCH 1/3` is what the retired LEG referent would have printed.
+                Assert.AreNotEqual($"MATCH 1/{ticket.Legs.Count}", rendered,
+                    $"the counter printed the LEG total ({ticket.Legs.Count}) on a ticket with only "
+                    + $"{session.FixtureCount} tellings — the referent has regressed to the leg, which "
+                    + "is precisely the `LEG 2/3 beside three rows` defect T165 was ruled to close. "
+                    + "This assertion, not the equality above, is what catches it");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
         /// <summary>THE POOL↔CODE EDGE, which `T158` STRUCTURALLY CANNOT SEE — and the sixth phantom
         /// it was pre-positioned to become.
         ///
@@ -1409,6 +1505,89 @@ namespace SBR.Tests.EditMode
         {
             typeof(TvSweatScreen).GetField("_ticket", BindingFlags.NonPublic | BindingFlags.Instance)
                 .SetValue(s, ticket);
+            MethodInfo render = typeof(TvSweatScreen).GetMethod("RenderPregame",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(render, "TvSweatScreen.RenderPregame not found by reflection — renamed?");
+            render.Invoke(s, System.Array.Empty<object>());
+        }
+
+        /// <summary>The interleaved <c>[matchA, matchB, matchA]</c> ticket the `T165` counter gate
+        /// needs — THREE legs, TWO tellings — together with its locked session, searched off the
+        /// board.
+        ///
+        /// <para>The pair is the NESTED GOAL PAIR: over the higher line ENTAILS over the lower, which
+        /// is pure set containment, so no board or pricing change can refuse it on correlation
+        /// grounds. The seed/matchup search is still needed, because the board decides which markets
+        /// it OFFERS at all.</para>
+        ///
+        /// <para>Deliberately does NOT drive the sweat, unlike <c>TvSweatFinalFixtureGateTests.Find</c>:
+        /// the counter under test is written by <c>RenderPregame</c>, before any beat, so surviving a
+        /// telling is not a precondition here. Returns a null tuple when no seed offers a legal one —
+        /// the caller must FAIL on that rather than skip, since a gate that quietly finds no subject
+        /// is a gate that quietly checks nothing.</para></summary>
+        private static (Ticket Ticket, SweatSession Session) FindSameMatchCounterTicket(params string[] seeds)
+        {
+            foreach (string seed in seeds)
+            {
+                int matchups = new Run(seed, new RunConfig()).CurrentSlate.Matchups.Count;
+                for (int a = 0; a < matchups; a++)
+                    for (int b = 0; b < matchups; b++)
+                    {
+                        if (a == b) continue;
+                        var run = new Run(seed, new RunConfig());
+                        RunConfig cfg = run.Config;
+                        var picks = new[]
+                        {
+                            new Pick(a, MarketSelection.TotalGoals(cfg.GoalLines[1], true)),
+                            new Pick(b, MarketSelection.Moneyline(Side.Home)),
+                            new Pick(a, MarketSelection.TotalGoals(cfg.GoalLines[0], true)),
+                        };
+                        // RefusalFor FIRST. PlaceTicket THROWS on a refused set, and a search that
+                        // throws its way across the board is a search that stops at the first
+                        // matchup pair the engine happens to dislike.
+                        if (run.RefusalFor(picks) != null) continue;
+
+                        Ticket t = run.PlaceTicket(picks, 10);
+                        run.LockRound();   // the session does not exist until the round is locked
+                        if (t.Legs.Count != 3) continue;
+                        if (!ReferenceEquals(t.Legs[0].Matchup, t.Legs[2].Matchup)) continue;
+                        if (ReferenceEquals(t.Legs[0].Matchup, t.Legs[1].Matchup)) continue;
+
+                        SweatSession session = run.Sweats[0];
+                        // The SHAPE, not the intent. A ticket whose fixtures did not actually
+                        // collapse is an ordinary ticket wearing a same-match ticket's picks, and it
+                        // renders identical digits under either referent — exactly the candidate
+                        // that would hand this gate a green with nothing behind it.
+                        if (session.FixtureCount >= t.Legs.Count) continue;
+                        return (t, session);
+                    }
+            }
+
+            return (null, null);
+        }
+
+        /// <summary>`T165`'s render seam: <c>_ticket</c> AND <c>_session</c>, then the real
+        /// <c>RenderPregame</c>.
+        ///
+        /// <para>A SECOND helper rather than a widened <see cref="RenderPregameFor"/>, on purpose.
+        /// Other tests in this file depend on that one's ticket-only shape — and the difference
+        /// between the two is precisely the thing under test: with <c>_session</c> null,
+        /// <c>FixtureTotal()</c> falls back to <c>_ticket.Legs.Count</c>, so the counter answers with
+        /// the LEG total while looking exactly right.</para></summary>
+        private static void RenderPregameWithSessionFor(TvSweatScreen s, Ticket ticket, SweatSession session)
+        {
+            FieldInfo ticketField = typeof(TvSweatScreen).GetField("_ticket",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            FieldInfo sessionField = typeof(TvSweatScreen).GetField("_session",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(ticketField, "TvSweatScreen._ticket not found by reflection — renamed?");
+            Assert.IsNotNull(sessionField,
+                "TvSweatScreen._session not found by reflection — renamed? A silent miss here would "
+                + "leave FixtureTotal() on its leg-count fallback and render the gate vacuous, which "
+                + "is the one outcome it exists to prevent — so it fails loudly instead");
+            ticketField.SetValue(s, ticket);
+            sessionField.SetValue(s, session);
+
             MethodInfo render = typeof(TvSweatScreen).GetMethod("RenderPregame",
                 BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.IsNotNull(render, "TvSweatScreen.RenderPregame not found by reflection — renamed?");
