@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 515.** THE PENDING-WINDOW
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 516.** HELD: Allen's
+'take the NEED-copy build read' - the build does not exist yet (TV's
+branch empty; the fresh seat still planning). Fires on the real merge.
+DD holding. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 515.** THE PENDING-WINDOW
 BUILD IS ACCEPTED by the DD (batch 195, a42fe44 - T143-am8; the >=3
 escalation withdrawn in full by the pre-committed reading; a gate owed
 on a 3.4px margin) - and the read found the window's NAME wrong: the
