@@ -1,6 +1,19 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 539 heartbeat - TV
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 540 - the counter's
+REMAINING defect is the orientation mismatch: ScorerFor indexes by
+_ledger.Picked (away-keyed here) into a list chosen by
+PickedHomeForPresentation (home for every kind but ML/AnytimeScorer).
+T140-am8's remedy is built and correct but was not this defect; TV
+stopped at T140-am2's line. Routed to the DD:
+route-counter-orientation-2026-08-25.md - the DD reads whether it is the
+orientation question (Allen's) or a stale kind-list (closable now).
+PlayMode flaky under machine load (three unrelated wall-clock failures
+in four runs); TV will not commit against an unexplained red. WITH
+ALLEN: T140-am2 orientation - now BLOCKING a counter fix if the DD reads
+it as (a); the rest unchanged.**
+
+*(prior stamp, cycle 539 heartbeat - TV
 still on the counter: its diagnostic shows one transition at frame 70
 revealing picked=5 opponent=0 against a 0-5 statline with the backed
 player AWAY - a side-orientation read inside the counter, under
