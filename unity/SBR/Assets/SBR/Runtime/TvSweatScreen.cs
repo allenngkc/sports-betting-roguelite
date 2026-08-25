@@ -3120,11 +3120,11 @@ namespace SBR.Game
                 }
                 case MarketKind.WinningMargin:
                 {
-                    // BUCKET 1 IS OFFERED AND UNAUTHORED — it takes the `default:` arm below rather
-                    // than a string coined here. `AuthoredStatement` returns null for it too, so the
-                    // two sites agree by construction instead of by a duplicated condition.
+                    // EVERY BUCKET NOW, INCLUDING 1 — `T151-am3` (DD batch 196) authored it. The
+                    // `goto default;` that routed bucket 1 to the unauthored path is gone, and so is
+                    // its twin condition in `AuthoredStatement`: the two sites agreed by construction
+                    // while the hole was open and they agree by construction now that it is closed.
                     int bucket = (int)leg.Selection.Line;
-                    if (bucket < 2) goto default;
                     return SweatActiveLegModel.Describe(SweatActiveLegModel.ActiveLegInput.WinningMargin(
                         bucket, bucket >= TopMarginBucketOf(leg), _ledger.Picked, _ledger.Opponent));
                 }
@@ -4501,15 +4501,14 @@ namespace SBR.Game
                     // is a bare parity with no market, which is what the `default:` was printing.
                     return sel.Choice == MarketChoice.Odd ? "TOTAL ODD" : "TOTAL EVEN";
                 case MarketKind.WinningMargin:
-                    // `MARGIN 2` / `MARGIN 3+`, not the engine's bare `2 GOALS`, which collides with
-                    // the total-goals family in this very column (`T151`).
+                    // `MARGIN 1` / `MARGIN 2` / `MARGIN 3+`, not the engine's bare `1 GOAL`, which
+                    // collides with the total-goals family in this very column (`T151`).
                     //
-                    // ⚠ BUCKET 1 FALLS THROUGH ON PURPOSE. `MatchModel.BuildOffers` offers margins
-                    // 1, 2 and 3 (verified against a real board, not read off the source), and
-                    // `T151`/`G1-am11` §3.2 author 2 and 3+ ONLY. A `MARGIN 1` coined here would be
-                    // a short form nobody wrote — G1's defect class, and the exact improvisation the
-                    // rule exists to stop. It takes the unauthored path and is ROUTED to the DD.
-                    if ((int)sel.Line < 2) return null;
+                    // BUCKET 1 IS AUTHORED AT `T151-am3` (DD batch 196) and no longer falls through.
+                    // It was routed rather than coined — the hole was left explicit at BOTH sites so
+                    // they agreed by construction, and the DD ruled *"a one-goal margin is the
+                    // commonest result in the sport, so this is not an edge bucket — it is THE
+                    // bucket."* One commit of silence bought a ruled form instead of an invented one.
                     return $"MARGIN {((int)sel.Line >= TopMarginBucketOf(leg) ? $"{(int)sel.Line}+" : ((int)sel.Line).ToString(CultureInfo.InvariantCulture))}";
                 default:
                     // A seventh market arrives here unauthored, and G1 names that as not covered. The

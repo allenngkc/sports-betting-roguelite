@@ -2033,8 +2033,17 @@ namespace SBR.Tests.EditMode
                 // ending — Handicap and PlayerMultiScorer — and WinningMargin was not among them.
                 // T161 measured rungs 1 and 2 both missing (380.8 and 283.2 against 261.0) with the
                 // floor landing on the dangling `... APART AT`. Rung 3 is what G1-am11 §3.2 added.
+                //
+                // BUCKET 1 IS MEASURED HERE AND WAS NOT BEFORE. `T151-am3` (batch 196) authored it
+                // after this lane routed the gap, and that batch's own Limits says the forms are
+                // UNMEASURED and that the singular `1 GOAL APART AT FULL TIME` being one character
+                // shorter than `2 GOALS APART AT FULL TIME` makes the existing numbers *"indicative
+                // and not a substitute."* So it is measured rather than inherited — which is the
+                // same instruction §5.2 gave for `TotalGoalsOddEven`, and that one found rung 1
+                // unreachable.
                 foreach ((string b, string r1, string r2, string r3) in new[]
                 {
+                    ("1",  "1 GOAL APART AT FULL TIME",   "1 GOAL APART AT FT",   "1 APART AT FT"),
                     ("2",  "2 GOALS APART AT FULL TIME",  "2 GOALS APART AT FT",  "2 APART AT FT"),
                     ("3+", "3+ GOALS APART AT FULL TIME", "3+ GOALS APART AT FT", "3+ APART AT FT"),
                 })
@@ -2064,11 +2073,14 @@ namespace SBR.Tests.EditMode
                 Assert.IsTrue(buckets.Contains(1),
                     "bucket 1 is NOT offered on this board. The gap reported below has closed and this assertion "
                     + "is the record of when — re-read MatchModel.BuildOffers before deleting it.");
-                Debug.Log($"[RUNGS-MARGIN] buckets OFFERED on a real board: {string.Join(", ", buckets)} — the deck "
-                    + "(T151 + G1-am11 §3.2) authors 2 and 3+ ONLY. ** BUCKET 1 HAS NO AUTHORED FORM IN EITHER "
-                    + $"SLOT. ** Unauthored it reaches LegStatement's default: -> MatchModel.Fields '1 GOAL' at "
-                    + $"{W(need, "1 GOAL"):0.0}px ({(Fit(need, "1 GOAL") ? "fits" : "overruns")}) — the exact "
-                    + "total-goals-family collision T151 authored MARGIN/APART to prevent. ROUTED, not answered here.");
+                string bareOne = Fit(need, "1 GOAL")
+                    ? "FITS — so it rendered silently, with no overrun to notice it by"
+                    : "overruns";
+                Debug.Log($"[RUNGS-MARGIN] buckets OFFERED on a real board: {string.Join(", ", buckets)} — "
+                    + "ALL THREE ARE NOW AUTHORED (T151 + G1-am11 §3.2 for 2 and 3+, T151-am3 for 1). "
+                    + $"The string bucket 1 rendered while unauthored was MatchModel.Fields' bare '1 GOAL' at "
+                    + $"{W(need, "1 GOAL"):0.0}px, which {bareOne} — recorded because that is why the gap was "
+                    + "invisible, not because it is still reachable.");
 
                 // ---------------------------------------------------------------- §5.2 TotalGoalsOddEven
                 // CONFIRMED rather than inherited: T161 read TV's per-form pass as sufficient and the
@@ -2582,16 +2594,12 @@ namespace SBR.Tests.EditMode
                             var id = (string)authored.Invoke(screen, new object[] { leg });
                             var sheet = (string)sheetName.Invoke(null, new object[] { leg });
 
-                            // WinningMargin bucket 1 is OFFERED and UNAUTHORED (T151 and G1-am11 §3.2
-                            // both stop at 2). It must take the unauthored path, not a coined string.
-                            if (sel.Kind == MarketKind.WinningMargin && (int)sel.Line < 2)
-                            {
-                                marginOneSeen++;
-                                Assert.IsNull(id, "WinningMargin bucket 1 has NO authored form and must return "
-                                    + $"null so the caller takes the unauthored path — got '{id}'. Coining a "
-                                    + "`MARGIN 1` here is G1's defect class and the DD has not ruled it.");
-                                continue;
-                            }
+                            // WinningMargin bucket 1 is AUTHORED since `T151-am3` (batch 196). It is
+                            // counted rather than special-cased: while the hole was open this branch
+                            // asserted `id == null`, and the count is what proves the bucket is still
+                            // REACHED now that it renders a form. A kind that stops being offered
+                            // fails the assertion below, not silently.
+                            if (sel.Kind == MarketKind.WinningMargin && (int)sel.Line < 2) marginOneSeen++;
 
                             Assert.IsNotNull(id, $"{sel.Kind} still has no authored compact form — T169's build "
                                 + "order is not met for this kind.");
@@ -2615,7 +2623,7 @@ namespace SBR.Tests.EditMode
                                     ? $"{SweatActiveLegModel.Surname(m.PlayerAt(sel.PlayerIndex).Name)} {(int)sel.Line}+"
                                 : sel.Kind == MarketKind.TotalGoalsOddEven
                                     ? (sel.Choice == MarketChoice.Odd ? "TOTAL ODD" : "TOTAL EVEN")
-                                    : $"MARGIN {((int)sel.Line >= 3 ? "3+" : "2")}";
+                                    : $"MARGIN {((int)sel.Line >= 3 ? "3+" : ((int)sel.Line).ToString())}";
                             Assert.AreEqual(deck, id,
                                 $"{sel.Kind}'s compact form is not the DECK's. T151/T152/G1-am11 §3 author these "
                                 + "and nothing here re-authors them — a mismatch means either the arm was never "
@@ -2650,7 +2658,10 @@ namespace SBR.Tests.EditMode
                                     ? $"{SweatActiveLegModel.Surname(m.PlayerAt(sel.PlayerIndex).Name)} TO SCORE {(int)sel.Line}+"
                                 : sel.Kind == MarketKind.TotalGoalsOddEven
                                     ? (sel.Choice == MarketChoice.Odd ? "ODD TOTAL AT FULL TIME" : "EVEN TOTAL AT FULL TIME")
-                                    : $"{((int)sel.Line >= 3 ? "3+" : "2")} GOALS APART AT FULL TIME";
+                                    // `GOAL` SINGULAR AT BUCKET 1 (`T151-am3`), matching the engine's
+                                    // own `{b} GOAL{(b == 1 ? "" : "S")}` rather than restating it.
+                                    : $"{((int)sel.Line >= 3 ? "3+" : ((int)sel.Line).ToString())} "
+                                      + $"{((int)sel.Line == 1 ? "GOAL" : "GOALS")} APART AT FULL TIME";
                             Assert.AreEqual(need1, copy.Need,
                                 $"{sel.Kind}'s NEED rung 1 is not the DECK's. T151/T152 author these verbatim and "
                                 + "this build re-authors nothing.");
