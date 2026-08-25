@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 541 - batch 200 landed
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 542 heartbeat - TV
+merged main into tv-theater (f6d3fb0; nothing in Runtime/ or Tests/
+changed - its tree already had the anchor-based version, so its kind-test
+read was its own error, being corrected) and parked the per-leg counter
+as a WIP commit (9c511b5, NOT merged - wip by name). Measuring the DD's
+ledger hypothesis now. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 541 - batch 200 landed
 (072fe7d): both arms refused. The stale kind-list is ALREADY FIXED at
 HEAD (c24b32c; PickedHomeForPresentation reads AnchorSide) - TV likely
 read a worktree lagging main; and orientation does NOT block (a single
