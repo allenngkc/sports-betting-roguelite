@@ -1,6 +1,18 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 504.** Landed: DD batch
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 505.** TOLD TO ALLEN,
+FLAGGED UNCONFIRMED (his word): TV's first measurement pass found a
+CITY-ONLY SURVIVOR on the two-word-city case - the fallback keeps the
+city and drops the distinctive word, the inverse of T69's shipped
+convention - which would widen the team-total collision from four
+pairs per match to the club's whole row set, and would mean batch 187's
+'narrow' reading was wrong. TV is re-running with its report defects
+fixed before this becomes a report; the DD writes the one-paragraph
+record. WITH ALLEN: the team-total scope call (now possibly wider),
+the veto, the carve-out bookkeeping, the hold's structure, research
+8-9, B9's sitting.
+
+*(prior stamp, cycle 504.** Landed: DD batch
 189 + the pending-window COPY spec (owed since 186 - the placeholder
 asserted a death that had not happened; 5283b3c), bundled into TV's
 height-consumption build. THE DD DOCKET REFRESHED
