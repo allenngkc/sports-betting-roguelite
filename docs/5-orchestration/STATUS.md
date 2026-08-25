@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 531 - the counter
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 532 - T94's seam BUILT
+(uncommitted; TV's confirming run in flight) and it INVALIDATED a C29
+gate's premise: the footer-word gate's two state-2 frames were T94's
+artefact itself (leg 1 lit while the stage was on leg 0). TV re-based
+the gate as an invariant (state 2 counts only with the stage on leg 1's
+fixture), re-ran the seed search per the pin's own instruction, dropped
+30 blind warm-up frames. Routed to the DD early:
+route-c29-gate-rebase-2026-08-25.md. TV's own "commit it" draft not
+fired. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 531 - the counter
 defect is CONFIRMED on a run (TV 2ff03a6: T169-am's fixture reads 1 where
 the player scored 2; unmerged, merges with the seam). T94's seam built at
 both sites, PlayMode running. DD holding for the build. WITH ALLEN:
