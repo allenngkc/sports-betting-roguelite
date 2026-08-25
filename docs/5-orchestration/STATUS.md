@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 529 - T156 re-take
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 530 - batch 198 landed:
+T94's seam RATIFIED as TV's repaint (UpdateTicketColumn(_liveLegsShown)
+at both sites; the DD says 197 read a predicate and called it a frame);
+the frame's reading (b) split into b1/b2. Bucket 1: NO gate owed (past
+the margin is the next rung, not an overrun). The multi-scorer counter is
+ITS OWN ITEM, arm A's N-live class - and it RETIRES the claim that the
+pending window was the last N-live site (it hid behind a field, not a
+call). TV building the seam; counter verification on a run first. CI
+green on 476a12d. WITH ALLEN: unchanged, plus that retired claim for
+the record.**
+
+*(prior stamp, cycle 529 - T156 re-take
 (5e5348e) and WinningMargin bucket 1 (ca4f410) MERGED; suites green. TV
 raised three questions, routed to the DD in
 route-t94-repaint-2026-08-25.md: (1) T94's seam - deletion alone leaves
