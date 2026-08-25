@@ -58,10 +58,18 @@ prompt fixes it.
 
 ## Access
 
-Linear ships an official MCP server. In each seat (orchestrator, DD, leads):
-`claude mcp add --transport http linear https://mcp.linear.app/mcp`, then
-`/mcp` → authenticate (browser OAuth, once per seat). The migration script
-uses a Linear API key instead.
+Linear ships an official MCP server (verified against Claude Code and
+Linear docs, 2026-08-25). One command, machine-wide — user scope makes it
+visible in every worktree, and the OAuth token is per-user, so ONE
+authentication covers the orchestrator, DD, and every lead seat:
+
+    claude mcp add --transport http linear --scope user https://mcp.linear.app/mcp
+    claude mcp login linear        # browser OAuth once (or /mcp inside a session)
+
+Tools exposed: find/search issues and projects, create issues and projects,
+update state and metadata, comment. A read-only endpoint exists
+(`https://mcp.linear.app/mcp/readonly`) if a seat should never write. The
+migration script uses a Linear API key instead of OAuth.
 
 ## Migration (non-destructive; REGISTER.md is never deleted)
 
