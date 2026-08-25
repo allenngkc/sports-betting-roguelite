@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 537 heartbeat - TV
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 538 heartbeat - TV's
+counter remedy: the counter is per-leg (an array) and the T169-am
+fixture's pin is being updated to read it; PlayMode re-running. DD
+holding. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 537 heartbeat - TV
 building the counter remedy (T140-am8) + the both-states seed; DD holding
 for the T94 verification frames. WITH ALLEN: unchanged.**
 
