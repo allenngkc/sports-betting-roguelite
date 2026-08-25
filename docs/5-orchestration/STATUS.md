@@ -1,6 +1,9 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25 10:40, cycle 488 (restart under
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 489 (heartbeat - the
+pause holds, quiet; seats down by design).**
+
+*(prior stamp, cycle 488 (restart under
 the pause - THE PAUSE HOLDS).** My session restarted; heartbeat re-armed
 (bhu1chzl9). Census: all three lead seats are DOWN (bare shells only;
 one claude.exe = me); Unity procs 0; main == origin; no branch ahead;
