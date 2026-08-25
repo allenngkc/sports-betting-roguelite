@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 507 - THE TEAM-TOTAL SCOPE
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 508 - a time-critical
+intercept.** DD batch 192 (3b9be2b, T143-am5): the pending window's leg
+name is built TO THE RULING, not the build state - and for the three
+team-total kinds it inherits T156 wholesale; the DD's own copy spec had
+the gap and amended it while TV's build ran. TV alerted mid-build with
+the pointer (pull, apply, halt the agent if it already authored that
+line). WITH ALLEN: the team-total scope call (two fixes), the veto, the
+carve-out bookkeeping, the hold's structure, research 8-9, B9's sitting.
+
+*(prior stamp, cycle 507 - THE TEAM-TOTAL SCOPE
 CALL IS RE-FRAMED FOR ALLEN (batch 191, 6867a56).** The measurement
 holds and T156 is WIDER than ruled: on the sweat screen every team-total
 bet for one side cuts down to CLUB + OVER/UNDER - number and market
