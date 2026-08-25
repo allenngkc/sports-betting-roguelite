@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 500.** The team-total
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 501.** PART C's GATE
+MERGED (8be3ff0 via b60d2bd - the direction meets its shape; the
+stopping-rule defect found and remedied; TV notes the argument it had
+shipped on was incomplete). TV now merging main and running the
+team-total fallback measurement under the ask doc's three conditions
+(risk it names: a city-only survivor widens the collision beyond T156).
+Then the height-consumption build and the NEED-copy build. DD on its
+next docket item. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 500.** The team-total
 fallback measurement is specified as a doc (d8317ed: the surviving
 string, not just the width; a distinctive-word-loss flag; the commit +
 T168-am's build state verified from the tree) and queued to TV behind
