@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 534 - T94's SEAM CLOSED
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 535 - CI green on the seam
+merge (fc572b4). TV's handoff rotation section merged (b3b256f: lane
+state at 7b28fa8, the counter open, the gate's new shape, two bugs a
+search inherits). TV holding on T140-am6's remedy; DD reading the build.
+WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 534 - T94's SEAM CLOSED
 and MERGED (7b28fa8, with the counter fixture 2ff03a6): repaint at both
 sites, LegsOfFixtureAfter deleted; the C29 footer-word gate re-based as
 an invariant (per-seed pre-emption failsafe + end-of-run assertions on
