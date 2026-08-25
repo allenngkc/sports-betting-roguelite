@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 511.** HELD: Allen's
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 512 - TV ROTATION ORDERED
+(97% context).** The seat finishes the pending-window number, commits
+the build if both suites are green, then writes its handoff (the chain:
+NEED-copy build, T94's seam; batches 192/194 folded in) and stands
+down; a fresh seat takes the lane. The DD's held read fires on the
+build's merge. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 511.** HELD: Allen's
 'TV's pending-window build is merged; take the read' - the build is
 not merged (nothing on TV's branch; its agent still composing). Fires on
 the real merge. DD holding for TV's return. WITH ALLEN: unchanged.
