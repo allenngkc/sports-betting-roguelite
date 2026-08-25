@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 530 - batch 198 landed:
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 531 - the counter
+defect is CONFIRMED on a run (TV 2ff03a6: T169-am's fixture reads 1 where
+the player scored 2; unmerged, merges with the seam). T94's seam built at
+both sites, PlayMode running. DD holding for the build. WITH ALLEN:
+unchanged.**
+
+*(prior stamp, cycle 530 - batch 198 landed:
 T94's seam RATIFIED as TV's repaint (UpdateTicketColumn(_liveLegsShown)
 at both sites; the DD says 197 read a predicate and called it a frame);
 the frame's reading (b) split into b1/b2. Bucket 1: NO gate owed (past
