@@ -134,6 +134,56 @@ what that clause forbids.
 
 ---
 
+## 0-U21. THE PENDING WINDOW — ONCE-PER-WHISTLE IS **VERIFIED, NOT BUILT** · 2026-08-24
+
+**Closed without a gate, deliberately, and accepted by the orchestrator.** Recorded here because a
+DECISION NOT TO BUILD looks identical to an omission six weeks later.
+
+### THE PROPERTY IS ALREADY PINNED, ENGINE-SIDE
+
+`engine.tests/SharedTellingTests.Both_legs_dead_at_one_whistle_opens_ONE_window_naming_both()`
+asserts all three clauses the order named:
+
+```
+Assert.Equal(1, windows);                                     // ONCE per whistle
+Assert.Equal(new[] { 0, 1 }, session.PendingDeadLegIndices);  // NAMES every dead leg
+Assert.True(session.NoSingleCallSaves);                       // STATES when no call saves
+Assert.Equal(LegState.Lost, session.RevealedLegState(0/1));   // AFTER every grade
+```
+
+### AND THE TV IS ONCE-PER-WHISTLE BY CONSTRUCTION
+
+- `HasPendingLoss` is a **session-level** flag the engine opens once; both TV entry sites guard on it.
+- `PendingWindowBeat` loops `while (_session.HasPendingLoss)` until it is drained.
+- **The two entry sites are MUTUALLY EXCLUSIVE**: `PlaySweat` runs
+  `if (_stage != null) { yield return TheaterBeat(evt); continue; }`, so the theaterless block is
+  unreachable whenever a stage exists.
+- Both open the window AFTER `ResolveBeat`/`FinalSlam` — the "after every grade" half.
+
+### ⚠ WHY A TV GATE WAS REFUSED, AND IT IS THE LANE'S OWN LESSON
+
+**It would be VACUOUS.** On every ticket shipping today exactly ONE leg dies per whistle, so "opened
+once" is trivially true — the gate would pass without ever touching the N-live case it names.
+
+**This lane has paid for that pattern twice in one day**: the TV twin's compatibility test that an
+off-by-one mutant PASSED (its ticket busted on leg 0, so neither predicate ever fired), and `T130`
+reporting green for weeks while never rendering the market it was written for. **A gate that cannot
+fail on the case it names converts an open question into a false answer**, which is worse than
+leaving the question open.
+
+**If it is ever built, it lands WITH the same-match fixture that could make it fail** — that gap is
+recorded in `0-U16`/`0-U13` and is the same one the counter and part C carry. Allen holds a veto and
+may order it built anyway.
+
+### WHAT THE TV ACTUALLY LACKS IS CONSUMPTION, NOT VERIFICATION
+
+It reads `HasPendingLoss` and **nothing else** — never `PendingDeadLegIndices`, never
+`NoSingleCallSaves`. That is `T143`/`S85`, and it is **blocked on the zone's height**, routed at
+`route-pending-window-height-2026-08-24.md`: the zone is 635.0 x 90.0, holds exactly three rows, and
+neither ruling fits as a fourth.
+
+---
+
 ## 0-U20. THE CAPTURE WINDOW FOUND A SHIPPING DEFECT — TWICE, IN ONE CHAIN · 2026-08-24
 
 **EditMode 332/331/0/1 · PlayMode 152/125/0/27** (+2 skipped = frames A and B, `[Explicit]`).
