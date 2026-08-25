@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 528 - T156 re-take
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 529 - T156 re-take
+(5e5348e) and WinningMargin bucket 1 (ca4f410) MERGED; suites green. TV
+raised three questions, routed to the DD in
+route-t94-repaint-2026-08-25.md: (1) T94's seam - deletion alone leaves
+the ended fixture painted LIVE through the beat; TV proposes a one-line
+repaint to _liveLegsShown instead - SEAM HELD on the DD's call; (2)
+bucket 1's ladder ends a rung early by 6.1px - gate owed?; (3) the
+multi-scorer counter may count one leg only - TV verifying on a run. TV's
+staged "go with the repaint" draft is TV's own, not fired. WITH ALLEN:
+unchanged.**
+
+*(prior stamp, cycle 528 - T156 re-take
 committed at TV (5e5348e: the city-only survivor is gone, the control is
 safe again, the pair is not); TV still mid-turn on PlayMode, merge on its
 report. T94 correction consumed. DD holding, nothing open. Untracked
