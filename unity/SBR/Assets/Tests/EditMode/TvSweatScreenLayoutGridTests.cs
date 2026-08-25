@@ -1511,6 +1511,100 @@ namespace SBR.Tests.EditMode
             }
         }
 
+        /// <summary>THE PENDING WINDOW'S COMPOSITION, REPORT-ONLY — what `T143`/`S85` cost the
+        /// intervention zone.
+        ///
+        /// <para><b>The zone does not resize to content</b> (§6's grid), and its own build note
+        /// records the last overrun being ROUTED rather than absorbed: title + three options measured
+        /// 110.0px in a 90.0px zone. So the composition is priced BEFORE any copy is authored — this
+        /// lane's own law, and the reason `T165`'s word went to the DD on numbers rather than on
+        /// arithmetic.</para>
+        ///
+        /// <para><b>What is new and why it costs height.</b> `T143` says the window NAMES EVERY DEAD
+        /// LEG (<c>PendingDeadLegIndices</c>), and `S85`'s general rule says the surface states
+        /// <c>NoSingleCallSaves</c> BEFORE the offer — the flag gates the STATEMENT, not the offer,
+        /// since §7c rules saves stay LEGAL. Both are new ROWS in a zone already at 82.5 of 90.</para>
+        ///
+        /// <para><b>This rules nothing.</b> It reports rows, height and overrun for each candidate
+        /// shape; the height and the copy are the DD's.</para></summary>
+        [Test]
+        public void T143_S85_price_the_pending_window_composition()
+        {
+            var go = new GameObject("PendingWindowComposition");
+            try
+            {
+                var screen = BuildScreen(go);
+                TMP_Text prompt = FindChild<TMP_Text>(screen, "InterventionPrompt");
+                Assert.IsNotNull(prompt, "InterventionPrompt is not built on this screen");
+                Assert.IsNotNull(prompt.font, "no font resolved — a measurement in the fallback face is void");
+                Assert.IsTrue(prompt.font.name.Contains("Encode"),
+                    $"measured in '{prompt.font.name}', not Encode Sans — the mistake T20 made once");
+
+                float zoneW = prompt.rectTransform.sizeDelta.x;
+                float zoneH = prompt.rectTransform.sizeDelta.y;
+                Debug.Log($"[PENDZONE] InterventionPrompt zone {zoneW:0.0} x {zoneH:0.0}");
+
+                // The shipped rows, verbatim from PendingWindowBeat.
+                const string optM = "HOLD M MULLIGAN (ONE MULLIGAN SLIP)";
+                const string optR = "HOLD R SEND TO REVIEW (ONE REF'S WHISTLE)";
+                const string optN = "N LET IT DIE";
+
+                // CANDIDATE ROWS, not authored copy — the SHAPES the two rulings require, at the
+                // longest plausible content so the measurement prices the worst case rather than the
+                // happy one (C46). Real leg names come from MarketSheet and are uppercased there.
+                const string deadOne = "DULUTH AUDITORS +1.5 IS DEAD";
+                const string deadTwo = "DULUTH AUDITORS +1.5 AND BRICKLAYERS OVER 2.5 ARE DEAD";
+                const string noSave = "NO SINGLE CALL SAVES THIS TICKET";
+
+                foreach ((string label, string[] rows) in new[]
+                {
+                    ("shipped worst case (both consumables)", new[] { optM, optR, optN }),
+                    ("+ one dead leg named", new[] { deadOne, optM, optR, optN }),
+                    ("+ two dead legs named", new[] { deadTwo, optM, optR, optN }),
+                    ("+ two dead + no-single-call-saves", new[] { deadTwo, noSave, optM, optR, optN }),
+                    ("no-save case only (S85 minimum)", new[] { noSave, optM, optR, optN }),
+
+                    // OPTION 1 — A ROW YIELDS. The two spending rows appear only when the run OWNS
+                    // that consumable, so the row count is 1 + canM + canR. Priced at every ownership
+                    // combination because C46 forbids leaning on the common case — the zone's own
+                    // build note makes that explicit for the shipped composition.
+                    ("opt1: one consumable + dead leg", new[] { deadOne, optR, optN }),
+                    ("opt1: no consumables + dead leg", new[] { deadOne, optN }),
+                    ("opt1: one consumable + dead + no-save", new[] { deadOne, noSave, optR, optN }),
+
+                    // OPTION 3 — THE COPY SHARES AN EXISTING ROW rather than taking a new one.
+                    ("opt3: dead leg joins the decline row", new[] { optM, optR, deadOne + "   ·   " + optN }),
+                    ("opt3: two legs join the decline row", new[] { optM, optR, deadTwo + "   ·   " + optN }),
+                    ("opt3: no-save joins the decline row", new[] { optM, optR, noSave + "   ·   " + optN }),
+                })
+                {
+                    string composed = string.Join("\n", rows);
+                    Vector2 pref = prompt.GetPreferredValues(composed, zoneW, 0f);
+                    float widest = 0f;
+                    string widestRow = string.Empty;
+                    foreach (string r in rows)
+                    {
+                        float w = prompt.GetPreferredValues(r, 100000f, 0f).x;
+                        if (w > widest) { widest = w; widestRow = r; }
+                    }
+                    bool fitsH = pref.y <= zoneH;
+                    bool fitsW = widest <= zoneW;
+                    Debug.Log($"[PENDZONE] {label,-38} rows={rows.Length} "
+                        + $"h={pref.y,6:0.0} vs {zoneH:0.0} {(fitsH ? "FITS" : $"OVER by {pref.y - zoneH:0.0}")}"
+                        + $"  widest row {widest,6:0.0} vs {zoneW:0.0} {(fitsW ? "fits" : "OVERRUNS")}"
+                        + $"  '{widestRow}'");
+                }
+
+                Debug.Log("[PENDZONE] report only — no copy is authored here and no height is ruled. "
+                    + "The zone does not resize to content (§6), so which row yields is the DD's call, "
+                    + "reported with the zone's dimensions as the standing condition requires.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
         [Test]
         public void T91_the_two_numbers_owed_since_batch_63()
         {
