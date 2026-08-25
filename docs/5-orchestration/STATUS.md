@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 497.** THE REGISTER SCAN
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 498.** T156 IS LIVE IN
+THE SHIPPED BUILD (batch 187, 70d48a4) - proven from the render chain
+plus a width TV already took, so the queued measurement was WITHDRAWN
+from TV (the number was in hand; an instrument is not run for a number
+already known). Allen's team-total SCOPE CALL therefore does not wait
+on it - it is ready for him now. TV on part C's gate; DD's desk clean.
+WITH ALLEN: the team-total scope call (T156 live), the verified-not-
+built veto, the carve-out bookkeeping, the hold's structure, research
+8-9, B9's sitting.
+
+*(prior stamp, cycle 497.** THE REGISTER SCAN
 IS AN INSTRUMENT NOW: tools/register-scan.js committed (1eff981 - cell
 count, inline-aware duplicate IDs, files-to-log reconciliation in one
 command) and the DD's charter updated to run it at every seating,
