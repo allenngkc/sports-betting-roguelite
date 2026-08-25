@@ -99,6 +99,47 @@ migration script uses a Linear API key instead of OAuth.
   manual drift. Revisit only if Allen wants to hand-draw (Figma has an MCP
   when that day comes).
 
+## Allen's refinements (2026-08-25, same day) — now part of the target
+
+### Unit of work = the ticket, not the worktree
+Today a worktree is seated with "do the whole slice." Retired as a pattern.
+The orchestrator decomposes an approved brief into Linear tickets BEFORE any
+seat opens (a Sonnet sub-agent drafts, the orchestrator reviews). Every
+ticket carries: goal, acceptance criteria, evidence required, files/ownership,
+and a size cap of one dispatch. Leads pull tickets from their lane's queue;
+each sub-agent dispatch is one ticket; a worktree is only the venue where
+tickets execute. Product tracking = the ticket graph, always current, and the
+DD/leads reason about one bounded ticket at a time — the other half of the
+hallucination fix.
+
+### CI/CD — staged, because Unity is the hard part
+- **Stage 1 (written today, `.github/workflows/ci.yml`):** GitHub Actions on
+  push to main and on PRs — build every .NET project (engine, engine.tests,
+  game-console, game-console.tests, sim) and run the engine + console test
+  suites on a Windows runner with .NET 10. No Unity, no LFS checkout, fast.
+- **Stage 2:** sim smoke on PRs (small seed count) + nightly full gate
+  campaign (parallelized per the speed brief) posting its table to the
+  Linear issue.
+- **Stage 3:** Unity EditMode/PlayMode in CI. Two routes, decide then:
+  GameCI with a Unity licence secret (heavy — URP, package restore, long
+  runs) or a self-hosted runner on Allen's machine (shares the editor with
+  the single-editor law — needs the lease scheduler). Until then Unity
+  validation stays local per the clean-merge checklist.
+- **CD:** a Windows player build artifact on every main merge (stage 3);
+  WebGL/itch stays deferred by Allen's earlier call.
+- **Merge flow:** the orchestrator moves from local merges to PRs
+  (`gh` CLI — not installed yet: `winget install GitHub.cli` + `gh auth
+  login`), branch protection on main requires CI green, and the clean-merge
+  checklist gains "CI green" as a hard line.
+
+### Design system rebuild = a human-readable quick reference
+Audience: Allen, 30-second lookups — not agents. The rebuilt Claude Design
+gallery gets an index that reads top-down: Surfaces (laptop, TV, room, phone,
+console) → each screen with an annotated capture and what it's for → the
+components used → tokens → the laws in plain language (amber = money, biro
+blue = your pick, oxide red = the house's mark, no pure black, facts ≥13px…).
+Every page is generated from repo canon; nothing is authored in the gallery.
+
 ## Not doing
 
 Vercel AI SDK or any custom agent runtime. Orca + Claude Code already IS the
