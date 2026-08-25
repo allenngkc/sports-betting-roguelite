@@ -866,7 +866,15 @@ namespace SBR.Tests.PlayMode
                 Assert.IsTrue(run.OwnsConsumable("mulligan_slip"), "T88: release abandons — nothing is spent");
                 Assert.IsTrue(director.CurrentSession.HasPendingLoss, "T88: release leaves the window open");
                 // Batch 56: the decline lost its HOLD, because it takes a press (T88(c)).
-                Assert.IsTrue(prompt.text.Contains("N LET IT DIE"),
+                // RE-BASED BY `T143`/§2 (DD batch 189's copy spec). This pinned the literal
+                // `N LET IT DIE`; the ruled decline row now ABSORBS the dying leg's name —
+                // `N LET LONGHAULERS DIE`, or `N LET {CLUB} +1.5 DIE` on a handicap. The subject of
+                // THIS test is unchanged and is not the copy: it asserts that RELEASING a held key
+                // returns the OFFER LIST rather than leaving the preview as residue. So it pins the
+                // stable, ruled-invariant part of that row — the `N LET` opening and the `DIE` verb,
+                // which `T88(c)` fixes as a press-not-hold and §2 keeps — rather than a club name
+                // that varies with whatever leg the seed happens to kill.
+                Assert.IsTrue(prompt.text.Contains("N LET") && prompt.text.TrimEnd().EndsWith("DIE"),
                     "release returns the OFFER LIST — the preview must not be residue. " +
                     $"Actual: '{prompt.text.Replace("\n", "\\n")}'");
 

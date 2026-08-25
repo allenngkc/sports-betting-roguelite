@@ -2472,8 +2472,21 @@ namespace SBR.Game
                 yield break;
             }
 
-            bool canM = director.Run.OwnsConsumable("mulligan_slip") && _session.CanMulliganPendingLoss;
-            bool canR = director.Run.OwnsConsumable("refs_whistle");
+            // S85 / T143-am2: WHERE NO SINGLE CALL SAVES THE TICKET, THE OFFER IS NOT PRESENTED —
+            // AND THEREFORE IT IS NOT OFFERED TO THE KEYBOARD EITHER. Two or more legs died at this
+            // one whistle; both saves act on ONE leg, so whichever is spent the ticket still dies.
+            // S85's ruling is that a refusal knowable before the act is SHOWN before it, and a
+            // window that renders no offer while M and R still commit would be precisely the
+            // "spend a Whistle to discover the ticket was already dead twice over" it forbids. The
+            // state is read ONCE and gated HERE, at the one place both the composition and the input
+            // read it, so the rows and the keys cannot disagree about what is on offer.
+            //
+            // The saves stay LEGAL in the engine (DD batch 169) — this is the surface declining to
+            // PRESENT them, which is a presentation ruling, not a lock on the consumable.
+            bool noSingleCallSaves = _session.NoSingleCallSaves;
+            bool canM = !noSingleCallSaves
+                && director.Run.OwnsConsumable("mulligan_slip") && _session.CanMulliganPendingLoss;
+            bool canR = !noSingleCallSaves && director.Run.OwnsConsumable("refs_whistle");
             // T86(a) (batch 44): the bracketed-key form is RETIRED on this surface. `[M]`/`[R]`/`[N]`
             // go the way of `[E]`, and T22's reasoning was never local to the cash-out slot — "not a
             // label, it is a debug token, and it is on a shipped surface in every frame". Its
@@ -2530,9 +2543,101 @@ namespace SBR.Game
             // It also removes the worst case rather than affording it: three option rows measure 82.5
             // in a 90.0 zone and fit in EVERY ownership combination, not only when one consumable is
             // held — C46 forbids leaning on the common case.
-            string offers = (canM ? optM + "\n" : "")
-                + (canR ? optR + "\n" : "")
-                + optN;
+
+            // ---------------------------------------------------------------- T143: NAME THE DEAD
+            // THE WINDOW NAMED NOTHING UNTIL THIS PASS. Three fixed rows, and `PendingDeadLegIndices`
+            // — the surface the session added FOR this ruling — read by nobody. T143 requires the
+            // window to name the legs that died at this whistle, and a ruling nothing reads has not
+            // landed. Copy: `spec-pending-window-copy-2026-08-25` (DD batches 186/189/192/193).
+            //
+            // TICKET ORDER, straight off the session, because that is the order the ticket column
+            // already prints these legs in — a second ordering here is how two columns come to
+            // disagree about which leg is which. Bounds-checked rather than trusted: a live sweat
+            // may not take the surface down over a name (SheetName's stated leniency), and the
+            // degenerate empty case falls back to the shipped string below.
+            var deadNames = new List<string>();
+            foreach (int i in _session.PendingDeadLegIndices)
+                if (_ticket != null && i >= 0 && i < _ticket.Legs.Count)
+                    deadNames.Add(PendingLegName(_ticket.Legs[i]));
+
+            string offers;
+            if (noSingleCallSaves)
+            {
+                // ═══ N ≥ 2: THE COMPOSITION IS NOT AUTHORED YET, AND IT IS NOT GUESSED HERE. ═══
+                //
+                // ⚠ TODO (DD batch 193, `T143-am6`) — THIS BRANCH IS OWED ITS COPY. It is reachable,
+                // it is explicit, and it deliberately renders NEITHER the §2 one-leg form nor a
+                // part-built §3: a silent fallthrough to `N LET {CLUB} {LINE} DIE` would name ONE
+                // leg while several died, which is the exact failure T143 exists to prevent.
+                //
+                // WHAT IS ALREADY RULED AND IS BUILT ABOVE: T143-am2 removes the save offer here, so
+                // the two spending rows do not render and M/R do not commit (`canM`/`canR` gated on
+                // `noSingleCallSaves`). That half is settled and stands whichever way the number
+                // below falls.
+                //
+                // WHAT WAITS, AND ON WHAT: batch 189 §3 authored a two-name form and §4 recorded a
+                // hole at three — FOUR rows in a three-row zone. Batch 193 shows BOTH premises
+                // stale: `RunConfig.MaxLegs` ships at 4, so N is bounded at FOUR enumerable cases
+                // rather than arbitrary; and the 870.4px width that made ≥3 look impossible measured
+                // the RETIRED `… IS DEAD`-class placeholder, not the bare names the composition
+                // uses. If two bare names share a row the ruled shape is N=2 → one name row + the
+                // shared refusal row (2 rows); N=3 → 2 names + 1 name + shared (3 rows); N=4 → 2 + 2
+                // + shared (3 rows) — every case inside the zone, and T143's "names every leg" never
+                // bounded. That is contingent on ONE MEASUREMENT the DD is taking: whether two bare
+                // names plus the separator fit 635.0. Batch 193 pre-commits both readings — (A) they
+                // fit, so the shape enumerated just above is the one to build and there is no hole;
+                // (B) they do not, so the ceiling stays at two names and N=3/N=4 take the bounded
+                // form ruled in that batch. EITHER WAY IT IS AN AUTHORED ANSWER, and guessing which
+                // one before the number lands is how a surface acquires copy nobody ruled.
+                //
+                // THE SEPARATOR IS ALREADY ON THIS SURFACE when the composition lands: `   ·   `
+                // (three spaces, U+00B7, three spaces), the form `PreviewOf` below already prints.
+                // Reuse it verbatim rather than re-typing a different spacing — and note FitToColumn
+                // drops a dangling " ·" on truncation, so a shared row degrades to whole words
+                // instead of a stranded glyph.
+                //
+                // UNTIL THEN this renders the SHIPPED, already-ratified decline row and nothing else.
+                // It is not new copy, it is not §3 part-built, and it does not assert a death (§1:
+                // the legs are PENDING, not dead). It is the one string that is true in this state
+                // under every pre-committed reading: the offer is not presented, and declining is
+                // what the player may do. `deadNames` is read and correct here — what is missing is
+                // the authored form that spends it, not the data.
+                offers = optN;
+            }
+            else
+            {
+                // ---- §2, THE ONE-LEG FORM. THE DECLINE ROW ABSORBS THE NAME rather than sharing a
+                // row with it: `LET … DIE` supplies the verb and the tense, the name supplies its
+                // referent, and NOTHING IS RESTATED. This is option 3 at its tightest — batch 186
+                // ruled the copy shares the decline row; here it *is* the decline row, with no
+                // separator and no second element, strictly shorter than the 528.4px shared form.
+                //
+                // §1 is why no form here asserts the death: TV's placeholder read
+                // `DULUTH AUDITORS +1.5 IS DEAD` and THE LEG IS NOT DEAD — the window exists
+                // precisely because the loss is PENDING and the player may still spend to prevent
+                // it. `IS DEAD` beside `LET IT DIE` contradicts itself on one row.
+                //
+                // T88(c) SURVIVES INTACT: still a press, still N-prefixed, still no HOLD. Batch 56's
+                // correction was about HOLD-versus-press, not about content, so absorbing the name
+                // changes what the row NAMES and nothing about its class. S24 survives too: one
+                // option, one row. AND THE TWO SPENDING ROWS ARE UNCHANGED — three rows total.
+                //
+                // WIDTH IS NOT AT ISSUE HERE, and a later seat must not treat this row as
+                // width-critical. Measured on this tree at ed2a6c2 against the 635.0 x 90.0 zone:
+                // `N LET SPREADSHEETS +1.5 DIE` is 334.8px with 300.2 spare (the longest club
+                // short-form across four slates), and even the UN-shortened
+                // `N LET SAN FRANCISCO MEATBALLS +1.5 DIE` is 477.3px and still fits. So `Short` is
+                // applied for CONSISTENCY with §2 and T168-am, NOT to make the row fit. The widest
+                // row is still optR at 523.8, the decline row never becomes the widest, and the
+                // three-row height is still 82.5 in the 90.0 zone — the shipped worst case, unmoved.
+                //
+                // The shipped `N LET IT DIE` survives as the DEGENERATE fallback only: a window with
+                // no nameable leg has nothing to absorb, and `N LET  DIE` would be worse than the
+                // string it replaces.
+                offers = (canM ? optM + "\n" : "")
+                    + (canR ? optR + "\n" : "")
+                    + (deadNames.Count > 0 ? $"N LET {deadNames[0]} DIE" : optN);
+            }
             // The HELD composition: the option being previewed, and how to finish or abandon it.
             // UNRATIFIED copy in T22/T86(a)'s established form — print the word, not the glyph —
             // routed with the rest of this batch's strings rather than presented as canon.
@@ -4261,6 +4366,83 @@ namespace SBR.Game
                     // here, which is what G1 actually asks for.
                     return SheetName(leg) ?? leg.DisplayLabel;
             }
+        }
+
+        /// <summary>`T143`: the pending window's name for ONE dying leg — <b>the club and its
+        /// qualifier, and nothing else</b>. Copy authority is
+        /// <c>docs/design/spec-pending-window-copy-2026-08-25</c> §2 (`T143-am4`), amended by
+        /// `T143-am5` (DD batch 192).
+        ///
+        /// <para><b>Deliberately NOT <see cref="LegStatement"/>.</b> That composes a full STATEMENT
+        /// for the ticket column — <c>{club} ML</c>, <c>OVER 2.5 GOALS</c> — and the pending window's
+        /// decline row ABSORBS the name into a sentence it already supplies the verb and the tense
+        /// for (<c>N LET … DIE</c>). A market word or a second verb inside the name restates what
+        /// the row is saying around it, which is the class S37/S58/T69/T70 have each ruled.</para>
+        ///
+        /// <para><b>`Short` IS APPLIED HERE, AT THIS CALL SITE — `T143-am5`, and this is the whole
+        /// point of that row.</b> `T168-am` ruled the club token is shortened at the RENDER and is
+        /// RULED-BUT-UNBUILT at HEAD, so naming the leg the obvious way — calling
+        /// <see cref="LegStatement"/> and taking what comes — reaches its <c>default:</c> arm →
+        /// <see cref="SheetName"/> → <c>MarketSheet</c> → <c>fields.Line</c>, which for a handicap is
+        /// <c>{hteam} ±1.5</c> with the <b>FULL</b> club name: the window would print
+        /// <c>N LET DULUTH AUDITORS +1.5 DIE</c> while the spec and its measurement describe
+        /// <c>N LET AUDITORS +1.5 DIE</c>. <b>New copy is built to the RULING, not to the build
+        /// state</b> — a new surface built to today's defect has to be fixed twice.</para>
+        ///
+        /// <para><b>The club comes from <see cref="MatchModel.AnchorSide"/>, NOT from
+        /// <c>SweatFlavor.PickedHomeForPresentation</c>.</b> The anchor answers <c>null</c> for
+        /// NEITHER, and that distinction is exactly what this row needs: the adapter collapses
+        /// <c>null</c> to HOME because a scoreline must be drawn in SOME direction, and that
+        /// convention on THIS row would name a club the ticket never backed — `T96`'s defect
+        /// verbatim (<c>MIDDLEMEN ML</c> printed on a draw ticket). A row naming the wrong club is
+        /// worse than a row naming no club.</para>
+        ///
+        /// <para><b>ONE qualifier is authored, and authoring more is NOT this seat's scope.</b> §2
+        /// gives the handicap <c>{CLUB} ±1.5</c> (`G1-am11` rung 3) and no other kind a short
+        /// qualifier. Where none is authored the row takes <b>the club alone</b> rather than a coined
+        /// abbreviation — a short form nobody wrote is G1's defect class, which is the rule that
+        /// exists to stop exactly this improvisation. New qualifier copy is the DD's to author.</para>
+        ///
+        /// <para><b><c>TeamTotalGoals</c>/<c>TeamTotalCorners</c>/<c>TeamTotalCards</c> INHERIT
+        /// `T156` AT THE SOURCE (DD batches 191/192) — known, not an oversight in this window.</b>
+        /// Their name comes off the same <c>fields.Line</c> batch 191 ruled defective: it truncates
+        /// to <c>RENO FERRETS OVER</c>, a direction with no market, and `Short` does not rescue it
+        /// (the measured 449.5 against 261.0 is ALREADY the short-club form). No wording available
+        /// inside this window can repair a name that is broken where it is composed, so `T143-am5`
+        /// ruled the window <b>inherits Allen's existing scope call rather than opening a second
+        /// one</b>: these three take the same path as every other kind with no authored qualifier —
+        /// the club alone, no special case, no repaired name invented here.</para>
+        ///
+        /// <para><b>Where the leg names NO club the spec authors no form</b>, and <c>{CLUB} {LINE}</c>
+        /// cannot be built at all — so the row falls back to the leg's own authored identity
+        /// (<see cref="LegStatement"/>), which for every anchorless kind is club-free BY
+        /// CONSTRUCTION (<c>OVER 2.5 GOALS</c>, <c>BTTS YES</c>, <c>DRAW</c>, <c>EXACT 3–1</c>,
+        /// <c>ODD</c>, <c>3+ GOALS</c>, <c>EITHER TEAM</c>). `T143-am5`'s full-club hazard therefore
+        /// cannot arise down this path: the hazard is a club name, and these strings carry none.
+        /// Reported as a gap in the spec rather than filled with copy invented here.</para></summary>
+        private string PendingLegName(Leg leg)
+        {
+            if (leg == null) return null;
+            // NO ANCHOR, NO CLUB — take the authored identity whole rather than borrowing a side.
+            //
+            // `AnchorSide` THROWS on a kind it has no arm for, and that is K17-cl's deliberate
+            // design, not an oversight to soften here: it is not new exposure either, because every
+            // sweat already runs it per leg through `PickedHomeForPresentation` (the scorebug, the
+            // stats panel, the ledger endpoint) long before this window can open. A sixteenth market
+            // kind fails at the engine's table, which is where it should fail.
+            Side? anchor = MatchModel.AnchorSide(leg);
+            if (anchor == null) return LegStatement(leg);
+
+            string club = SweatFlavor.Short(
+                anchor == Side.Home ? leg.Matchup.Home.Name : leg.Matchup.Away.Name).ToUpperInvariant();
+            // THE SIGN IS THE ENGINE'S OWN RULED FORMAT, read back rather than re-derived: the
+            // handicap line is SIGNED and applied TO THE BACKED SIDE (home −1.5 must win by two,
+            // away +1.5 may lose by one), and `MatchModel.Fields`' handicap arm prints it as
+            // `{hteam} {Line:+0.0;-0.0}`. Reusing that format string is what stops a sign convention
+            // drifting between two surfaces that must agree about one bet.
+            return leg.Selection.Kind == MarketKind.Handicap
+                ? $"{club} {leg.Selection.Line.ToString("+0.0;-0.0", CultureInfo.InvariantCulture)}"
+                : club;
         }
 
         /// <summary>G1: the authored form if it fits, else the authored SHORTER line, else the

@@ -1941,6 +1941,141 @@ namespace SBR.Tests.EditMode
             return "(commit unreadable — state it by hand)";
         }
 
+        /// <summary>THE PENDING WINDOW'S RULED COPY, MEASURED — §5 of
+        /// <c>docs/design/spec-pending-window-copy-2026-08-25.md</c>.
+        ///
+        /// <para>Report-only. The spec authored the forms; this prices them before they are built,
+        /// which is the order `T144` and `T165` both established after arithmetic predicted a fit
+        /// and a failure respectively and was wrong twice.</para>
+        ///
+        /// <para><b>§5.1 says the LONGEST club short-form and the longest handicap line, not
+        /// `AUDITORS`.</b> A short club flatters the number, and the row that has to fit is the worst
+        /// one on the board — <c>C46</c>. Both are searched off real slates rather than assumed.</para>
+        ///
+        /// <para><b>The ≥2 form is NOT measured here.</b> §5.3 defers it to the N-live shape, and no
+        /// ticket shipping today produces two legs dead at one whistle. Measuring it now would price
+        /// a composition against content that cannot occur.</para></summary>
+        [Test]
+        public void T143_S85_price_the_ruled_pending_window_copy()
+        {
+            var go = new GameObject("PendingWindowRuledCopy");
+            try
+            {
+                var screen = BuildScreen(go);
+                TMP_Text prompt = FindChild<TMP_Text>(screen, "InterventionPrompt");
+                Assert.IsNotNull(prompt, "InterventionPrompt is not built on this screen");
+                Assert.IsTrue(prompt.font.name.Contains("Encode"),
+                    $"measured in '{prompt.font.name}', not Encode Sans — the mistake T20 made once");
+
+                float zoneW = prompt.rectTransform.sizeDelta.x;
+                float zoneH = prompt.rectTransform.sizeDelta.y;
+
+                // C58-am2: the number travels with its build state.
+                Debug.Log($"[PENDCOPY] zone {zoneW:0.0} x {zoneH:0.0} · commit {CommitAtMeasurement()} "
+                    + "· T168-am BUILT: false (no T168 reference under Assets/**). §2 authors the club "
+                    + "token through SweatFlavor.Short, so the row below is measured AS THE SPEC "
+                    + "AUTHORS IT; the full-name form is measured beside it as the un-shortened case.");
+
+                // THE LONGEST SHORT-FORM CLUB on real slates. Short() takes the last word, so this is
+                // the longest club NOUN in the pool — not the longest full name.
+                string longestShort = string.Empty, longestFull = string.Empty;
+                foreach (string seed in new[] { "PENDCOPY-A", "PENDCOPY-B", "PENDCOPY-C", "PENDCOPY-D" })
+                {
+                    var run = new Run(seed, new RunConfig());
+                    foreach (Matchup m in run.CurrentSlate.Matchups)
+                        foreach (Team t in new[] { m.Home, m.Away })
+                        {
+                            string s = SweatFlavor.Short(t.Name);
+                            if (s.Length > longestShort.Length) longestShort = s;
+                            if (t.Name.Length > longestFull.Length) longestFull = t.Name;
+                        }
+                }
+                Assert.IsNotEmpty(longestShort, "C29: no club was collected, so nothing below is a worst case");
+
+                // The longest handicap line the board can offer, read from config rather than assumed.
+                double longestLine = 0;
+                foreach (double d in new RunConfig().HandicapLines) if (d > longestLine) longestLine = d;
+
+                string club = longestShort.ToUpperInvariant();
+                string clubFull = longestFull.ToUpperInvariant();
+
+                // ---- §5.1 — the one-leg decline row, which ABSORBS the name rather than sharing it.
+                string declineShort = $"N LET {club} +{longestLine:0.0} DIE";
+                string declineFull = $"N LET {clubFull} +{longestLine:0.0} DIE";
+                foreach ((string label, string row) in new[]
+                {
+                    ("§2 as authored (Short)", declineShort),
+                    ("un-shortened (full name)", declineFull),
+                    ("shipped decline row", "N LET IT DIE"),
+                })
+                {
+                    float w = prompt.GetPreferredValues(row, 100000f, 0f).x;
+                    Debug.Log($"[PENDCOPY] decline row · {label,-26} '{row}' {w,7:0.0}px vs {zoneW:0.0} "
+                        + (w <= zoneW ? $"FITS, {zoneW - w:0.0}px spare" : $"** OVERRUNS by {w - zoneW:0.0}px **"));
+                }
+
+                // ---- §5.2 — the THREE-ROW height with both spending rows present. The spec expects
+                // the shipped 82.5; expected is not measured, so it is measured.
+                const string optM = "HOLD M MULLIGAN (ONE MULLIGAN SLIP)";
+                const string optR = "HOLD R SEND TO REVIEW (ONE REF'S WHISTLE)";
+                foreach ((string label, string[] rows) in new[]
+                {
+                    ("shipped worst case", new[] { optM, optR, "N LET IT DIE" }),
+                    ("ruled, one-leg (Short)", new[] { optM, optR, declineShort }),
+                    ("ruled, one-leg (full name)", new[] { optM, optR, declineFull }),
+                })
+                {
+                    Vector2 pref = prompt.GetPreferredValues(string.Join("\n", rows), zoneW, 0f);
+                    float widest = 0f; string widestRow = string.Empty;
+                    foreach (string r in rows)
+                    {
+                        float w = prompt.GetPreferredValues(r, 100000f, 0f).x;
+                        if (w > widest) { widest = w; widestRow = r; }
+                    }
+                    Debug.Log($"[PENDCOPY] {label,-28} rows={rows.Length} h={pref.y,6:0.0} vs {zoneH:0.0} "
+                        + (pref.y <= zoneH ? "FITS" : $"OVER by {pref.y - zoneH:0.0}")
+                        + $" · widest {widest,6:0.0} vs {zoneW:0.0} "
+                        + (widest <= zoneW ? "fits" : "OVERRUNS") + $" '{widestRow}'");
+                }
+
+                // ---- BATCH 193's ONE NUMBER — DO TWO BARE NAMES PLUS THE SEPARATOR FIT 635.0?
+                //
+                // T143-am6 reduces the whole >=3 question to this, with BOTH readings pre-committed
+                // in the batch so the number decides rather than a reading of it:
+                //   (A) they FIT      -> no hole at any reachable N; T143 stands unamended.
+                //   (B) they DO NOT   -> the ceiling stays at two names and N=3/N=4 take the
+                //                        bounded form ruled in that batch.
+                //
+                // MaxLegs is 4, so N is bounded at four and the cases are enumerable rather than
+                // arbitrary. The 870.4 that made >=3 look impossible measured the RETIRED
+                // `... IS DEAD` placeholder, not the bare names the shipped composition uses —
+                // which is batch 194's asymmetry rule: a placeholder LONGER than the authored copy
+                // can only be trusted where it concluded FITS, and 870.4 concluded OVERRUNS.
+                const string Separator = "   ·   ";   // the surface's own, as PreviewOf uses
+                string longestQualifier = $"UNDER {new RunConfig().GoalLines[new RunConfig().GoalLines.Length - 1]:0.0}";
+                string bareWorst = $"{club} {longestQualifier}";
+                foreach ((string label, string row) in new[]
+                {
+                    ("worst case: 2x longest club + longest line", bareWorst + Separator + bareWorst),
+                    ("realistic: AUDITORS +1.5 · SPREADSHEETS UNDER 2.5", "AUDITORS +1.5" + Separator + "SPREADSHEETS UNDER 2.5"),
+                    ("the shared row itself", "NO ONE CALL SAVES THIS" + Separator + "N LET THEM DIE"),
+                    ("one bare name alone (worst)", bareWorst),
+                })
+                {
+                    float w = prompt.GetPreferredValues(row, 100000f, 0f).x;
+                    Debug.Log($"[PENDCOPY-193] {label,-48} '{row}' {w,7:0.0}px vs {zoneW:0.0} "
+                        + (w <= zoneW ? $"** FITS ** {zoneW - w:0.0}px spare" : $"** DOES NOT FIT ** over by {w - zoneW:0.0}px"));
+                }
+
+                Debug.Log($"[PENDCOPY] longest club short-form '{club}' (full '{clubFull}') · "
+                    + $"longest handicap line {longestLine:0.0} · report only, no form authored here.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
         /// <summary>`T91`'s two numbers, owed to the Design Director since 2026-08-13 and routed at
         /// batch 153 (`T91-am3`). `T91` needs no ruling — its ruling was made at `T91-am2`, batch 63.
         /// It needs these.
