@@ -1,6 +1,18 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 525.** Allen re-activated
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 526.** THE NEED-COPY BUILD
+IS ACCEPTED (batch 196, 0ad725d - T169-am: four arms, zero coined copy;
+it corrected two of the DD's own numbers, one caught by the DD's own
+law). Rulings: WinningMargin bucket 1 AUTHORED (T151-am3 - queued to TV
+behind the T156 re-take); {n} in CLEAR BY {n} defined as goals-that-
+must-change, ratifying TV's build (T152-am2). CI green on the TV merge
+(a6a3a4c). Untouched: docs/design/linear-dryrun-template-pass.txt -
+the architect session's Linear dry-run, not mine to land (Allen: do not
+act on the Linear part yet). WITH ALLEN: the team-total scope call,
+the veto, the carve-out bookkeeping, the hold's structure, B9's
+sitting, Linear setup.
+
+*(prior stamp, cycle 525.** Allen re-activated
 TV for one item: the T156 team-total fallback RE-TAKE now that T168's
 club form is built (the earlier number was conditional on it; the ask
 doc binds). DD reading the NEED-copy build with the two routed
