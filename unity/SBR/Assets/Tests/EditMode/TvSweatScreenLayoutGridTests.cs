@@ -2379,6 +2379,319 @@ namespace SBR.Tests.EditMode
         }
 
 
+        /// <summary>`T143-am8` (DD batch 195) — <b>THE GATE, and it is a gate rather than a report.</b>
+        ///
+        /// <para>That row's instruction is exact: *"when §3 lands it lands with a check that FAILS if
+        /// the two-name row exceeds the zone... A ruling resting on a measured margin owes a test
+        /// that the margin still holds."* `C29`'s shape, applied to a width.</para>
+        ///
+        /// <para><b>Pinned to the REAL number, not batch 195's stand-in.</b> That batch's
+        /// 631.6-against-635.0 was taken on <c>SPREADSHEETS UNDER 3.5</c> twice — a club plus a
+        /// line, a form neither the old <c>PendingLegName</c> nor `T143-am9` can emit. This walks a
+        /// real board through the SHIPPED <c>PendingLegName</c> and the SHIPPED
+        /// <c>PendingDeadRows</c>, both by reflection, so it measures what renders.</para>
+        ///
+        /// <para><b>ONE WHISTLE IS ONE FIXTURE.</b> Two legs dying together are two legs of the SAME
+        /// matchup, never an arbitrary pair, so the pair is formed per matchup. The test ASSERTS a
+        /// pair was actually formed — a width gate over an empty pool is this lane's trap #1, a gate
+        /// that runs while its case does not.</para>
+        ///
+        /// <para>Every reachable N is checked, bounded by <c>RunConfig.MaxLegs</c> as batch 193
+        /// established, in BOTH dimensions: no row may exceed the zone's width and no composition may
+        /// exceed its height.</para></summary>
+        [Test]
+        public void T143_am8_the_pending_window_two_name_row_stays_inside_its_zone()
+        {
+            var go = new GameObject("PendingWindowWidthGate");
+            try
+            {
+                var screen = BuildScreen(go);
+                TMP_Text prompt = FindChild<TMP_Text>(screen, "InterventionPrompt");
+                Assert.IsNotNull(prompt, "InterventionPrompt is not built — the gate has no zone");
+                Assert.IsTrue(prompt.font.name.Contains("Encode"),
+                    $"measured in '{prompt.font.name}', not Encode Sans — a gate in the fallback face is void");
+
+                MethodInfo pendingLegName = typeof(TvSweatScreen).GetMethod(
+                    "PendingLegName", BindingFlags.NonPublic | BindingFlags.Instance);
+                MethodInfo pendingDeadRows = typeof(TvSweatScreen).GetMethod(
+                    "PendingDeadRows", BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.IsNotNull(pendingLegName, "TvSweatScreen.PendingLegName not found — renamed? This gate "
+                    + "must FAIL rather than silently measure a name the surface never emits.");
+                Assert.IsNotNull(pendingDeadRows, "TvSweatScreen.PendingDeadRows not found — renamed? §3's "
+                    + "composition is this gate's subject.");
+
+                float zoneW = prompt.rectTransform.sizeDelta.x;
+                float zoneH = prompt.rectTransform.sizeDelta.y;
+                int maxLegs = new RunConfig().MaxLegs;
+
+                // The widest names a real board can put on one fixture, through the shipped method.
+                var worst = new List<string>();
+                float worstPairW = 0f; string worstPairRow = null;
+                int fixturesWithTwo = 0;
+                foreach (string seed in new[] { "AM8-A", "AM8-B", "AM8-C", "AM8-D" })
+                {
+                    var run = new Run(seed, new RunConfig());
+                    foreach (Matchup m in run.CurrentSlate.Matchups)
+                    {
+                        var names = new List<string>();
+                        foreach (MarketOffer o in m.Markets)
+                        {
+                            var name = (string)pendingLegName.Invoke(screen, new object[] { new Leg(m, o.Selection, 2.00) });
+                            if (!string.IsNullOrEmpty(name)) names.Add(name);
+                        }
+                        if (names.Count < 2) continue;
+                        fixturesWithTwo++;
+                        names.Sort((a, b) => prompt.GetPreferredValues(b, 100000f, 0f).x
+                                     .CompareTo(prompt.GetPreferredValues(a, 100000f, 0f).x));
+                        string row = names[0] + "   ·   " + names[1];
+                        float w = prompt.GetPreferredValues(row, 100000f, 0f).x;
+                        if (w > worstPairW)
+                        {
+                            worstPairW = w; worstPairRow = row;
+                            worst = new List<string>(names.GetRange(0, System.Math.Min(maxLegs, names.Count)));
+                        }
+                    }
+                }
+                Assert.Greater(fixturesWithTwo, 0,
+                    "C29: NO fixture on any seed offered two markets, so the two-name row was never formed and "
+                    + "this gate asserted nothing. A width gate over an empty pool is a green that is not coverage.");
+                Assert.IsNotNull(worstPairRow, "no two-name row was composed — see the assertion above");
+
+                Debug.Log($"[AM8-GATE] zone {zoneW:0.0} x {zoneH:0.0} · commit {CommitAtMeasurement()} · "
+                    + $"{fixturesWithTwo} fixtures with 2+ markets · worst two-name row '{worstPairRow}' "
+                    + $"{worstPairW:0.0}px ({zoneW - worstPairW:0.0}px spare). Batch 195's stand-in was 631.6/3.4.");
+
+                // ---- THE GATE ITSELF, in both dimensions, at every reachable N.
+                Assert.LessOrEqual(worstPairW, zoneW,
+                    $"§3's two-name row OVERRUNS its zone: '{worstPairRow}' is {worstPairW:0.0}px against "
+                    + $"{zoneW:0.0}px. `T143-am8` requires this to FAIL rather than ship — batch 195 withdrew "
+                    + "batch 189's >=3 escalation ON THIS MARGIN, so an overrun here re-opens that ruling and "
+                    + "is the DD's, not something to shorten around.");
+
+                for (int n = 2; n <= maxLegs; n++)
+                {
+                    var names = new List<string>();
+                    for (int i = 0; i < n; i++) names.Add(worst[i % worst.Count]);
+                    var composed = (string)pendingDeadRows.Invoke(null, new object[] { names });
+                    Assert.IsNotNull(composed, $"PendingDeadRows returned null at N={n}");
+                    foreach (string row in composed.Split('\n'))
+                    {
+                        float w = prompt.GetPreferredValues(row, 100000f, 0f).x;
+                        Assert.LessOrEqual(w, zoneW,
+                            $"N={n}: row '{row}' is {w:0.0}px against the {zoneW:0.0}px zone");
+                    }
+                    float h = prompt.GetPreferredValues(composed, zoneW, 0f).y;
+                    Debug.Log($"[AM8-GATE] N={n} · {composed.Split('\n').Length} rows · h {h:0.0} vs {zoneH:0.0}");
+                    Assert.LessOrEqual(h, zoneH,
+                        $"N={n}: §3's composition is {h:0.0}px tall against a {zoneH:0.0}px zone. §6's grid does "
+                        + "not resize to content, so which row yields is the DD's call and not a thing to absorb.");
+                    // `S85-am3`: at two or more dead there is no offer and no permission to give, so
+                    // the last row is a DISMISSAL. A composition that asked `LET IT DIE` here would
+                    // offer a choice the player does not hold — the defect that row corrected.
+                    StringAssert.EndsWith("N GO ON", composed,
+                        $"N={n}: the >=2 composition must end on `S85-am3`'s dismissal, not on a decline");
+                    StringAssert.DoesNotContain("LET IT DIE", composed,
+                        $"N={n}: `N LET IT DIE` is the ONE-leg decline and `S85-am3` superseded it here");
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        /// <summary>`T169`'s four arms MEET THEIR KINDS — the gate this lane's rotation says is the
+        /// one most often missing.
+        ///
+        /// <para>Four separate gates ran green for weeks in this lane while their case never
+        /// occurred. So this does not assert that a string is well-formed; it asserts that the
+        /// SURFACE REACHED THE NEW ARM for a real offered selection, by checking the rendered NEED
+        /// against the string the OLD path would have produced. A row that still falls to
+        /// <c>default:</c> renders the sheet name, and that is what fails here.</para>
+        ///
+        /// <para>Both halves are checked, because `T169`'s four are a build order in TWO slots: the
+        /// compact identity (<c>AuthoredStatement</c>) and the NEED band
+        /// (<c>DescribeActiveLeg</c>).</para></summary>
+        [Test]
+        public void T169_the_four_new_arms_are_reached_by_real_offered_selections()
+        {
+            var go = new GameObject("FourKindsArms");
+            try
+            {
+                var screen = BuildScreen(go);
+                MethodInfo authored = typeof(TvSweatScreen).GetMethod(
+                    "AuthoredStatement", BindingFlags.NonPublic | BindingFlags.Instance);
+                MethodInfo describe = typeof(TvSweatScreen).GetMethod(
+                    "DescribeActiveLeg", BindingFlags.NonPublic | BindingFlags.Instance);
+                MethodInfo sheetName = typeof(TvSweatScreen).GetMethod(
+                    "SheetName", BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.IsNotNull(authored, "TvSweatScreen.AuthoredStatement not found — renamed?");
+                Assert.IsNotNull(describe, "TvSweatScreen.DescribeActiveLeg not found — renamed?");
+                Assert.IsNotNull(sheetName, "TvSweatScreen.SheetName not found — renamed?");
+
+                var reached = new HashSet<MarketKind>();
+                int marginOneSeen = 0;
+                foreach (string seed in new[] { "ARMS-A", "ARMS-B" })
+                {
+                    var run = new Run(seed, new RunConfig());
+                    foreach (Matchup m in run.CurrentSlate.Matchups)
+                        foreach (MarketOffer o in m.Markets)
+                        {
+                            MarketSelection sel = o.Selection;
+                            if (sel.Kind != MarketKind.Handicap && sel.Kind != MarketKind.PlayerMultiScorer
+                                && sel.Kind != MarketKind.TotalGoalsOddEven && sel.Kind != MarketKind.WinningMargin)
+                                continue;
+                            var leg = new Leg(m, sel, 2.00);
+                            var id = (string)authored.Invoke(screen, new object[] { leg });
+                            var sheet = (string)sheetName.Invoke(null, new object[] { leg });
+
+                            // WinningMargin bucket 1 is OFFERED and UNAUTHORED (T151 and G1-am11 §3.2
+                            // both stop at 2). It must take the unauthored path, not a coined string.
+                            if (sel.Kind == MarketKind.WinningMargin && (int)sel.Line < 2)
+                            {
+                                marginOneSeen++;
+                                Assert.IsNull(id, "WinningMargin bucket 1 has NO authored form and must return "
+                                    + $"null so the caller takes the unauthored path — got '{id}'. Coining a "
+                                    + "`MARGIN 1` here is G1's defect class and the DD has not ruled it.");
+                                continue;
+                            }
+
+                            Assert.IsNotNull(id, $"{sel.Kind} still has no authored compact form — T169's build "
+                                + "order is not met for this kind.");
+
+                            // PINNED TO THE DECK'S OWN STRING, not merely "different from the sheet".
+                            //
+                            // The first version of this gate asserted `id != SheetName(leg)` on the
+                            // reasoning that the sheet name carries the city. IT FAILED, AND THE
+                            // FAILURE WAS THE GATE'S: with `T168-am` built, `SheetName` shortens the
+                            // club too, so a handicap's sheet name is now `MEATBALLS -1.5` —
+                            // CHARACTER-IDENTICAL to `G1-am11` §3.3's rung 3. Two correct strings
+                            // agreeing is not a fall-through. Recorded rather than quietly widened,
+                            // because "the two conventions converged" is a real consequence of T168
+                            // and a later seat will meet it again.
+                            string club = SweatFlavor.Short(
+                                sel.Choice == MarketChoice.Away ? m.Away.Name : m.Home.Name).ToUpperInvariant();
+                            string deck =
+                                sel.Kind == MarketKind.Handicap
+                                    ? $"{club} {sel.Line.ToString("+0.0;-0.0", System.Globalization.CultureInfo.InvariantCulture)}"
+                                : sel.Kind == MarketKind.PlayerMultiScorer
+                                    ? $"{SweatActiveLegModel.Surname(m.PlayerAt(sel.PlayerIndex).Name)} {(int)sel.Line}+"
+                                : sel.Kind == MarketKind.TotalGoalsOddEven
+                                    ? (sel.Choice == MarketChoice.Odd ? "TOTAL ODD" : "TOTAL EVEN")
+                                    : $"MARGIN {((int)sel.Line >= 3 ? "3+" : "2")}";
+                            Assert.AreEqual(deck, id,
+                                $"{sel.Kind}'s compact form is not the DECK's. T151/T152/G1-am11 §3 author these "
+                                + "and nothing here re-authors them — a mismatch means either the arm was never "
+                                + "reached (the row still falls to LegStatement's default:) or the string drifted "
+                                + $"from the ruling. Sheet name for comparison: '{sheet}'.");
+
+                            var copy = (SweatActiveLegModel.ActiveLegCopy)describe.Invoke(screen, new object[] { leg });
+                            Assert.IsNotEmpty(copy.Need,
+                                $"{sel.Kind}'s NEED is blank — DescribeActiveLeg's default: returns the identity, "
+                                + "so a blank here means neither arm nor fallback ran.");
+
+                            // `Live` IS THE DISCRIMINATOR, and `Identity` is NOT.
+                            //
+                            // The first version asserted `Identity != "MARKET PICK"`. IT FAILED, AND
+                            // THE GATE WAS WRONG AGAIN: `MARKET PICK` is the model's identity for
+                            // EVERY non-team market — `IsTeamMarket` is moneyline-only by design
+                            // (`T96`) — so all four of these arms set it deliberately. What actually
+                            // separates a new arm from `DescribeActiveLeg`'s `default:` is that the
+                            // default passes `string.Empty` for the progress line and every arm here
+                            // supplies one. Two wrong proxies in one gate is worth the note: the
+                            // question "did my case occur" needs a discriminator that can only be
+                            // true one way, not one that merely looks different.
+                            Assert.IsNotEmpty(copy.Live,
+                                $"{sel.Kind} took DescribeActiveLeg's `default:` arm — that arm passes an EMPTY "
+                                + "progress line, and every one of T169's four authors one. The routing was not "
+                                + "added for this kind.");
+
+                            string need1 =
+                                sel.Kind == MarketKind.Handicap
+                                    ? (sel.Line < 0 ? $"{club} TO WIN BY 2+" : $"{club} WITHIN 1 GOAL")
+                                : sel.Kind == MarketKind.PlayerMultiScorer
+                                    ? $"{SweatActiveLegModel.Surname(m.PlayerAt(sel.PlayerIndex).Name)} TO SCORE {(int)sel.Line}+"
+                                : sel.Kind == MarketKind.TotalGoalsOddEven
+                                    ? (sel.Choice == MarketChoice.Odd ? "ODD TOTAL AT FULL TIME" : "EVEN TOTAL AT FULL TIME")
+                                    : $"{((int)sel.Line >= 3 ? "3+" : "2")} GOALS APART AT FULL TIME";
+                            Assert.AreEqual(need1, copy.Need,
+                                $"{sel.Kind}'s NEED rung 1 is not the DECK's. T151/T152 author these verbatim and "
+                                + "this build re-authors nothing.");
+                            reached.Add(sel.Kind);
+                        }
+                }
+                Assert.That(reached, Is.EquivalentTo(new[]
+                {
+                    MarketKind.Handicap, MarketKind.PlayerMultiScorer,
+                    MarketKind.TotalGoalsOddEven, MarketKind.WinningMargin,
+                }), "not all four of T169's kinds were reached by a real offered selection — the ones missing "
+                  + "are UNTESTED, whatever the other assertions above say about the ones that were.");
+                Assert.Greater(marginOneSeen, 0,
+                    "C29: WinningMargin bucket 1 never appeared, so its unauthored-path assertion never ran.");
+                Debug.Log($"[ARMS] all four kinds reached by real offers · bucket-1 margins seen {marginOneSeen} "
+                    + $"· commit {CommitAtMeasurement()}");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        /// <summary>`T168-am`: <b>every club name the TV renders passes through
+        /// <see cref="SweatFlavor.Short"/></b> — asserted on the one path that did not,
+        /// <c>SheetName</c>, and asserted against a club whose CITY IS ACTUALLY PRESENT.
+        ///
+        /// <para>A club whose full name is already one word would pass this test without the fix
+        /// doing anything, which is why the fixture is selected by <c>Name != Short(Name)</c> and
+        /// FAILS when no such club is on the board rather than reporting a vacuous green.</para></summary>
+        [Test]
+        public void T168_the_sheet_name_renders_the_club_in_the_TVs_own_convention()
+        {
+            var go = new GameObject("T168ClubForm");
+            try
+            {
+                var screen = BuildScreen(go);
+                MethodInfo sheetName = typeof(TvSweatScreen).GetMethod(
+                    "SheetName", BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.IsNotNull(sheetName, "TvSweatScreen.SheetName not found — renamed?");
+
+                int checkedRows = 0;
+                foreach (string seed in new[] { "T168-A", "T168-B" })
+                {
+                    var run = new Run(seed, new RunConfig());
+                    foreach (Matchup m in run.CurrentSlate.Matchups)
+                        foreach (MarketOffer o in m.Markets)
+                        {
+                            MarketSelection sel = o.Selection;
+                            string subject = MatchModel.Fields(m, sel).Subject;
+                            if (string.IsNullOrEmpty(subject)) continue;
+                            // Only clubs whose city is really there can prove anything.
+                            if (subject == SweatFlavor.Short(subject)) continue;
+                            var leg = new Leg(m, sel, 2.00);
+                            var name = (string)sheetName.Invoke(null, new object[] { leg });
+                            if (name == null) continue;
+                            // The subject may be a PLAYER (scorer markets); `Short` is last-word-wins
+                            // either way, and the convention is the same one: drop what precedes it.
+                            StringAssert.DoesNotContain(subject.ToUpperInvariant(), name,
+                                $"{sel.Kind} renders '{name}', which still carries the FULL name "
+                                + $"'{subject.ToUpperInvariant()}' — T168-am rules the club token is shortened "
+                                + "at the RENDER, and frame B's three-conventions-on-one-screen is what that "
+                                + "row exists to fix.");
+                            checkedRows++;
+                        }
+                }
+                Assert.Greater(checkedRows, 0,
+                    "C29: no sheet row carried a multi-word subject, so this gate asserted NOTHING. "
+                    + "A club whose name is one word cannot prove a city was dropped.");
+                Debug.Log($"[T168] {checkedRows} sheet rows with a multi-word subject, all shortened "
+                    + $"· commit {CommitAtMeasurement()}");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
         /// <summary>`C58-am2`: a routed width is meaningless without its build state, so the commit
         /// travels with the number. Read from the repo rather than hard-coded, so it cannot go stale.</summary>
         private static string CommitAtMeasurement()
