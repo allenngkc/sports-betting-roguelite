@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 501.** PART C's GATE
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 502 (heartbeat).** Quiet:
+TV running the team-total measurement; DD on its docket item; nothing
+ahead, nothing to land. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 501.** PART C's GATE
 MERGED (8be3ff0 via b60d2bd - the direction meets its shape; the
 stopping-rule defect found and remedied; TV notes the argument it had
 shipped on was incomplete). TV now merging main and running the
