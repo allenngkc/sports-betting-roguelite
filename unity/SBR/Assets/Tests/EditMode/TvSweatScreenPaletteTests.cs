@@ -2361,8 +2361,19 @@ namespace SBR.Tests.EditMode
                 + "backed side once) and FitToColumn (which truncates on a word boundary against "
                 + "the measured column). Assigning leg.DisplayLabel raw is the defect.");
 
-            int at = src.IndexOf("private string LegStatement(", System.StringComparison.Ordinal);
-            Assert.Greater(at, -1, "LegStatement not found — re-point this scan rather than deleting it.");
+            // RE-POINTED, and this scan's own rule is what says to re-point rather than delete.
+            // `T143-am9` (DD batch 195) split `LegStatement` in two: it is now the one-line
+            // `AuthoredStatement(leg) ?? SheetName(leg) ?? DisplayLabel`, and the ARMS — including
+            // this one — moved into `AuthoredStatement`. The split exists because the pending window
+            // must tell an authored arm from a fall-through to `default:`, which a method whose
+            // default is invisible from outside cannot answer.
+            //
+            // THE PREMISE IS UNCHANGED: the Moneyline compact form is still `{CLUB} ML`, named once,
+            // without the fixture. Only the method holding it moved — so this re-points rather than
+            // widening the assertion, which is the distinction `T163`/`T164`/`T143` were re-based on.
+            int at = src.IndexOf("private string AuthoredStatement(", System.StringComparison.Ordinal);
+            Assert.Greater(at, -1, "AuthoredStatement not found — re-point this scan rather than deleting "
+                + "it. It has held LegStatement's authored arms since T143-am9 (batch 195).");
             // SCANNED TO A REAL END MARKER, NEVER A CHARACTER COUNT — and this is the third time this
             // lane has paid for that. The window was `Substring(at, 2200)`; T96's draw row added a
             // dozen lines of reasoning to LegStatement and pushed `{club} ML` past 2200, so the

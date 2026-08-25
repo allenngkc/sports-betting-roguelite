@@ -741,6 +741,11 @@ namespace SBR.Game
         // Anytime-scorer, per leg: true only at the leg's causal identity payoff — see
         // DescribeActiveLeg / OnGoalPlayed. Reset per-leg in BeginStageLeg.
         private bool _scorerRevealedForActiveLeg;
+        // `T152`'s multi-scorer count: the BACKED player's goals AS REVEALED, incremented only at
+        // OnGoalPlayed's named-scorer branch. Reset wherever `_scorerRevealedForActiveLeg` is —
+        // the two are one per-leg scorer state and a reset that moved only one of them would carry a
+        // previous leg's count into a fresh row.
+        private int _pickedScorerGoals;
 
         // ---- input ----
         private InputAction _interact;
@@ -2221,8 +2226,19 @@ namespace SBR.Game
             else if (scorer != null && _ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count)
             {
                 Leg leg = _ticket.Legs[_stageLeg];
-                bool pickedScorer = leg.Selection.Kind == MarketKind.AnytimeScorer
+                // `T152`'s multi-scorer arm needs the BACKED PLAYER'S REVEALED GOAL COUNT, and this
+                // is the one site that knows a revealed goal has a named scorer. The predicate is
+                // widened from AnytimeScorer-only to "this leg's backed player scored", because both
+                // kinds back a player and both ask the same question of this frame.
+                bool backsThisPlayer =
+                    (leg.Selection.Kind == MarketKind.AnytimeScorer
+                     || leg.Selection.Kind == MarketKind.PlayerMultiScorer)
                     && object.ReferenceEquals(scorer, leg.Matchup.PlayerAt(leg.Selection.PlayerIndex));
+                // The COUNT, not a flag — `T152` refused AnytimeScorer's binary here in terms: at one
+                // goal on a `2+` leg the player HAS scored and the leg is NOT won, so `SCORED` would
+                // read as a win. Incremented on the revealed goal, never read off `MatchStatLine`.
+                if (backsThisPlayer && leg.Selection.Kind == MarketKind.PlayerMultiScorer) _pickedScorerGoals++;
+                bool pickedScorer = backsThisPlayer && leg.Selection.Kind == MarketKind.AnytimeScorer;
                 // §4: money/won is gold, not the retired saturated green — LaptopOs.MoneyGood is
                 // the laptop OS's own retired-green token and has no role on this surface.
                 // FLAGGED, tier applied but hue untouched: TV-05 as quoted in ResolveBeat below says
@@ -2596,13 +2612,17 @@ namespace SBR.Game
                 // drops a dangling " ·" on truncation, so a shared row degrades to whole words
                 // instead of a stranded glyph.
                 //
-                // UNTIL THEN this renders the SHIPPED, already-ratified decline row and nothing else.
-                // It is not new copy, it is not §3 part-built, and it does not assert a death (§1:
-                // the legs are PENDING, not dead). It is the one string that is true in this state
-                // under every pre-committed reading: the offer is not presented, and declining is
-                // what the player may do. `deadNames` is read and correct here — what is missing is
-                // the authored form that spends it, not the data.
-                offers = optN;
+                // ═══ N ≥ 2 — §3, BUILT. The TODO above is discharged; its conditions are met and
+                // the paragraph is kept because it records what the branch was waiting on.
+                //
+                // Reading (A) fired at batch 195, so the enumerated shape is the one built here and
+                // there is no hole at any reachable N. See `PendingDeadRows` for the composition,
+                // the `N GO ON` correction, and the measurement that replaced batch 195's stand-in.
+                //
+                // T143-am2's half is unchanged and still gates M/R on `noSingleCallSaves`: the save
+                // offer is NOT presented here, so the two spending rows do not render. That is why
+                // the last row is a dismissal rather than a decline.
+                offers = PendingDeadRows(deadNames);
             }
             else
             {
@@ -2812,6 +2832,7 @@ namespace SBR.Game
             _stoppageGoalCount = 0;
             _marketSuspended = false;
             _scorerRevealedForActiveLeg = false;
+            _pickedScorerGoals = 0;
             // T164: the bed's pregame seed is the value the mirror used to carry here — leg 0's own
             // number, NOT the ticket's — so the crowd opens exactly as it opened before this change.
             _tensionProb = _pendingTensionProb =
@@ -2890,6 +2911,7 @@ namespace SBR.Game
             _stageLeg = legIndex;
             _stageBeatCount = beatCount;
             _scorerRevealedForActiveLeg = false; // fresh leg = fresh scorer-identity gate
+            _pickedScorerGoals = 0;                // ...and a fresh count, T152's arm reads it
             _ledger.ResetForLeg();
             _ledger.ConfigureEndpoint(leg);
             _countLedger = null;
@@ -3077,6 +3099,44 @@ namespace SBR.Game
                     return SweatActiveLegModel.Describe(SweatActiveLegModel.ActiveLegInput.AnytimeScorer(
                         player.Name, _scorerRevealedForActiveLeg));
                 }
+
+                // ---- T169's FOUR. The `default:` below stops being these kinds' arm; it now serves
+                // only the three team totals Allen HOLDS and `WinningMargin`'s unauthored bucket 1.
+                case MarketKind.Handicap:
+                {
+                    // ⚠ THE LEDGER IS NOT BACKED-ANCHORED FOR THIS KIND, AND THE SWAP IS THE FIX.
+                    // `PickedHomeForPresentation` returns true UNCONDITIONALLY for every kind that is
+                    // not Moneyline or AnytimeScorer (`T152-am`), so `_ledger.Picked` is HOME whether
+                    // the ticket backed home or away. A handicap on the AWAY side must compare the
+                    // AWAY margin, so the pair is swapped here — at the site that knows the
+                    // selection, which is the same reason `T96`'s draw routing lives here.
+                    bool backedHome = leg.Selection.Choice != MarketChoice.Away;
+                    int forGoals = backedHome ? _ledger.Picked : _ledger.Opponent;
+                    int againstGoals = backedHome ? _ledger.Opponent : _ledger.Picked;
+                    string club = SweatFlavor.Short(
+                        backedHome ? leg.Matchup.Home.Name : leg.Matchup.Away.Name).ToUpperInvariant();
+                    return SweatActiveLegModel.Describe(SweatActiveLegModel.ActiveLegInput.Handicap(
+                        club, leg.Selection.Line, forGoals, againstGoals));
+                }
+                case MarketKind.WinningMargin:
+                {
+                    // BUCKET 1 IS OFFERED AND UNAUTHORED — it takes the `default:` arm below rather
+                    // than a string coined here. `AuthoredStatement` returns null for it too, so the
+                    // two sites agree by construction instead of by a duplicated condition.
+                    int bucket = (int)leg.Selection.Line;
+                    if (bucket < 2) goto default;
+                    return SweatActiveLegModel.Describe(SweatActiveLegModel.ActiveLegInput.WinningMargin(
+                        bucket, bucket >= TopMarginBucketOf(leg), _ledger.Picked, _ledger.Opponent));
+                }
+                case MarketKind.TotalGoalsOddEven:
+                    return SweatActiveLegModel.Describe(SweatActiveLegModel.ActiveLegInput.TotalGoalsOddEven(
+                        leg.Selection.Choice == MarketChoice.Odd, _ledger.Picked, _ledger.Opponent));
+                case MarketKind.PlayerMultiScorer:
+                {
+                    Player multi = leg.Matchup.PlayerAt(leg.Selection.PlayerIndex);
+                    return SweatActiveLegModel.Describe(SweatActiveLegModel.ActiveLegInput.PlayerMultiScorer(
+                        multi.Name, (int)leg.Selection.Line, _pickedScorerGoals));
+                }
                 default:
                     // ⚠ THIS ARM RETURNED AN ALL-EMPTY COPY, AND THAT IS T130's DEFECT AT SOURCE.
                     //
@@ -3115,8 +3175,55 @@ namespace SBR.Game
             if (leg == null || leg.Matchup == null) return null;
             foreach (MarketSheetRow row in MarketSheet.Build(leg.Matchup).AllRows)
                 if (row.Offer.Selection.Equals(leg.Selection))
-                    return row.Name.ToUpperInvariant();
+                    return ShortenSubject(leg, row.Name.ToUpperInvariant());
             return null;
+        }
+
+        /// <summary>`T168-am` (DD batch 185) IN ONE PLACE: <b>every club name the TV renders passes
+        /// through <see cref="SweatFlavor.Short"/> — the distinctive word, city dropped.</b> The
+        /// identity still comes from <see cref="MarketSheet"/>; only the club FORM is the TV's.
+        ///
+        /// <para>Frame B carried the defect on one screen: the leg row read <c>DULUTH AUDITORS</c>,
+        /// the scorebug <c>AUDITORS</c>, the strip <c>Gravediggers</c> — three renderings of a club
+        /// in two conventions. <c>7dd5686</c> repaired `T130`'s silence by routing the row through
+        /// <c>MarketSheet</c>, which is the LAPTOP's naming; the source is right and what came with
+        /// it is the city. <b>The fix is at the render, not the source — no naming authority
+        /// moves</b>, which is what keeps this from re-opening `S96`.</para>
+        ///
+        /// <para><b>⚠ IT CANNOT BE <c>Short(name)</c>, AND THIS IS THE WHOLE REASON THIS METHOD
+        /// EXISTS.</b> <see cref="SweatFlavor.Short"/> is last-word-wins, so
+        /// <c>Short("DULUTH AUDITORS +1.5")</c> returns <c>"+1.5"</c> — the composed line's tail, not
+        /// its club. The token is LOCATED instead, through <c>MatchModel.Fields</c>' own
+        /// <c>Subject</c>, which is the engine's published answer to "what is the thing backed" and
+        /// is by construction the exact substring <c>NameOf</c> composed the name around.
+        /// <c>MarketSheetRow</c> does not carry the fields (they are a local in
+        /// <c>MarketSheet.Build</c> and are discarded), so the engine is asked again rather than
+        /// parsed.</para>
+        ///
+        /// <para><b>SCOPE, and it is smaller than `T168-am` had to assume.</b> That row was written
+        /// when SIX kinds reached the unauthored path. With `T169`'s four arms built above, the only
+        /// kinds left here are the three team totals Allen HOLDS (`T152-am`) — plus DoubleChance,
+        /// which has left the offered set. Applying <c>Short</c> does NOT rescue them and was never
+        /// claimed to: TV measured the SHORT-club form at 449.5px against a 261.0px band, and the
+        /// four `T156` cases still lose their distinctive word. <b>This shortens a string; it settles
+        /// no market, and `T169`'s escalation stands either way.</b></para>
+        ///
+        /// <para>What it DOES settle is the pending window's worst case: through this path the
+        /// hazard drops from <b>16 of 369</b> names overrunning the 635.0px zone to <b>0 of 152</b>,
+        /// worst 692.5px → 517.2px. Measured at `1c0e400`.</para>
+        ///
+        /// <para>A subject that is not found in the name is left ALONE rather than forced. The
+        /// substitution is only correct when <c>NameOf</c> actually composed around the subject, and
+        /// a name that does not contain it is a shape this method does not understand — the
+        /// containment check is the guard, not an optimisation.</para></summary>
+        private static string ShortenSubject(Leg leg, string name)
+        {
+            if (string.IsNullOrEmpty(name)) return name;
+            string subject = MatchModel.Fields(leg.Matchup, leg.Selection).Subject;
+            if (string.IsNullOrEmpty(subject)) return name;
+            string full = subject.ToUpperInvariant();
+            if (!name.Contains(full)) return name;
+            return name.Replace(full, SweatFlavor.Short(subject).ToUpperInvariant());
         }
 
         private Player ScorerFor(ScoreLedger.StagedGoal goal, Leg leg)
@@ -3479,7 +3586,9 @@ namespace SBR.Game
                     // better than the mid-word cut it replaces. But the DURABLE fix is shorter
                     // AUTHORED copy, and what a leg statement should say is a copy decision this
                     // seat does not hold. This removes the defect; it does not settle the string.
-                    _legRow[i].Need.text = FitOrFallback(_legRow[i].Need, copy.Need, copy.NeedFallback);
+                    // THREE RUNGS, not two — `G1-am11` §3.2/§3.3. `NeedFallback2` is null on every
+                    // arm that has two, and `FitLadder` skips nulls, so nothing else moves.
+                    _legRow[i].Need.text = FitLadder(_legRow[i].Need, copy.Need, copy.NeedFallback, copy.NeedFallback2);
                     _legRow[i].Progress.color = liveInk;
                     _legRow[i].Progress.text = copy.Live;
                 }
@@ -4300,6 +4409,26 @@ namespace SBR.Game
         /// already uses — the row and the scorebug should not disagree about what a club is
         /// called.</para></summary>
         private string LegStatement(Leg leg)
+            => AuthoredStatement(leg) ?? SheetName(leg) ?? leg.DisplayLabel;
+
+        /// <summary>This leg's AUTHORED identity, or <b>null where no form has been authored for its
+        /// kind</b> — the one authority on which arms exist.
+        ///
+        /// <para><b>Split out of <see cref="LegStatement"/> for `T143-am9` (DD batch 195), and the
+        /// split is the point rather than a tidy-up.</b> That row rules the pending window
+        /// *"names the leg by the same identity the ticket column prints"* and, in the same breath,
+        /// *"take `LegStatement`'s AUTHORED arms; do NOT fall through to its `default:`"* — batch
+        /// 192's warning, which stands. A caller cannot honour that against a method whose
+        /// <c>default:</c> is invisible from outside, and a second copy of "which kinds are
+        /// authored" is a fact stated twice that will eventually be stated differently. <b>Null IS
+        /// the answer to "is there an arm", and there is exactly one place it is decided.</b></para>
+        ///
+        /// <para>The number this guard is worth: if the window DID fall through, <b>16 of 369</b>
+        /// composed names overrun its 635.0px zone, the worst
+        /// <c>N LET SAN FRANCISCO LONGHAULERS UNDER 4.5 CORNERS DIE</c> at 692.5px. Through the
+        /// authored arms it is <b>0 of 125</b>, and through the club-alone path <b>0 of 20</b>.
+        /// Measured at `1c0e400`.</para></summary>
+        private string AuthoredStatement(Leg leg)
         {
             // G1: NEED states the REQUIREMENT, this states the IDENTITY. A live row asks "what does
             // my money still need"; every other row asks "which bet is this". Where those two
@@ -4351,6 +4480,37 @@ namespace SBR.Game
                     // Same surname rule as NEED, from the same helper — two copies of one convention
                     // is how the two halves of a statement drift apart.
                     return $"{SweatActiveLegModel.Surname(leg.Matchup.PlayerAt(sel.PlayerIndex).Name)} ANYTIME";
+
+                // ---- T169's FOUR COMPACT FORMS. Authored at `T151`/`T152` and extended by
+                // `G1-am11` §3; unbuilt until now, which is why every one of these kinds reached the
+                // `default:` below and named itself in the LAPTOP's convention (`T168`).
+                case MarketKind.Handicap:
+                    // `{CLUB} ±1.5` — the market's own notation, and `G1-am11` §3.3's rung 3 is
+                    // deliberately IDENTICAL to this compact (same sanction as the totals markets).
+                    // The club is Short'd HERE, at the render, which is `T168-am` in one line: the
+                    // identity may come from `MarketSheet`, the club FORM is the TV's.
+                    return $"{SweatFlavor.Short(sel.Choice == MarketChoice.Away ? leg.Matchup.Away.Name : leg.Matchup.Home.Name).ToUpperInvariant()}"
+                         + $" {sel.Line.ToString("+0.0;-0.0", CultureInfo.InvariantCulture)}";
+                case MarketKind.PlayerMultiScorer:
+                    // `{SURNAME} {n}+`. Same helper as AnytimeScorer above, for the same reason —
+                    // and it is what stops the sheet's FULL player name reaching this slot.
+                    return $"{SweatActiveLegModel.Surname(leg.Matchup.PlayerAt(sel.PlayerIndex).Name)} {(int)sel.Line}+";
+                case MarketKind.TotalGoalsOddEven:
+                    // `TOTAL ODD`, not `ODD GOALS` — *odd goals* reads as UNUSUAL goals, and the
+                    // market's structure is total → parity (`T151`). The engine's own `ODD`/`EVEN`
+                    // is a bare parity with no market, which is what the `default:` was printing.
+                    return sel.Choice == MarketChoice.Odd ? "TOTAL ODD" : "TOTAL EVEN";
+                case MarketKind.WinningMargin:
+                    // `MARGIN 2` / `MARGIN 3+`, not the engine's bare `2 GOALS`, which collides with
+                    // the total-goals family in this very column (`T151`).
+                    //
+                    // ⚠ BUCKET 1 FALLS THROUGH ON PURPOSE. `MatchModel.BuildOffers` offers margins
+                    // 1, 2 and 3 (verified against a real board, not read off the source), and
+                    // `T151`/`G1-am11` §3.2 author 2 and 3+ ONLY. A `MARGIN 1` coined here would be
+                    // a short form nobody wrote — G1's defect class, and the exact improvisation the
+                    // rule exists to stop. It takes the unauthored path and is ROUTED to the DD.
+                    if ((int)sel.Line < 2) return null;
+                    return $"MARGIN {((int)sel.Line >= TopMarginBucketOf(leg) ? $"{(int)sel.Line}+" : ((int)sel.Line).ToString(CultureInfo.InvariantCulture))}";
                 default:
                     // A seventh market arrives here unauthored, and G1 names that as not covered. The
                     // old fallback was `leg.DisplayLabel` — and THE CONSOLE ALREADY RULED THAT THE
@@ -4364,8 +4524,28 @@ namespace SBR.Game
                     // and the console all print through (S96, §6.5) — so an unauthored kind names
                     // the bet in the same words the BOARD offered it in. Still no copy invented
                     // here, which is what G1 actually asks for.
-                    return SheetName(leg) ?? leg.DisplayLabel;
+                    //
+                    // NULL rather than the sheet name: `LegStatement` above applies the fallback, and
+                    // `PendingLegName` must be able to tell "authored" from "fell through". See
+                    // AuthoredStatement's own doc.
+                    return null;
             }
+        }
+
+        /// <summary>Which margin bucket is the engine's "or more" one, read from the ENGINE's own
+        /// published field rather than from its constant.
+        ///
+        /// <para><c>MatchModel.TopMarginBucket</c> is <c>internal</c> to the engine assembly, so this
+        /// surface cannot see it — and duplicating the literal <c>3</c> here is precisely the
+        /// two-copies-of-one-rule defect `T62` names. <c>MatchModel.Fields</c> IS public and already
+        /// renders the distinction (<c>{b}+ GOALS</c> for the top bucket, <c>{b} GOAL(S)</c>
+        /// otherwise), so the engine is asked rather than copied. Stringly, and deliberately so: the
+        /// alternative is a second definition of a rule the engine owns.</para></summary>
+        private static int TopMarginBucketOf(Leg leg)
+        {
+            int b = (int)leg.Selection.Line;
+            string line = MatchModel.Fields(leg.Matchup, leg.Selection).Line;
+            return line != null && line.StartsWith($"{b}+", System.StringComparison.Ordinal) ? b : b + 1;
         }
 
         /// <summary>`T143`: the pending window's name for ONE dying leg — <b>the club and its
@@ -4423,7 +4603,40 @@ namespace SBR.Game
         private string PendingLegName(Leg leg)
         {
             if (leg == null) return null;
-            // NO ANCHOR, NO CLUB — take the authored identity whole rather than borrowing a side.
+            // ═══ `T143-am9` (DD batch 195): THE WINDOW NAMES THE LEG BY THE SAME IDENTITY THE
+            // TICKET COLUMN PRINTS. One bet, one name, across two zones of one surface — `S96`'s
+            // one-composer principle applied INSIDE the TV, and the same fault frame B carried when
+            // one club appeared in two conventions on one screen.
+            //
+            // WHAT THIS REPLACED, AND WHY THE PREVIOUS READING WAS TOO COARSE RATHER THAN WRONG:
+            // this method used to return the `AnchorSide` club, plus a `±1.5` qualifier for Handicap
+            // alone. That choice was made to avoid `T96`'s defect — `PickedHomeForPresentation`
+            // collapses null to HOME and would name a club the ticket never backed — and the
+            // reasoning was right. But `AnchorSide` answers for `AnytimeScorer` and
+            // `PlayerMultiScorer` through `PlayerSide`, so A BET ON A PLAYER WAS NAMED BY HIS CLUB:
+            // the column printed `LANYARD ANYTIME` and the window would have said
+            // `N LET AUDITORS DIE`. `T96`'s own shape — a row borrowing another market's identity —
+            // reached by the safer route.
+            //
+            // AND THE CLUB ALONE DID NOT DISTINGUISH. A Moneyline, a team total and a scorer leg on
+            // the SAME club rendered the same string; on a same-match ticket (`T142` ships them) two
+            // legs sit on one fixture and die at one whistle, so the player could not tell WHICH of
+            // his two AUDITORS bets it was. `T143` exists so he does not have to work that out, and
+            // a name that does not distinguish is worse than a count that never claimed to.
+            //
+            // AUTHORED ARMS ONLY — batch 192's warning, which `T143-am9` restates. Falling through
+            // to `LegStatement`'s `default:` would reach `MarketSheet`, and 16 of 369 of those names
+            // OVERRUN this 635.0px zone (worst 692.5px). `AuthoredStatement` returns null instead of
+            // a sheet name precisely so this call site can tell the two apart.
+            string authored = AuthoredStatement(leg);
+            if (authored != null) return authored;
+
+            // ---- NO AUTHORED ARM: the club alone, exactly as before, and NOTHING is invented.
+            //
+            // `T143-am9` leaves this half standing — *"the unauthored kinds still have no name and
+            // still ride Allen's scope call, exactly as batch 192 left them."* Today that is the
+            // three team totals Allen HOLDS (`T152-am`) and `WinningMargin`'s bucket 1, which is
+            // OFFERED and unauthored (`T151`/`G1-am11` §3.2 stop at 2) and is routed to the DD.
             //
             // `AnchorSide` THROWS on a kind it has no arm for, and that is K17-cl's deliberate
             // design, not an oversight to soften here: it is not new exposure either, because every
@@ -4431,18 +4644,68 @@ namespace SBR.Game
             // stats panel, the ledger endpoint) long before this window can open. A sixteenth market
             // kind fails at the engine's table, which is where it should fail.
             Side? anchor = MatchModel.AnchorSide(leg);
-            if (anchor == null) return LegStatement(leg);
+            // No anchor and no authored arm: there is no club to name and no form to take, so the
+            // sheet name is the last resort rather than a blank. `T143-am5`'s full-club hazard is
+            // retired at source — `SheetName` now applies `Short` per `T168-am`.
+            if (anchor == null) return SheetName(leg) ?? leg.DisplayLabel;
 
-            string club = SweatFlavor.Short(
+            return SweatFlavor.Short(
                 anchor == Side.Home ? leg.Matchup.Home.Name : leg.Matchup.Away.Name).ToUpperInvariant();
-            // THE SIGN IS THE ENGINE'S OWN RULED FORMAT, read back rather than re-derived: the
-            // handicap line is SIGNED and applied TO THE BACKED SIDE (home −1.5 must win by two,
-            // away +1.5 may lose by one), and `MatchModel.Fields`' handicap arm prints it as
-            // `{hteam} {Line:+0.0;-0.0}`. Reusing that format string is what stops a sign convention
-            // drifting between two surfaces that must agree about one bet.
-            return leg.Selection.Kind == MarketKind.Handicap
-                ? $"{club} {leg.Selection.Line.ToString("+0.0;-0.0", CultureInfo.InvariantCulture)}"
-                : club;
+        }
+
+        /// <summary>`S85-am3` (DD batch 193) §3's separator, already on this surface as
+        /// <c>PreviewOf</c>'s: three spaces, U+00B7, three spaces. Named once so the two sites cannot
+        /// drift to different spacing — a one-character divergence is how the last five phantoms
+        /// started.</summary>
+        private const string PendingSeparator = "   ·   ";
+
+        /// <summary>`T143` §3 (DD batch 189, decline word corrected by `S85-am3` at batch 193): the
+        /// ≥2 composition — <b>every leg that died, named, then the refusal and the dismissal.</b>
+        ///
+        /// <para><b>Why this could be built now and not before.</b> Batch 189 §4 recorded a hole at
+        /// three dead legs — four rows in a three-row zone — and batch 193 showed BOTH premises
+        /// stale: <c>RunConfig.MaxLegs</c> ships at 4, so N is bounded at four enumerable cases
+        /// rather than arbitrary; and the 870.4px width that made ≥3 look impossible had measured a
+        /// placeholder the DD had already retired. Batch 193 pre-committed both readings and batch
+        /// 195 fired reading <b>(A)</b>: two names share a row, so N=2 → one name row + shared;
+        /// N=3 → two names + one name + shared; N=4 → two + two + shared. <b>Every case inside the
+        /// zone, and `T143`'s "names every leg that died" stands unamended.</b></para>
+        ///
+        /// <para><b>THE MARGIN THAT WITHDRAWAL RESTS ON IS 35× WIDER THAN BATCH 195 KNEW, and this
+        /// lane measured it before building.</b> Batch 195's 631.6-against-635.0 (3.4px) was taken
+        /// on <c>SPREADSHEETS UNDER 3.5</c> twice — a club plus a line, <b>a form neither the old
+        /// `PendingLegName` nor `T143-am9`'s rule can emit</b>. Under am9 the worst pair is
+        /// <c>UNDER 10.5 CORNERS · PAVEMENT ANYTIME</c> at <b>514.6px, 120.4px spare</b>, measured
+        /// both over any pair and over SAME-FIXTURE pairs only — which is the honest constraint,
+        /// because one whistle is one fixture. `T143-am7` rules a `FITS` conclusion survives a
+        /// stand-in LONGER than the real copy; it was longer, so <b>the withdrawal stands a
+        /// fortiori</b>. The gate `T143-am8` asks for is pinned to the real number, not the
+        /// stand-in.</para>
+        ///
+        /// <para><b><c>N GO ON</c>, not <c>N LET THEM DIE</c>.</b> `S85-am3`: at two or more dead,
+        /// `T143-am2` removes the save offer — so nothing the player does changes the outcome, and
+        /// <c>LET THEM DIE</c> would ask permission he does not hold. At ONE dead leg with an offer
+        /// on screen, declining IS a choice and <c>LET IT DIE</c> is exact. <b>The two shapes are
+        /// genuinely different and the words must be.</b> The window here is a NOTICE and its last
+        /// row is a DISMISSAL — and <c>NO ONE CALL SAVES THIS</c> is what makes it honest rather
+        /// than curt, stating the refusal `S85` requires be SHOWN before offering the only thing
+        /// left.</para>
+        ///
+        /// <para>Names are packed two to a row and the LAST row takes the remainder, so a stranded
+        /// odd name shares with nothing rather than being dropped. Ticket order throughout — the
+        /// order the column already prints them in.</para></summary>
+        private static string PendingDeadRows(IReadOnlyList<string> names)
+        {
+            const string refusal = "NO ONE CALL SAVES THIS" + PendingSeparator + "N GO ON";
+            if (names == null || names.Count == 0) return refusal;
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < names.Count; i += 2)
+            {
+                sb.Append(names[i]);
+                if (i + 1 < names.Count) sb.Append(PendingSeparator).Append(names[i + 1]);
+                sb.Append('\n');
+            }
+            return sb.Append(refusal).ToString();
         }
 
         /// <summary>G1: the authored form if it fits, else the authored SHORTER line, else the
@@ -4454,11 +4717,40 @@ namespace SBR.Game
         /// sentence with its end cut off. <see cref="FitToColumn"/> remains only as the structural
         /// guard against broken glyphs and should not be reached by shipped copy.</para></summary>
         private static string FitOrFallback(TMP_Text target, string primary, string fallback)
+            => FitLadder(target, primary, fallback);
+
+        /// <summary>The same rule as <see cref="FitOrFallback"/> over N authored rungs: the first
+        /// that fits, else the truncation backstop on the LAST (shortest) authored rung.
+        ///
+        /// <para><b>Added rather than widening <see cref="FitOrFallback"/>'s signature, and the
+        /// reason is mechanical:</b> that two-rung form is reached BY REFLECTION from four EditMode
+        /// gates, which invoke it with three boxed arguments. A <c>params</c> parameter changes the
+        /// invocation shape and silently breaks every one of them — a green suite that stopped
+        /// measuring, which is this lane's own trap. <c>FitOrFallback</c> now delegates here, so the
+        /// two can never disagree about what fits.</para>
+        ///
+        /// <para><b>Two of `T169`'s four kinds need three rungs</b> and the register says so:
+        /// `WinningMargin`'s rungs 1 and 2 BOTH miss the 261.0px band (366.4/268.8 for the 2 bucket,
+        /// 380.8/283.2 for 3+, measured), so without a third the row lands on the floor — which
+        /// `T161` measured as the dangling <c>2 GOALS APART AT</c>. `G1-am11` §3.2's
+        /// <c>2 APART AT FT</c> clears at 181.7px.</para>
+        ///
+        /// <para>Null and empty rungs are SKIPPED rather than treated as authored: an arm with two
+        /// rungs passes null for the third, and a null must not become the truncation subject.
+        /// §8's rule is unchanged — copy "truncates or chooses a shorter authored line; it never
+        /// shrinks", and truncation stays the floor.</para></summary>
+        private static string FitLadder(TMP_Text target, params string[] rungs)
         {
-            if (Fits(target, primary)) return primary;
-            if (!string.IsNullOrEmpty(fallback) && Fits(target, fallback)) return fallback;
-            // Both missed: clip the better of the two on a word boundary rather than emit nothing.
-            return FitToColumn(target, string.IsNullOrEmpty(fallback) ? primary : fallback);
+            string last = null;
+            for (int i = 0; i < rungs.Length; i++)
+            {
+                if (string.IsNullOrEmpty(rungs[i])) continue;
+                if (Fits(target, rungs[i])) return rungs[i];
+                last = rungs[i];
+            }
+            // Every authored rung missed: clip the SHORTEST one on a word boundary rather than emit
+            // nothing. `last` is the last non-empty rung, which the ladder orders shortest-last.
+            return FitToColumn(target, last);
         }
 
         /// <summary>T69/TV-12/13: fit a statement to its measured column by dropping whole words.
