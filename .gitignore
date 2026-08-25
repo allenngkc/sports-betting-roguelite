@@ -40,3 +40,4 @@ evidence/
 # Design-evidence frame sets stay on disk, never in history (frame-sets-stay-untracked, 2026-08-16; made repo-wide 2026-08-20 - per-directory ignores silently defaulted new docks to committable). Already-tracked legacy PNGs are unaffected.
 docs/design/dd-import/**/*.png
 docs/design/register-export.json
+docs/design/linear-import/context-packs/_gen-*.log

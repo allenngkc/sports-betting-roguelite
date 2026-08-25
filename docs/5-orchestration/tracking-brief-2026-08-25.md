@@ -190,6 +190,15 @@ posted to the issue on merge). Rebuilding the runtime buys nothing.
   untruncated; (2) Linear's markdown normalizer re-flows nested emphasis
   around inline code — cosmetic, but rulings should be checked for it.
 
+- **2026-08-25 — full import STAGED.** Six context packs generated from canon
+  (`docs/design/linear-import/context-packs/`, 6–9k chars each, `TO CONFIRM`
+  only where the docs are silent). Batches: TV 269 · Laptop 131 ·
+  Cross-surface 56 · Room 43 · Console 22 · Phone 8 = 529 issues, laws
+  excluded, dry-run issues moved not duplicated. Importer is mechanical and
+  idempotent (`tools/linear-import.py`, checkpointed). The switch is
+  pre-written (`linear-switch-2026-08-25.md`). **Blocked only on the Linear
+  API key at `~/.linear_api_key`.**
+
 ## Phases
 
 - P1 — connect MCP, write the export script, dry-run import, charter updates.
