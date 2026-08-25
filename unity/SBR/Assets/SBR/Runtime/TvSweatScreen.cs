@@ -738,14 +738,63 @@ namespace SBR.Game
         private float _cashOutScale = 1f;
         private float _cashOutFlash;
         private int _cashOutRoundShown;
-        // Anytime-scorer, per leg: true only at the leg's causal identity payoff — see
-        // DescribeActiveLeg / OnGoalPlayed. Reset per-leg in BeginStageLeg.
-        private bool _scorerRevealedForActiveLeg;
-        // `T152`'s multi-scorer count: the BACKED player's goals AS REVEALED, incremented only at
-        // OnGoalPlayed's named-scorer branch. Reset wherever `_scorerRevealedForActiveLeg` is —
-        // the two are one per-leg scorer state and a reset that moved only one of them would carry a
-        // previous leg's count into a fresh row.
-        private int _pickedScorerGoals;
+        // ═══ PER-LEG SCORER STATE — `T140-am8` (DD batch 199). BOTH ARRAYS, AND THAT IS THE RULING.
+        //
+        // These were two SCALARS, and the scalar was the defect: `OnGoalPlayed` resolved them against
+        // `_ticket.Legs[_stageLeg]`, and `_stageLeg` is the telling's ANCHOR. **The anchor answers
+        // WHICH MATCH IS ON THE STAGE. It was being asked WHICH BETS ARE COUNTING**, and under arm A
+        // those are different questions — a fixture can carry several legs.
+        //
+        // `T140-am8` names it a UNIT error rather than a missing loop, which is what stops it
+        // recurring: **a per-leg quantity is computed per leg.** And the flag's own old name carried
+        // the error — *the active leg*, singular, is the phrase `SweatActiveLegModel` retired in
+        // terms. **One flag cannot serve N legs**: a per-leg counter behind a shared reveal flag
+        // would reveal one leg's scorer on ANOTHER leg's causal payoff, which is half a fix and the
+        // worse half. They change together or not at all.
+        //
+        // Indexed by TICKET LEG INDEX and sized with the ticket, exactly as `_presentedResolved` is,
+        // and read bounds-safely for the same stated reason: several readers walk `_legRow`'s fixed
+        // slot count rather than the ticket's legs.
+
+        /// <summary>Anytime-scorer, PER LEG: true only at that leg's own causal identity payoff —
+        /// see DescribeActiveLeg / OnGoalPlayed.</summary>
+        private bool[] _scorerRevealed = System.Array.Empty<bool>();
+        /// <summary>`T152`'s multi-scorer count, PER LEG: that leg's backed player's goals AS
+        /// REVEALED, incremented only at OnGoalPlayed's named-scorer branch.</summary>
+        private int[] _pickedScorerGoals = System.Array.Empty<int>();
+
+        /// <summary>Sizes both per-leg scorer arrays to the current ticket and clears them. Same
+        /// shape and same call sites as <see cref="ResetPresentedResolved"/> — they are the ticket's
+        /// per-leg state and they are reset together or one of them goes stale.</summary>
+        private void ResetScorerState()
+        {
+            int count = _ticket != null ? _ticket.Legs.Count : 0;
+            if (_scorerRevealed.Length != count) _scorerRevealed = new bool[count];
+            else System.Array.Clear(_scorerRevealed, 0, count);
+            if (_pickedScorerGoals.Length != count) _pickedScorerGoals = new int[count];
+            else System.Array.Clear(_pickedScorerGoals, 0, count);
+        }
+
+        /// <summary>Clears the per-leg scorer state for every leg of ONE TELLING. Called from
+        /// <c>BeginStageLeg</c>, whose <paramref name="anchorLeg"/> is the telling's anchor: the
+        /// anchor selects the MATCH, and every leg riding that match gets a fresh count and a fresh
+        /// reveal gate because they all start together.</summary>
+        private void ResetScorerStateForTelling(int anchorLeg)
+        {
+            foreach (int i in LegsOfFixtureContaining(anchorLeg))
+            {
+                if (i < 0) continue;
+                if (i < _scorerRevealed.Length) _scorerRevealed[i] = false;
+                if (i < _pickedScorerGoals.Length) _pickedScorerGoals[i] = 0;
+            }
+        }
+
+        /// <summary>Whether leg <paramref name="i"/>'s backed scorer has been revealed. Bounds-safe
+        /// by design, as <see cref="IsPresentedResolved"/> is and for the same reason.</summary>
+        private bool ScorerRevealed(int i) => i >= 0 && i < _scorerRevealed.Length && _scorerRevealed[i];
+
+        /// <summary>Leg <paramref name="i"/>'s revealed backed-player goal count. Bounds-safe.</summary>
+        private int PickedScorerGoals(int i) => i >= 0 && i < _pickedScorerGoals.Length ? _pickedScorerGoals[i] : 0;
 
         // ---- input ----
         private InputAction _interact;
@@ -2247,20 +2296,49 @@ namespace SBR.Game
             }
             else if (scorer != null && _ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count)
             {
+                // ═══ EVERY LIVE LEG ON THIS TELLING, NOT THE ANCHOR — `T140-am8` (DD batch 199).
+                //
+                // THIS IS THE BET QUESTION, and it is the one read in this method that had the wrong
+                // unit. `_stageLeg` selects the MATCH that is staged; it never selects the set of
+                // legs whose counters advance. The legs of that match are taken FROM THE TICKET
+                // rather than from a presentation cache, so "which bets are counting" is answered by
+                // the ticket's own grouping — the anchor still picks the match, which is exactly what
+                // the discriminator says it is for.
+                //
+                // ⚠ ORIENTATION IS DELIBERATELY NOT SETTLED HERE. `ScorerFor` is asked ONCE, against
+                // the anchor, and its answer — WHO SCORED — is a match fact that every leg then tests
+                // its own bet against. Two legs on one match may back opposite sides, so *picked* is
+                // ambiguous under N-live; that is `T140-am2`'s owed item and Allen has not seen it.
+                // Resolving the scorer per leg would let this counter fix quietly decide it.
+                foreach (int li in LegsOfFixtureContaining(_stageLeg))
+                {
+                    if (li < 0 || li >= _ticket.Legs.Count) continue;
+                    Leg liveLeg = _ticket.Legs[li];
+                    // `T152`'s multi-scorer arm needs the BACKED PLAYER'S REVEALED GOAL COUNT, and
+                    // this is the one site that knows a revealed goal has a named scorer. The
+                    // predicate covers both player kinds, because both back a player and both ask the
+                    // same question of this frame.
+                    bool backsThisPlayer =
+                        (liveLeg.Selection.Kind == MarketKind.AnytimeScorer
+                         || liveLeg.Selection.Kind == MarketKind.PlayerMultiScorer)
+                        && object.ReferenceEquals(scorer, liveLeg.Matchup.PlayerAt(liveLeg.Selection.PlayerIndex));
+                    if (!backsThisPlayer) continue;
+                    // The COUNT, not a flag — `T152` refused AnytimeScorer's binary here in terms: at
+                    // one goal on a `2+` leg the player HAS scored and the leg is NOT won, so
+                    // `SCORED` would read as a win. Incremented on the revealed goal, never read off
+                    // `MatchStatLine`.
+                    if (liveLeg.Selection.Kind == MarketKind.PlayerMultiScorer && li < _pickedScorerGoals.Length)
+                        _pickedScorerGoals[li]++;
+                    // EACH LEG'S OWN REVEAL GATE. A shared flag would reveal one leg's scorer on
+                    // another leg's causal payoff — `T140-am8` calls that the worse half of a half
+                    // fix, and it is why the flag moved with the counter rather than after it.
+                    if (liveLeg.Selection.Kind == MarketKind.AnytimeScorer && li < _scorerRevealed.Length)
+                        _scorerRevealed[li] = true;
+                }
+
                 Leg leg = _ticket.Legs[_stageLeg];
-                // `T152`'s multi-scorer arm needs the BACKED PLAYER'S REVEALED GOAL COUNT, and this
-                // is the one site that knows a revealed goal has a named scorer. The predicate is
-                // widened from AnytimeScorer-only to "this leg's backed player scored", because both
-                // kinds back a player and both ask the same question of this frame.
-                bool backsThisPlayer =
-                    (leg.Selection.Kind == MarketKind.AnytimeScorer
-                     || leg.Selection.Kind == MarketKind.PlayerMultiScorer)
+                bool pickedScorer = leg.Selection.Kind == MarketKind.AnytimeScorer
                     && object.ReferenceEquals(scorer, leg.Matchup.PlayerAt(leg.Selection.PlayerIndex));
-                // The COUNT, not a flag — `T152` refused AnytimeScorer's binary here in terms: at one
-                // goal on a `2+` leg the player HAS scored and the leg is NOT won, so `SCORED` would
-                // read as a win. Incremented on the revealed goal, never read off `MatchStatLine`.
-                if (backsThisPlayer && leg.Selection.Kind == MarketKind.PlayerMultiScorer) _pickedScorerGoals++;
-                bool pickedScorer = backsThisPlayer && leg.Selection.Kind == MarketKind.AnytimeScorer;
                 // §4: money/won is gold, not the retired saturated green — LaptopOs.MoneyGood is
                 // the laptop OS's own retired-green token and has no role on this surface.
                 // FLAGGED, tier applied but hue untouched: TV-05 as quoted in ResolveBeat below says
@@ -2280,7 +2358,7 @@ namespace SBR.Game
                 _flavorScale = 1.12f;
                 // SweatActiveLegModel's ScorerRevealed gate: true only at this exact causal
                 // identity payoff, matching the model's own documented contract.
-                if (pickedScorer) _scorerRevealedForActiveLeg = true;
+                // (the per-leg reveal gates are set in the telling loop above — `T140-am8`)
             }
         }
 
@@ -2853,8 +2931,7 @@ namespace SBR.Game
             _audioUrgency = 0f;
             _stoppageGoalCount = 0;
             _marketSuspended = false;
-            _scorerRevealedForActiveLeg = false;
-            _pickedScorerGoals = 0;
+            ResetScorerState();
             // T164: the bed's pregame seed is the value the mirror used to carry here — leg 0's own
             // number, NOT the ticket's — so the crowd opens exactly as it opened before this change.
             _tensionProb = _pendingTensionProb =
@@ -2932,8 +3009,10 @@ namespace SBR.Game
             if (_stage == null) return;
             _stageLeg = legIndex;
             _stageBeatCount = beatCount;
-            _scorerRevealedForActiveLeg = false; // fresh leg = fresh scorer-identity gate
-            _pickedScorerGoals = 0;                // ...and a fresh count, T152's arm reads it
+            // FRESH TELLING = FRESH GATES AND FRESH COUNTS, for every leg riding this match, not
+            // just the anchor. `legIndex` is the anchor and selects the MATCH; the legs of that
+            // match all start together, so they all reset together (`T140-am8`).
+            ResetScorerStateForTelling(legIndex);
             _ledger.ResetForLeg();
             _ledger.ConfigureEndpoint(leg);
             _countLedger = null;
@@ -3071,7 +3150,11 @@ namespace SBR.Game
         /// <c>MatchStatLine</c> directly, and never a locked endpoint. The model's own factory
         /// signatures (plain int/double/bool/string) make that the only thing this method CAN
         /// pass, by construction.</summary>
-        private SweatActiveLegModel.ActiveLegCopy DescribeActiveLeg(Leg leg)
+        /// <summary>`T140-am8`: takes the leg's TICKET INDEX as well as the leg, because two of
+        /// its arms read PER-LEG state (<c>_scorerRevealed</c>, <c>_pickedScorerGoals</c>) and a
+        /// describer that could not say WHICH leg it was describing is how those became scalars in
+        /// the first place. Both call sites already have the index in scope.</summary>
+        private SweatActiveLegModel.ActiveLegCopy DescribeActiveLeg(Leg leg, int legIndex)
         {
             switch (leg.Selection.Kind)
             {
@@ -3119,7 +3202,7 @@ namespace SBR.Game
                 {
                     Player player = leg.Matchup.PlayerAt(leg.Selection.PlayerIndex);
                     return SweatActiveLegModel.Describe(SweatActiveLegModel.ActiveLegInput.AnytimeScorer(
-                        player.Name, _scorerRevealedForActiveLeg));
+                        player.Name, ScorerRevealed(legIndex)));
                 }
 
                 // ---- T169's FOUR. The `default:` below stops being these kinds' arm; it now serves
@@ -3157,7 +3240,7 @@ namespace SBR.Game
                 {
                     Player multi = leg.Matchup.PlayerAt(leg.Selection.PlayerIndex);
                     return SweatActiveLegModel.Describe(SweatActiveLegModel.ActiveLegInput.PlayerMultiScorer(
-                        multi.Name, (int)leg.Selection.Line, _pickedScorerGoals));
+                        multi.Name, (int)leg.Selection.Line, PickedScorerGoals(legIndex)));
                 }
                 default:
                     // ⚠ THIS ARM RETURNED AN ALL-EMPTY COPY, AND THAT IS T130's DEFECT AT SOURCE.
@@ -3575,7 +3658,7 @@ namespace SBR.Game
                     // The compact line is blanked rather than reused: it printed leg.DisplayLabel,
                     // which IS the authored statement, so leaving it would print the statement twice
                     // at two different sizes. NEED is the one place it appears on a live row.
-                    SweatActiveLegModel.ActiveLegCopy copy = DescribeActiveLeg(leg);
+                    SweatActiveLegModel.ActiveLegCopy copy = DescribeActiveLeg(leg, i);
                     // The live form replaces the compact one entirely — statement, price and chip
                     // all clear. §7 bans duplicating a fact already on the surface, and the live
                     // row's NEED carries the statement (T24: "state survives in the word, price in
@@ -3729,7 +3812,7 @@ namespace SBR.Game
                 }
                 else if (IsLiveShown(i))
                 {
-                    outcomes.Add(DescribeActiveLeg(leg).Outcome);
+                    outcomes.Add(DescribeActiveLeg(leg, i).Outcome);
                 }
                 else
                 {

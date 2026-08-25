@@ -79,7 +79,11 @@ namespace SBR.Tests.EditMode
                     object copy;
                     try
                     {
-                        copy = describe.Invoke(screen, new object[] { leg });
+                        // `T140-am8` (batch 199) gave DescribeActiveLeg a LEG INDEX: two of its
+                        // arms read per-leg scorer state, and a describer that could not say WHICH
+                        // leg it was describing is how that state came to be a scalar. Index 0 —
+                        // this pin builds a one-leg ticket, so 0 IS the leg it constructed.
+                        copy = describe.Invoke(screen, new object[] { leg, 0 });
                     }
                     catch (TargetInvocationException ex)
                     {

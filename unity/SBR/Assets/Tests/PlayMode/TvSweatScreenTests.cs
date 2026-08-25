@@ -1583,7 +1583,9 @@ namespace SBR.Tests.PlayMode
                 + "turns on it and must fail rather than silently drop the invariant.");
 
             int framesSampled = 0, state1Cases = 0, state2Cases = 0;
-            string state1Seed = null, state2Seed = null;
+            string state1Seed = null, state2Seed = null, bothStatesSeed = null;
+            int splitState1 = 0, splitState2 = 0;
+            string splitState1Seed = null, splitState2Seed = null;
             var searchLog = new List<string>();
 
             couch.OnInteract(null);
@@ -1676,31 +1678,51 @@ namespace SBR.Tests.PlayMode
 
                 searchLog.Add($"{seed}: frames={frames} state1={s1} state2={s2}");
                 framesSampled += frames;
-                // ⚠ BOTH STATES ARE CERTIFIED, BUT NO LONGER NECESSARILY BY ONE SEED — and this is a
-                // consequence of `T94`'s closure, reported rather than absorbed.
+
+                // ═══ A BOTH-STATES SEED IS PREFERRED — `T140-am7` (DD batch 199), and the reason is
+                // this file's own neighbour.
                 //
-                // The 2026-08-17 search found ONE seed in twelve carrying both, and the seam's build
-                // showed that seed's state 2 was the pre-emption artefact. Re-run under `T140-am5`,
-                // the twelve split cleanly: several reach state 1 and never state 2, and
-                // `STATS-MULTI-2` reaches state 2 — genuinely, with the stage on leg 1's own fixture
-                // — and never state 1. **No seed carries both any more.**
+                // §5 requires both states CERTIFIED; it never required one artefact, and its closing
+                // note says so — *"the construction is a lane call; the states that must be certified
+                // are not."* So a split across two seeds is compliant. **It is still weaker, and the
+                // weakness is specific: TWO SEEDS CERTIFY THE WORD AT TWO STATES; ONLY ONE TICKET
+                // PASSING THROUGH BOTH CAN CATCH A VALUE THAT FAILS TO UPDATE ON THE TRANSITION.** A
+                // footer computed once and cached would read correctly on two separate runs and
+                // stalely on one — and **a stale cached flag is exactly the defect the seam in this
+                // same commit fixed**, one field away in this same file.
                 //
-                // §5 requires BOTH STATES CERTIFIED; it does not require one seed to carry them, and
-                // that was never the claim — it was how the old search happened to land. Certifying
-                // each state on a seed that genuinely produces it is the SAME claim, and neither
-                // state's definition is relaxed by an inch: state 2 still demands leg 1 live on its
-                // own fixture with the footer reading STAKE. **This is not widening the gate to match
-                // the seed; it is the gate no longer depending on a coincidence that the fix
-                // removed.** Routed, because whether §5 wants one construction is the DD's.
-                if (s1 > state1Cases) { state1Cases = s1; state1Seed = seed; }
-                if (s2 > state2Cases) { state2Cases = s2; state2Seed = seed; }
-                if (state1Cases > 0 && state2Cases > 0) break;
+                // FRAME COUNT IS NOT THE THING TO MAXIMISE. The assertion is `> 0`, so 11 satisfies
+                // it precisely as 49 does; the old max-picking is what hid `STATS-MULTI-2` carrying
+                // both. **Take the FIRST seed that carries both and stop.**
+                if (s1 > 0 && s2 > 0)
+                {
+                    bothStatesSeed = seed;
+                    state1Cases = s1; state2Cases = s2;
+                    state1Seed = seed; state2Seed = seed;
+                    break;
+                }
+                // Otherwise remember the FIRST seed to show each state, as the fallback the ruling
+                // allows only when no single seed carries both. First, not widest — see above.
+                if (s1 > 0 && splitState1Seed == null) { splitState1 = s1; splitState1Seed = seed; }
+                if (s2 > 0 && splitState2Seed == null) { splitState2 = s2; splitState2Seed = seed; }
+            }
+
+            if (bothStatesSeed == null)
+            {
+                // FALL TO THE SPLIT — permitted, and RECORDED as a fallback rather than passed off as
+                // the design, so a later seat knows the stronger construction was looked for first.
+                state1Cases = splitState1; state1Seed = splitState1Seed;
+                state2Cases = splitState2; state2Seed = splitState2Seed;
+                UnityEngine.Debug.Log("[TRAP-GATE] NO single seed carried both states — falling to the "
+                    + "two-seed split (T140-am7 permits it only in this case). A transition-stale value "
+                    + "is NOT covered by this run.");
             }
 
             UnityEngine.Debug.Log($"[TRAP-SEARCH] re-run under T140-am5 across {candidateSeeds.Length} "
                 + "seeds :: " + string.Join(" | ", searchLog));
-            UnityEngine.Debug.Log($"[TRAP-GATE] state1 seed={state1Seed ?? "(none)"} cases={state1Cases} "
-                + $"· state2 seed={state2Seed ?? "(none)"} cases={state2Cases} · frames={framesSampled}");
+            UnityEngine.Debug.Log($"[TRAP-GATE] {(bothStatesSeed != null ? $"BOTH on '{bothStatesSeed}'" : "SPLIT")} "
+                + $":: state1 seed={state1Seed ?? "(none)"} cases={state1Cases} · state2 seed="
+                + $"{state2Seed ?? "(none)"} cases={state2Cases} · frames={framesSampled}");
 
             // C29: both states are RULED requirements (section 5), not one. A run that only ever
             // showed state 1 has not certified the fix "actually working on a multi-leg ticket".
@@ -3251,7 +3273,14 @@ namespace SBR.Tests.PlayMode
                 + "exists to drive THAT field and must fail rather than watch nothing.");
             Assert.IsNotNull(stageLegField, "TvSweatScreen._stageLeg not found — renamed?");
 
-            int maxCount = 0, framesWatched = 0;
+            // `T140-am8` (batch 199) made the counter PER LEG — an int[] indexed by ticket leg —
+            // because `_stageLeg` is the telling's ANCHOR and answers "which match is staged", never
+            // "which bets are counting". This ticket has one leg, so the multi-scorer leg is index 0;
+            // read by index rather than by casting the field, which is what this pin did while the
+            // counter was a scalar.
+            const int MultiLegIndex = 0;
+            int maxCount = 0, framesWatched = 0, lastCount = 0;
+            var transitions = new List<string>();
             var stageLegsSeen = new SortedSet<int>();
             couch.OnInteract(null);
             yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
@@ -3259,13 +3288,45 @@ namespace SBR.Tests.PlayMode
             float start = Time.realtimeSinceStartup;
             while (run.Phase == Phase.Sweat && Time.realtimeSinceStartup - start < 60f)
             {
-                int c = (int)countField.GetValue(screen);
+                var counts = (int[])countField.GetValue(screen);
+                int c = counts != null && MultiLegIndex < counts.Length ? counts[MultiLegIndex] : 0;
+                // EVERY TRANSITION, not just the peak. A peak says WHAT the counter reached; the
+                // transitions say WHEN, and whether it ever went backwards — which is the difference
+                // between "the goal never reached this site" and "the count was reset between goals".
+                if (c != lastCount)
+                {
+                    transitions.Add($"f{framesWatched}:{lastCount}->{c}@stage{(int)stageLegField.GetValue(screen)}");
+                    lastCount = c;
+                }
                 if (c > maxCount) maxCount = c;
                 stageLegsSeen.Add((int)stageLegField.GetValue(screen));
                 framesWatched++;
                 yield return null;
             }
             Assert.Greater(framesWatched, 0, "C29: the sweat was never observed — the poll ran zero frames");
+
+            // The REVEALED endpoint, so a count that never moved can be told apart from goals that
+            // were never revealed. The ledger is the surface's own revealed truth; the stat line is
+            // the locked one they must converge to.
+            FieldInfo ledgerField = typeof(TvSweatScreen).GetField(
+                "_ledger", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(ledgerField, "TvSweatScreen._ledger not found — renamed?");
+            var ledger = ledgerField.GetValue(screen);
+            int ledgerPicked = (int)ledger.GetType().GetProperty("Picked").GetValue(ledger);
+            int ledgerOpponent = (int)ledger.GetType().GetProperty("Opponent").GetValue(ledger);
+            bool backedIsHome = played.PlayerSide(foundPlayerIndex) == Side.Home;
+            // THE SCORER LISTS THEMSELVES. `ScorerFor` indexes these by the revealed count BEFORE
+            // each goal, so a list SHORTER than the goal count silently returns null for the tail —
+            // and a null scorer skips the named-scorer branch entirely. Printing the lists is what
+            // separates "the goal never reached the site" from "the site could not name it".
+            var names = new List<string>();
+            foreach (Player sc in played.StatLine.AwayScorers) names.Add(sc == null ? "(null)" : sc.Name);
+            var homeNames = new List<string>();
+            foreach (Player sc in played.StatLine.HomeScorers) homeNames.Add(sc == null ? "(null)" : sc.Name);
+            UnityEngine.Debug.Log($"[MULTI-DIAG] AwayScorers({names.Count}) = [{string.Join(", ", names)}] · "
+                + $"HomeScorers({homeNames.Count}) = [{string.Join(", ", homeNames)}] · backed='{foundPlayerName}' "
+                + $"playerIndex={foundPlayerIndex} side={(backedIsHome ? "HOME" : "AWAY")} · "
+                + $"statline {played.StatLine.HomeGoals}-{played.StatLine.AwayGoals}");
             Assert.AreNotEqual(Phase.Sweat, run.Phase, "the sweat never finished inside 60s");
 
             // ---- 5. REPORT. The number is not asserted, by instruction: whether it is right and what
@@ -3274,6 +3335,10 @@ namespace SBR.Tests.PlayMode
                 + $"leg is a {(int)multi.Line}+ multi-scorer, ticket has {run.Tickets[0].Legs.Count} leg(s). "
                 + $"_pickedScorerGoals PEAKED AT {maxCount} over {framesWatched} observed frames. "
                 + $"_stageLeg took {string.Join("/", stageLegsSeen)}. "
+                + $"TRANSITIONS [{string.Join(" ", transitions)}] · revealed endpoint "
+                + $"picked={ledgerPicked} opponent={ledgerOpponent} vs statline "
+                + $"{played.StatLine.HomeGoals}-{played.StatLine.AwayGoals}, backed player is "
+                + $"{(backedIsHome ? "HOME" : "AWAY")}. "
                 + $"EXPECTED if the counter is wired: {actualGoals}. "
                 + $"** {(maxCount == actualGoals ? "MATCHES" : $"DOES NOT MATCH — read {maxCount}, the player scored {actualGoals}")} ** "
                 + "REPORT ONLY — no fix, no reading; routed.");
