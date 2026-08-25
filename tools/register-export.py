@@ -14,18 +14,19 @@ SURFACE_BY_PREFIX = {"S": "laptop", "T": "tv", "R": "room", "C": "cross-surface"
 
 # Normalize the register's free-text state vocabulary onto the Linear workflow.
 STATE_RULES = [
-    # order matters: terminal/negative words first, then laws, then positive rulings
-    (r"design-?verified", "Design-verified"),
-    (r"struck|strike|revoked|dumped|deprecated|superseded|withdrawn|cancell?ed|void", "Struck"),
-    (r"parked|deferred|held|quarantined?", "Parked"),
-    (r"^\s*≡|re-?pointed|alias", "Closed"),          # alias rows point at the base row
-    (r"closed|retired", "Closed"),
-    (r"implemented|landed|shipped|merged", "Implemented"),
-    (r"in build|building|dispatched|flagged|owed|violation", "In Build"),
-    (r"law|constitution|standing", "Law"),         # not work: becomes a rule, not a ticket
-    (r"granted|approved|ruled|signed|authored|confirmed|amended|new|spec issued|reasoning corrected", "Approved"),
-    (r"debt|candidate|proposed", "Candidate"),
-    (r"exploration|open|pending", "Exploration"),
+    # order matters: terminal/negative words first, then laws, then positive rulings.
+    # Word boundaries use lookarounds instead of backslash-b so the file survives any copy path.
+    ('design-?verified', 'Design-verified'),
+    ('(?<![a-z])struck(?![a-z])|(?<![a-z])strike(?![a-z])|(?<![a-z])revoked(?![a-z])|(?<![a-z])dumped(?![a-z])|(?<![a-z])deprecated(?![a-z])|(?<![a-z])superseded(?![a-z])|(?<![a-z])withdrawn(?![a-z])|(?<![a-z])cancelled(?![a-z])|(?<![a-z])canceled(?![a-z])|(?<![a-z])void(?![a-z])', 'Struck'),
+    ('(?<![a-z])parked(?![a-z])|(?<![a-z])deferred(?![a-z])|(?<![a-z])held(?![a-z])|(?<![a-z])quarantined(?![a-z])|(?<![a-z])quarantine(?![a-z])', 'Parked'),
+    ('^ *≡|(?<![a-z])re-pointed(?![a-z])|(?<![a-z])repointed(?![a-z])|(?<![a-z])alias(?![a-z])', 'Closed'),
+    ('(?<![a-z])closed(?![a-z])|(?<![a-z])retired(?![a-z])', 'Closed'),
+    ('(?<![a-z])implemented(?![a-z])|(?<![a-z])landed(?![a-z])|(?<![a-z])shipped(?![a-z])|(?<![a-z])merged(?![a-z])', 'Implemented'),
+    ('(?<![a-z])in build(?![a-z])|(?<![a-z])building(?![a-z])|(?<![a-z])dispatched(?![a-z])|(?<![a-z])flagged(?![a-z])|(?<![a-z])owed(?![a-z])|(?<![a-z])violation(?![a-z])', 'In Build'),
+    ('(?<![a-z])law(?![a-z])|(?<![a-z])constitution(?![a-z])|(?<![a-z])standing law(?![a-z])', 'Law'),
+    ('(?<![a-z])granted(?![a-z])|(?<![a-z])approved(?![a-z])|(?<![a-z])ruled(?![a-z])|(?<![a-z])signed(?![a-z])|(?<![a-z])authored(?![a-z])|(?<![a-z])confirmed(?![a-z])|(?<![a-z])amended(?![a-z])|(?<![a-z])new(?![a-z])|(?<![a-z])spec issued(?![a-z])|(?<![a-z])reasoning corrected(?![a-z])', 'Approved'),
+    ('(?<![a-z])debt(?![a-z])|(?<![a-z])candidate(?![a-z])|(?<![a-z])proposed(?![a-z])', 'Candidate'),
+    ('(?<![a-z])exploration(?![a-z])|(?<![a-z])open(?![a-z])|(?<![a-z])pending(?![a-z])', 'Exploration'),
 ]
 
 def normalize(state_cell):
