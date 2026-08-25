@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 520 - WRAP-UP FOR THE
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 521 - CI FIX PUSHED.** The
+stale console gate rewritten (9c6df0f): it now asserts, over the whole
+priced pool, that the console's BackedSide agrees with the engine's
+MatchModel.AnchorSide on every kind except the ruled exception (player
+-scorer kinds answer NEITHER) - the two tables are intentionally
+parallel per 622abf3's own docstring, which corrected my briefing.
+Console 24/24, engine 329/330 (1 skipped). Re-polling Actions; 'CI
+green' joins the checklist on green. TV's step A merged (b7fdaa3); TV
+finishing its wrap-up. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 520 - WRAP-UP FOR THE
 TRANSITION (Allen).** (1) RESEARCH WORKTREE DROPPED on Allen's order:
 0 ahead, merged, clean, no seat; worktree + branch deleted; registry
 updated; items 8-9 lapse unless re-raised. (2) CI RED DIAGNOSED: one
