@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 533 heartbeat - DD's
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 534 - T94's SEAM CLOSED
+and MERGED (7b28fa8, with the counter fixture 2ff03a6): repaint at both
+sites, LegsOfFixtureAfter deleted; the C29 footer-word gate re-based as
+an invariant (per-seed pre-emption failsafe + end-of-run assertions on
+both states), warm-up dropped, pacing fix. TV corrected itself: a seed
+CAN still carry both states (STATS-MULTI-2: 11/50) - the two-seed shape
+is max-picking, not impossibility. The counter still reads 1 for 2
+(MULTI-0) - NOT in this commit; its remedy is the DD's with the read
+(T140-am6). DD reading 7b28fa8 now. CI pending. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 533 heartbeat - DD's
 early take on the gate re-base: expects ACCEPT (invariant, not widening;
 StakeWord is a pure function so two seeds certify it completely - not a
 precedent for splitting a gate that tests a real transition) and ENDORSE
