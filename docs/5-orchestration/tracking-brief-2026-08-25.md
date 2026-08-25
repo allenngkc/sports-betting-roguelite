@@ -178,6 +178,18 @@ posted to the issue on merge). Rebuilding the runtime buys nothing.
     580-row import (minus laws), and whether to add custom workflow states
     (e.g. a real "Design-verified" column) in Linear settings or keep labels.
 
+- **2026-08-25 — template pass on the dry run.** `linear-templates.md` written
+  (project context packs; ticket ends in Expected behavior; no dispatch without
+  it). All 10 dry-run issues re-shaped to it by a headless Opus session; the
+  dry-run project now carries a SAMPLE TV-surface context pack drawn from
+  `tv-design.md`, `constitution.md` and the tv-theater handoff. Expected
+  behavior derived on 8/10; marked `TO DERIVE` on SBR-10 (S81 is "recorded,
+  not ruled") and SBR-11 (P7 is quarantined) — the rule fired exactly where it
+  should. **Two fixes for the full import:** (1) the sample generator truncated
+  bodies at 1,500 chars — the full import must carry spec text verbatim and
+  untruncated; (2) Linear's markdown normalizer re-flows nested emphasis
+  around inline code — cosmetic, but rulings should be checked for it.
+
 ## Phases
 
 - P1 — connect MCP, write the export script, dry-run import, charter updates.
