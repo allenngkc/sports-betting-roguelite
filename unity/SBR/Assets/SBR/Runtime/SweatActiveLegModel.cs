@@ -668,12 +668,18 @@ namespace SBR.Game
         /// `YOUR MARGIN IS CLEAR` meaning *winning comfortably*: one word, two meanings, two
         /// surfaces. The compact keeps `MARGIN` and is not reopened.</para>
         ///
-        /// <para><b>⚠ BUCKET 1 IS OFFERED AND HAS NO AUTHORED FORM.</b> `MatchModel.BuildOffers` runs
-        /// <c>m = 1..TopMarginBucket</c> unfiltered and `MarketSelection`'s own docstring says
-        /// margins 1 and 2 are EXACT, so a margin-1 leg is bettable — but `T151` and `G1-am11` §3.2
-        /// both author 2 and 3+ only. <b>No copy is invented here for it.</b> It throws, and the
-        /// caller routes it to the unauthored path rather than to a coined string — a short form
-        /// nobody wrote is `G1`'s defect class. Measured and routed to the DD.</para>
+        /// <para><b>BUCKET 1 IS AUTHORED — `T151-am3` (DD batch 196), on this lane's routed
+        /// question.</b> It was the one bucket with no form, it is OFFERED (12 seen in one run on a
+        /// real board), and the DD's ruling names why that mattered: <b>a one-goal margin is the
+        /// commonest result in the sport, so this is not an edge bucket — it is THE bucket.</b>
+        /// Unauthored it rendered the engine's bare <c>1 GOAL</c>, the exact collision `T151` exists
+        /// to prevent. <b>Nothing was coined here while it was unruled</b>, which cost one commit and
+        /// is what `G1` asks for.</para>
+        ///
+        /// <para>The singular <c>GOAL</c> matches the engine's own
+        /// <c>{b} GOAL{(b == 1 ? "" : "S")}</c>, and the word placement is `G1-am11`'s rather than a
+        /// new call: <c>MARGIN</c> stays IN the compact and OUT of the NEED band, and rung 3 drops
+        /// <c>GOALS</c> and keeps <c>APART</c> exactly as <c>3+ APART AT FT</c> does.</para>
         ///
         /// <para>`G1`'s monotonicity table has the margin as NOT monotone — *a margin can SHRINK* —
         /// so the progress pair is `MET`/`NOT YET` and the outcome is always <c>Undecided</c>: a
@@ -681,11 +687,9 @@ namespace SBR.Game
         private static ActiveLegCopy DescribeWinningMargin(ActiveLegInput l)
         {
             int bucket = (int)l.Line;
-            if (bucket < 2)
+            if (bucket < 1)
                 throw new ArgumentOutOfRangeException(nameof(l), bucket,
-                    "WinningMargin bucket 1 has NO authored form (T151 and G1-am11 §3.2 both stop at 2). "
-                    + "It is offered by MatchModel.BuildOffers and is routed to the DD; the caller must "
-                    + "take the unauthored path rather than reach here for a string nobody wrote.");
+                    "WinningMargin buckets start at 1 (MarketSelection says so and throws there too).");
             // Revealed-only, both sides. `>=` for the top bucket is the market's own rule
             // (MatchModel: `bucket >= TopMarginBucket ? margin >= bucket : margin == bucket`),
             // carried here through the factory's flag rather than through a constant this assembly
@@ -694,9 +698,14 @@ namespace SBR.Game
             bool top = l.Choice == MarketChoice.Over;
             bool met = top ? margin >= bucket : margin == bucket;
             string b = top ? $"{bucket}+" : bucket.ToString(CultureInfo.InvariantCulture);
-            return new ActiveLegCopy($"{b} GOALS APART AT FULL TIME", met ? "MET" : "NOT YET",
+            // `GOAL` SINGULAR AT BUCKET 1 — `T151-am3`, and it matches the engine's own
+            // `{b} GOAL{(b == 1 ? "" : "S")}` rather than restating the rule differently. The top
+            // bucket is "1+ OR MORE" and can never be one, so the singular is reachable only at the
+            // exact-1 bucket, which is exactly where the engine puts it.
+            string goals = !top && bucket == 1 ? "GOAL" : "GOALS";
+            return new ActiveLegCopy($"{b} {goals} APART AT FULL TIME", met ? "MET" : "NOT YET",
                                      isTeamMarket: false, identity: MarketPick,
-                                     needFallback: $"{b} GOALS APART AT FT",
+                                     needFallback: $"{b} {goals} APART AT FT",
                                      outcome: RevealedLegOutcome.Undecided,
                                      needFallback2: $"{b} APART AT FT");
         }
