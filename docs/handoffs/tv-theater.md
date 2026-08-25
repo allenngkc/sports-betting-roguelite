@@ -5,6 +5,128 @@
 
 ---
 
+## 0-ROT5. LANE STATE 2026-08-25 (third) — READ THIS FIRST
+
+**Written while HOLDING, not at a handover — the seat has not rotated.** State is `7b28fa8`, merged.
+**EditMode 342/341/0/1 · PlayMode 153/126/0/27.** Editor closed, procs 0. Tree clean but `URP.png`
+(permanent phantom) and the untracked `artifacts/`. If work lands before the seat actually rotates,
+this section is the base to amend rather than the record to replace.
+
+### THE CHAIN IS DONE EXCEPT ONE ITEM, WHICH IS HELD ON A RULING
+
+`638df13` routed the two questions the NEED build raised · `5e5348e` the `T156` re-take post-`T168` ·
+`ca4f410` `WinningMargin` bucket 1 · `2ff03a6` `T169-am`'s owed fixture · `7b28fa8` **`T94`'s seam,
+closed.** Rulings folded this stretch: batches **196** (`T169-am`, `T151-am3`, `T152-am2`), **197**
+(`T140-am4`, since corrected), **198** (`T140-am5`, `T151-am4`, `T140-am6`).
+
+**⚠ OPEN AND HELD: the multi-scorer counter.** `T140-am6` rules it arm A's N-live class and **its own
+item** — a structural single-leg assumption that predates the build, not `T169-am`'s missing test.
+**Do not start the remedy until that ruling lands.** Deliberately not in `7b28fa8`.
+
+### THE COUNTER'S NUMBER, AND IT IS WORSE THAN THE ITEM SAYS
+
+`T169-am`'s owed fixture is built and green:
+`TvSweatScreenTests.T169_am_the_multi_scorer_counter_is_driven_by_a_real_goal`.
+
+```
+[MULTI] DRIVEN: 'Darryl Ledger' scored 2 on seed 'MULTI-0' … _pickedScorerGoals PEAKED AT 1 …
+        _stageLeg took -1/0.  EXPECTED if wired: 2.  ** DOES NOT MATCH **
+```
+
+**IT IS WRONG ON THE SIMPLEST CASE THERE IS — a ONE-LEG ticket, `_stageLeg` never leaving 0.** So the
+row would read `1 GOALS • NEED 1` on a leg already won. `T140-am6`'s anchor-only reading is real and
+is confirmed in code, **but it is not the whole defect**, and a remedy aimed only at the N-live shape
+would leave this one standing. Reproduced identically on two separate runs.
+
+> **AND MY OWN ROUTED HYPOTHESIS WAS NOT WHAT THIS IS.** I predicted the `_stageLeg` hole — a
+> multi-scorer leg that is not the anchor never counting. That is a real shape and the DD confirmed
+> it; **it is simply not the cause of this number.** A fix aimed at the thing I routed would have
+> missed the thing the fixture found.
+
+**The fixture searches its own seed and proves the search valid**: nothing lets a test choose who
+scores, so throwaway `Run`s are locked per seed until a repeat scorer appears, and the room run is
+pinned to that seed. That is only sound if the stat line is independent of what was bet
+(`Rng.Outcomes` is a stream the betting path never draws from), so it **re-asserts the scoreline
+after placing a different ticket** rather than trusting the reading.
+
+### `T94`'s SEAM — CLOSED, AND THE GATE THAT FAILED WAS CERTIFYING THE DEFECT
+
+Built to **batch 198**, not 197: `UpdateTicketColumn(_liveLegsShown)` at both sites,
+`LegsOfFixtureAfter` deleted. **A SUBSTITUTION, not a deletion** — `MarkPresentedResolved` sets flags
+and repaints nothing, `UpdateTicketColumn` is the only writer of `_legRow[i].IsLive`, and
+`AnimateLegPulse` reads that cached flag every frame, so a bare deletion leaves the ENDED fixture lit
+and pulsing through the whole beat: **`T94` inverted.**
+
+**`TicketFooterWord_…_StakeWhenLegTwoWonEarly` went red, and the failure was the fix working.**
+`frames=59` and `state1=49` were IDENTICAL before and after; only `state2` moved, 2 → 0. Two frames.
+Instrumented, both fired at **`_stageLeg = 0`** — leg 1 lit and read as ALREADY WON while the stage
+and scorebug were still on leg 0's match, its "revealed count" being leg 0's, because `_countLedger`
+only resets in `BeginStageLeg`. **The gate had been certifying a footer word off `T94` itself**, and
+the 2026-08-17 seed search that picked `STATS-MULTI-5` measured the same artefact.
+
+### THE GATE'S NEW SHAPE — a self-re-running search, and an INVARIANT rather than a wider assertion
+
+- **It searches at run time** over 12 candidate seeds instead of pinning one, so it cannot silently
+  go stale again. The pinned-seed comment's own instruction is what governs: *"RE-RUN THE SEARCH —
+  never widen the gate."*
+- **A state-2 frame counts ONLY when the stage is on leg 1's own fixture.** That is the re-base:
+  what the ruling makes invariant, not a looser claim. Neither state's definition is relaxed.
+- **`Assert.AreEqual(0, preemptS2)` per seed** fails if a state-2 frame is ever seen with the stage
+  still on leg 0 — **the retired defect can never satisfy this gate again.**
+- **Both states end in end-of-run assertions** that fail when the state is absent
+  (`Assert.Greater(state1Cases, 0)` / `…(state2Cases, 0)`). The `[TRAP-GATE]` line reports beside
+  them and carries nothing.
+- Two seeds, one per state, is sanctioned — `StakeWord` is a pure function. §5 requires both states
+  certified, never that one seed carry them.
+
+```
+STATS-MULTI-5: frames=90 state1=49 state2=0 | STATS-MULTI-1: frames=52 state1=29 state2=0
+STATS-MULTI-2: frames=82 state1=11 state2=50
+```
+
+> **A CORRECTION TO WHAT I FIRST REPORTED:** I said no seed carries both states any more.
+> **`STATS-MULTI-2` carries both** — 11 and 50. It read `state1=0` in the first search run only
+> because of the warm-up I then removed. **The claim was an artefact of my own instrument.** The
+> two-seed shape stands, but its reason is the max-picking, not an impossibility.
+
+### ⚠ THE TWO SEARCH-SHAPED BUGS — both mine, both in a test that had never searched before
+
+**A gate that becomes a SEARCH inherits none of its single-seed habits safely.** Everything the old
+gate could do once, it now does N times, and three things that were harmless became defects:
+
+1. **THE 30 WARM-UP FRAMES WENT BLIND ON 42% OF THE SEARCH.** *"Let the first beat render a
+   scorebug"* — harmless on one pinned seed, and at `TimeScaleOverride = 0.0001f` it **consumes an
+   entire short sweat**: the first search run reported `frames=0` on **FIVE of twelve** candidates.
+   Dropped entirely; the qualifying condition needs `chip0 == "W"`, which cannot be true before leg 0
+   resolves, so early frames disqualify themselves.
+2. **`TimeScaleOverride` DOES NOT SURVIVE `StartNewRun`.** Set once before the loop it silently stops
+   applying, and every subsequent sweat runs at wall-clock. **This blew a 600s budget twice** before
+   it was found. Re-assert it at the top of each iteration.
+3. **A SEARCH MULTIPLIES ITS FAILSAFE BY ITS CANDIDATE COUNT.** The gate's 60s hang-guard × 12 seeds
+   is a twelve-minute wait that reads as a hang, not a slow test. Now 20s — still twenty times the
+   honest budget, and a seed needing more has something wrong worth finding fast.
+
+### THE OTHER THINGS THIS STRETCH ESTABLISHED
+
+- **`T156` post-`T168`**: the pair is UNCHANGED (`FERRETS OVER 1.5` for goals AND cards), the
+  city-only survivor is GONE (`MOOSE JAW` → `SPREADSHEETS`), and **the control no longer collides** —
+  the line survives now, so `FERRETS OVER 4.5` ≠ `FERRETS OVER 1.5`. Two of the first run's three
+  findings retired by the build; the DD rules §4.
+- **Bucket 1's ladder ends a rung early**, rung 2 at 254.9 vs 261.0 — **6.1px**. `T151-am4`: **no gate
+  owed**, and the rule is worth carrying — *a slender margin owes a gate when what lies past it is an
+  OVERRUN, and owes nothing when what lies past it is the next authored rung.* Watch the cliff, not
+  the size.
+- **`{n}` in `CLEAR BY {n}` is ratified as built** (`T152-am2`) — the goals that must CHANGE. Its own
+  ruling warns a later seat against "correcting" it to the adjusted margin, which would print
+  half-goals. **The one line offered for changing should not be changed.**
+- **A Unity run dirties FIVE files beyond `URP.png`** — `ProjectSettings.asset`, the TMP
+  `LiberationSans` fallback, and the three TV `EncodeSans*` SDF atlases (those only on runs that
+  measure text). They appear AFTER a suite, which is exactly when you are about to stage.
+  `git checkout --` them; stage by explicit path, every time.
+
+---
+
+
 ## 0-ROT4. SEAT ROTATION 2026-08-25 (second) — READ THIS FIRST
 
 **Wrapped on Allen's order before a transition, not at a context limit.** Two commits:
