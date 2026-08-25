@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 493 - T163 DESIGN-VERIFIED
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 494.** The pending-loss
+window measured and routed (8e4e3b8 via 930635e): neither T143's line
+nor S85's fits as a new row in the fixed grid; three options priced,
+option 3 (share a row) favoured on the numbers; the two-leg form
+overruns in both shapes - an open case under any option. The height is
+the DD's, queued behind its NEED-copy + T168 spec (mid-write). TV builds
+the once-per-whistle verification - composition-free, the last
+N-live piece not blocked on height. WITH ALLEN: the carve-out
+bookkeeping, the hold's structure, research 8-9, B9's sitting.
+
+*(prior stamp, cycle 493 - T163 DESIGN-VERIFIED
 on both branches (batch 184, b22c6d0): the flavour anchor holds on 120
 frames; the DD records the dock catching three of its own errors. DD
 now speccing the seven kinds' NEED copy + T168 together (Allen). TV
