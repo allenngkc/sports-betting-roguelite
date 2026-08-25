@@ -134,6 +134,52 @@ what that clause forbids.
 
 ---
 
+## 0-U22. THE COUNTER MEETS ITS SHAPE — THE FIRST SAME-MATCH FIXTURE · 2026-08-24
+
+**EditMode 334/333/0/1** (+1, so the file recompiled and the gate ran).
+
+```
+[T165-SAMEMATCH] legs 3 · fixtures 2 · counter rendered 'MATCH 1/2'
+```
+
+**Three legs, two tellings, and the counter says TWO.** Under the retired LEG referent it would have
+printed `MATCH 1/3` — the leg total the ticket column contradicts, which is the incoherence `T165`
+was ruled to fix. **First time the surface has been observed doing it.**
+
+### THE GAP THIS CLOSES, AND THE TWO IT LEAVES A PATTERN FOR
+
+`0-U13` recorded it: *"NO TEST RENDERS THE COUNTER ON A SAME-MATCH TICKET… the ruling exists for the
+shape no test builds."* Every other fixture in both suites is ordinary, where fixture count equals leg
+count and the two referents are indistinguishable.
+
+**This is the FIRST fixture in either suite to build AND RENDER a same-match ticket.** The recipe is
+reusable and the other two argument-only claims should copy it:
+
+- the nested goal pair on ONE matchup (over the higher line entails over the lower — pure set
+  containment, so no board change refuses it) plus a moneyline on ANOTHER;
+- `Assert.Less(FixtureCount, Legs.Count)` **before rendering anything**;
+- **set `_session`, not only `_ticket`.**
+
+### ⚠ THE `_session` POINT IS THE TRANSFERABLE ONE
+
+`FixtureTotal()` is `_session != null ? _session.FixtureCount : _ticket.Legs.Count`. **A fixture that
+sets only `_ticket` renders the FALLBACK and passes** — `MATCH 1/3` on this very ticket — while
+proving nothing about the referent. `AnchorForTelling` and the pending window read the session too.
+
+**Same shape as `T130` never meeting its market and the TV twin's compatibility test passing under a
+mutant: the gate ran, the case did not.** The reflection sets both fields and fails loudly if either
+name moves.
+
+### THE DISCRIMINATOR IS THE SECOND ASSERTION, NOT THE FIRST
+
+`AreEqual("MATCH 1/{FixtureCount}")` is true under BOTH referents on an ordinary ticket — alone it is
+a restatement. `AreNotEqual("MATCH 1/{Legs.Count}")` is what fails the moment the referent regresses.
+
+**And the evidence line is logged BEFORE the verdicts**, deliberately: a `Debug.Log` under a failing
+assert never runs, so evidence written last is lost exactly when it is needed.
+
+---
+
 ## 0-U21. THE PENDING WINDOW — ONCE-PER-WHISTLE IS **VERIFIED, NOT BUILT** · 2026-08-24
 
 **Closed without a gate, deliberately, and accepted by the orchestrator.** Recorded here because a
