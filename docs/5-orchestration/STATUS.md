@@ -1,6 +1,20 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 506 - THE CITY-ONLY
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 507 - THE TEAM-TOTAL SCOPE
+CALL IS RE-FRAMED FOR ALLEN (batch 191, 6867a56).** The measurement
+holds and T156 is WIDER than ruled: on the sweat screen every team-total
+bet for one side cuts down to CLUB + OVER/UNDER - number and market
+word both gone - so all three markets at any number read as ONE string;
+batch 187's 'corners is clean' was the DD's own error (the number is
+gone before it could protect anything). Separately, two-word cities cut
+past the club's own name (MOOSE JAW for SPREADSHEETS) - the ruled naming
+fix solves that one only. THE FIRST HAS TWO FIXES: short copy for the
+three markets, or take them out of the offered set. TV measuring the
+pending window (probe run, suite expected 337). WITH ALLEN: THIS CALL,
+the veto, the carve-out bookkeeping, the hold's structure, research
+8-9, B9's sitting.
+
+*(prior stamp, cycle 506 - THE CITY-ONLY
 FINDING IS CONFIRMED, AND WORSE.** TV's re-run report is merged
 (968a250): the team-total NEED fallback's DISTINCTIVE WORD NEVER
 SURVIVES, and the CONTROL COLLIDES TOO. Routed to the DD for T156/T168
