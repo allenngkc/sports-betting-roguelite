@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 498.** T156 IS LIVE IN
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 499 - CORRECTION to 498.**
+The measurement was NOT withdrawn: batch 187 keeps it, for the copy,
+behind the part-C gate (not expedited), and binds it to C58-am2 - a
+routed width states the commit it was taken at and whether T168-am was
+built. I over-read 'not needed to decide' as 'not needed'; TV and the DD
+are corrected. THE TEAM-TOTAL SCOPE CALL IS WITH ALLEN NOW: T156 is live
+in the shipped build; the collision is narrower than assumed - goals vs
+cards at the 1.5 line only, corners clean.
+
+*(prior stamp, cycle 498.** T156 IS LIVE IN
 THE SHIPPED BUILD (batch 187, 70d48a4) - proven from the render chain
 plus a width TV already took, so the queued measurement was WITHDRAWN
 from TV (the number was in hand; an instrument is not run for a number
