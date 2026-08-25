@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 521 - CI FIX PUSHED.** The
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 522 - CI IS GREEN.** Run
+on c70a2b6 concluded success: .NET build, engine tests, console tests
+(the stale anchor-shape gate rewritten at 9c6df0f). 'CI green' now sits
+in STUDIO.md's clean-merge checklist - every autonomous merge reads the
+Actions result on the merged main before it counts. TV finishing its
+wrap-up; the DD's held read fires on that merge. WITH ALLEN: the
+team-total scope call, the veto, the carve-out bookkeeping, the hold's
+structure, B9's sitting, Linear setup (the tracking brief waits on it).
+
+*(prior stamp, cycle 521 - CI FIX PUSHED.** The
 stale console gate rewritten (9c6df0f): it now asserts, over the whole
 priced pool, that the console's BackedSide agrees with the engine's
 MatchModel.AnchorSide on every kind except the ruled exception (player

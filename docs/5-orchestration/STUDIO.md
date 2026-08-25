@@ -114,10 +114,13 @@ only as Creative Director or for genuinely critical calls.
   and history rewrites stay banned outright — not escalatable.)
 
 **Clean-merge checklist** (autonomous merge only if all hold): tests at the
-lead's stated baseline; no integration-only file drift (ProjectSettings,
-packages) or drift already justified and reverted; handoff current; no open
-conflict-register item touching the branch; merge applies without conflicts.
-Any miss → Allen.
+lead's stated baseline; **CI green** — the stage-1 GitHub Actions run
+(`.github/workflows/ci.yml`: .NET build + engine/console tests) on the merged
+`main` must conclude `success` (the orchestrator reads it via the REST API or
+the browser; `gh` is not installed); no integration-only file drift
+(ProjectSettings, packages) or drift already justified and reverted; handoff
+current; no open conflict-register item touching the branch; merge applies
+without conflicts. Any miss → Allen.
 
 **Evidence-based gates:** a phase advances when the exit criteria in the lead's
 approved plan are met with evidence artifacts. The orchestrator verifies and
