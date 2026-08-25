@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 516.** HELD: Allen's
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 517 - AUTONOMOUS DECISION
+(veto window).** The fresh TV seat asked whether Section 3 (the >=2
+name composition) is in scope this seat or gate-only; I took its
+recommendation - BUILD IT TOO: fully authored (batches 189/193/195),
+same call site and deadNames list as T143-am9, and gate-only would
+leave a known-wrong string on screen. Within-direction. Unity lease
+granted (procs 0). Building: the NEED copy + Section 3 + am8's gate +
+am9's name; T94's seam last. The DD's held read fires on the merge.
+WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 516.** HELD: Allen's
 'take the NEED-copy build read' - the build does not exist yet (TV's
 branch empty; the fresh seat still planning). Fires on the real merge.
 DD holding. WITH ALLEN: unchanged.
