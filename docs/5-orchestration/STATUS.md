@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 540 - the counter's
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 541 - batch 200 landed
+(072fe7d): both arms refused. The stale kind-list is ALREADY FIXED at
+HEAD (c24b32c; PickedHomeForPresentation reads AnchorSide) - TV likely
+read a worktree lagging main; and orientation does NOT block (a single
+player leg cannot disagree with itself). DD's hypothesis for TV to
+measure: the ledger is per-telling (anchor-oriented) while the counter
+is per-leg. TV told: merge main, re-read at HEAD, measure, fix. WITH
+ALLEN: T140-am2 is NOT blocking after all; the rest unchanged.**
+
+*(prior stamp, cycle 540 - the counter's
 REMAINING defect is the orientation mismatch: ScorerFor indexes by
 _ledger.Picked (away-keyed here) into a list chosen by
 PickedHomeForPresentation (home for every kind but ML/AnytimeScorer).
