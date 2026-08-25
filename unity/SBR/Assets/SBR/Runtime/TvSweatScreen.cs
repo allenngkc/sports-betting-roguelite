@@ -2973,8 +2973,45 @@ namespace SBR.Game
                         player.Name, _scorerRevealedForActiveLeg));
                 }
                 default:
-                    return new SweatActiveLegModel.ActiveLegCopy(string.Empty, string.Empty, false, string.Empty);
+                    // ⚠ THIS ARM RETURNED AN ALL-EMPTY COPY, AND THAT IS T130's DEFECT AT SOURCE.
+                    //
+                    // A LIVE row blanks its compact line by design, so NEED and progress are the
+                    // only spans it has. An empty copy therefore renders a leg of the player's
+                    // ticket as a completely blank row — which is exactly what item 1.3 fixed for
+                    // CorrectScore, and its own record says the caller was half the fix: "the arm
+                    // AND the caller wiring — the arm alone would not have fixed it, the caller's
+                    // default: returned an empty copy, which IS the blank column." 1.3 added the
+                    // CorrectScore arm and LEFT THE DEFAULT, so every other kind kept the defect.
+                    //
+                    // SEVEN OFFERED KINDS REACH HERE: Handicap (4 selections on the board),
+                    // TeamTotalGoals/Corners/Cards and TotalGoalsOddEven (2 each), WinningMargin
+                    // and PlayerMultiScorer (1 each). Found by the anchor capture window, which
+                    // forced an away-backed Handicap that no test had ever rendered live.
+                    //
+                    // THE FALLBACK AUTHORS NO COPY, DELIBERATELY. NEED takes the row's own identity
+                    // string — the same LegStatement the compact line prints for this leg on every
+                    // other row state — so the row states WHICH BET IT IS rather than nothing. That
+                    // is a compromise: NEED asks "what does my money still need" and this answers
+                    // "which bet is this". Authoring real NEED copy for these kinds is a DESIGN
+                    // question and is routed, not invented here. What is fixed is the SILENCE.
+                    return new SweatActiveLegModel.ActiveLegCopy(
+                        LegStatement(leg), string.Empty, isTeamMarket: false, identity: "MARKET PICK");
             }
+        }
+
+        /// <summary>This leg's printed name, read off <see cref="MarketSheet"/> — the composer the
+        /// laptop and the console both print through. Null when the selection is not on its matchup's
+        /// sheet, which the caller treats as a last resort rather than a crash: the console THROWS
+        /// there (a gate can afford to), but a live sweat may not take the surface down over a name.
+        /// The exhaustive blank-row gate is what makes that leniency safe — a kind missing from the
+        /// sheet fails there instead of rendering quietly.</summary>
+        private static string SheetName(Leg leg)
+        {
+            if (leg == null || leg.Matchup == null) return null;
+            foreach (MarketSheetRow row in MarketSheet.Build(leg.Matchup).AllRows)
+                if (row.Offer.Selection.Equals(leg.Selection))
+                    return row.Name.ToUpperInvariant();
+            return null;
         }
 
         private Player ScorerFor(ScoreLedger.StagedGoal goal, Leg leg)
@@ -4210,9 +4247,19 @@ namespace SBR.Game
                     // is how the two halves of a statement drift apart.
                     return $"{SweatActiveLegModel.Surname(leg.Matchup.PlayerAt(sel.PlayerIndex).Name)} ANYTIME";
                 default:
-                    // A seventh market would arrive here unauthored. G1 names that explicitly as not
-                    // covered, so fall back to the engine's own label rather than inventing copy.
-                    return leg.DisplayLabel;
+                    // A seventh market arrives here unauthored, and G1 names that as not covered. The
+                    // old fallback was `leg.DisplayLabel` — and THE CONSOLE ALREADY RULED THAT THE
+                    // DEFECT. SweatLines.LegName reads the SHEET and says so in terms: "Nothing here
+                    // falls back to the enum name: THAT FALLBACK IS K16/T130." On a live Handicap
+                    // leg DisplayLabel gave the bare word `Handicap` — a leg of the player's ticket
+                    // naming its market TYPE instead of his bet, on a row whose compact line is
+                    // blanked by design. Found by the anchor capture window.
+                    //
+                    // Read through MarketSheet instead — the ONE composer this surface, the laptop
+                    // and the console all print through (S96, §6.5) — so an unauthored kind names
+                    // the bet in the same words the BOARD offered it in. Still no copy invented
+                    // here, which is what G1 actually asks for.
+                    return SheetName(leg) ?? leg.DisplayLabel;
             }
         }
 

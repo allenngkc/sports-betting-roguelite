@@ -1926,6 +1926,316 @@ namespace SBR.Tests.PlayMode
                 });
         }
 
+        /// <summary>THE ANCHOR WINDOW, FRAME A — <c>T163</c>'s NEITHER branch on the strip.
+        ///
+        /// <para>Shot against <c>docs/design/anchor-precommit-2026-08-24.md</c>. Composition is
+        /// arm 2's exactly — <c>GOALLESS-5</c>, matchup 0, stake 25, <c>UNDER 1.5 GOALS</c> +
+        /// <c>BTTS — NO</c> — so §5's docked predecessor stays readable against it for the COLUMN.</para>
+        ///
+        /// <para><b>THE MOMENT IS NOT ARM 2's, AND IT CANNOT BE.</b> Arm 2 bursts 150 frames FROM THE
+        /// WHISTLE FORWARD, and on a drawn match the strip at FT carries <c>THE MATCH ENDS LEVEL</c> —
+        /// written DIRECTLY at the call site in <c>FinalSlam</c> and <c>RenderEvent</c> when the
+        /// revealed ledger is level, never drawn from a table (and <c>SweatFlavor.For</c> returns
+        /// <c>FINAL WHISTLE</c> on a LegFinal for the same reason). <b>That line is club-free by
+        /// AUTHORSHIP, not by the anchor.</b> A frame shot to match arm 2's moment would satisfy §5's
+        /// economy and FAIL condition 1 while looking perfectly clean — the failure condition 1 exists
+        /// to prevent, one medium over. So this bursts at a MOMENTUM beat mid-sweat. §5 is explicitly
+        /// <i>not a condition, an economy</i>; condition 1 binds.</para>
+        ///
+        /// <para><b>One property of the seed to expect rather than discover:</b> <c>GOALLESS-5</c>
+        /// ends 0-0, so there are no goal beats at all — the only anchor-interpolating lines reachable
+        /// here would be <c>MomUp</c>/<c>MomDown</c>. THE FRAMES DISPROVED THIS, and the shot is the
+        /// better for it: the burst caught <c>NeitherGoalUp[1]</c> at 1'. A <c>Score</c> beat plays
+        /// in FULL on a goalless match — the ledger's live-lead clamp stages it as the CHALKED-OFF
+        /// variant — so the narrative beat and the scoreline are different things, and the goal
+        /// family IS reachable here.</para></summary>
+        [Explicit("Anchor window frame A: T163 neither branch on a totals/BTTS leg. Writes frames. "
+            + "Run by filter only.")]
+        [Timeout(1200000)]
+        [UnityTest]
+        public IEnumerator Capture_AnchorNeitherBranch_TotalsLeg()
+        {
+            _seed = "GOALLESS-5";
+            s_sceneIndex = 0;
+            Directory.CreateDirectory(OutputDir);
+            TheaterStage.PresentationSeedOverride = StableSeed(_seed);
+            Time.captureDeltaTime = 1f / 50f;
+
+            yield return LoadRoom();
+            var director = Object.FindAnyObjectByType<RunDirector>();
+            var screen = Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = Object.FindAnyObjectByType<SitSpot>();
+            Camera cam = Camera.main;
+            Assert.IsNotNull(director, "RunDirector missing");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+            Assert.IsNotNull(cam, "no main camera — the room band would be lost");
+
+            screen.TimeScaleOverride = 1f;
+            couch.transitionDuration = 0.01f;
+            yield return WaitUntilOrFail(() => director.Run != null,
+                Time.realtimeSinceStartup + 10f, "director never started a run");
+
+            director.StartNewRun(_seed);
+            Run run = director.Run;
+            Matchup m = run.CurrentSlate.Matchups[0];
+            Assert.IsNotNull(m, "the goalless matchup is missing from this slate");
+
+            MarketSelection under = FirstOfferedSelection(m, MarketKind.TotalGoals,
+                sel => sel.Choice == MarketChoice.Under,
+                "no UNDER total-goals line on the goalless matchup — a RE-SEED, never a substitution");
+            MarketSelection bttsNo = FirstOfferedSelection(m, MarketKind.BothTeamsToScore,
+                sel => sel.Choice == MarketChoice.No,
+                "no BTTS-NO line on the goalless matchup — a RE-SEED, never a substitution");
+            run.PlaceTicket(new List<Pick> { new Pick(m.Index, under), new Pick(m.Index, bttsNo) }, 25.0);
+            director.LockRound();
+            Assert.AreEqual(Phase.Sweat, run.Phase);
+
+            // CONDITION 3 — no live leg on this fixture names a side, or T163 branch (1) fires and the
+            // frame tests the opposite branch. Asserted off the ENGINE's table, never by kind name.
+            Ticket ticket = director.CurrentTicket;
+            for (int i = 0; i < ticket.Legs.Count; i++)
+                Assert.IsNull(MatchModel.AnchorSide(ticket.Legs[i]),
+                    $"leg {i} ({ticket.Legs[i].Selection.Kind}) NAMES A SIDE, so T163 branch (1) fires "
+                    + "and this frame would test the side branch instead of the neither branch");
+
+            couch.OnInteract(null);
+            yield return WaitUntilOrFail(() => SitSpot.Active != null,
+                Time.realtimeSinceStartup + 15f, "player never sat down");
+
+            // CONDITION 1 — wait for a strip line that came from an ANCHOR-INTERPOLATING table. On
+            // this branch that means a member of the club-free set: reaching it proves the call went
+            // through For/NeutralLine and took T163's neither path, which a count-family line or the
+            // authored drawn ending would not.
+            string line = null;
+            float deadline = Time.realtimeSinceStartup + 900f;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                string now = screen.DebugFlavorText;
+                if (!string.IsNullOrEmpty(now) && IsClubFreeAnchorLine(now)) { line = now; break; }
+                if (screen.RevealedView.ClockText == "FT" || run.Phase != Phase.Sweat) break;
+                yield return null;
+            }
+            Assert.IsNotNull(line,
+                "no strip line from an anchor-interpolating table appeared before full time. CONDITION 1 "
+                + "is unmet and this burst would prove nothing about the anchor. Last strip text: "
+                + $"'{screen.DebugFlavorText}'");
+
+            // CONDITION 4 — the assertion itself: the rendered line names NO club.
+            string home = SweatFlavor.Short(m.Home.Name), away = SweatFlavor.Short(m.Away.Name);
+            StringAssert.DoesNotContain(home, line, $"the strip names the HOME club: '{line}'");
+            StringAssert.DoesNotContain(away, line, $"the strip names the AWAY club: '{line}'");
+
+            Debug.Log($"[ANCHOR-A] strip='{line}' home='{home}' away='{away}' "
+                + $"clock={screen.RevealedView.ClockText}");
+
+            AssertSubjectInFrame(screen, "Flavor", "anchor-neither-totals");
+            yield return CaptureBurst(screen, cam, "anchor-neither-totals", 60, 0f);
+
+            Debug.Log($"[TvSweatCaptureHarness] seed={_seed} frame A complete -> {OutputDir}");
+        }
+
+        /// <summary>CONDITION 1's classifier: is this rendered line a member of <c>T163</c>'s
+        /// club-free set? Read off <see cref="SweatFlavor.NeitherLine"/> itself rather than restated,
+        /// so the harness cannot drift from the table it checks.
+        ///
+        /// <para>This is the assertion the pre-commitment asks for IN THE HARNESS rather than by eye:
+        /// a strip carrying a count-family line (<c>CornerFor</c>/<c>BookingFor</c>), the near-miss
+        /// pair, or the authored <c>THE MATCH ENDS LEVEL</c> is ALSO club-free — and would read as a
+        /// clean pass while proving nothing about the anchor.</para></summary>
+        private static bool IsClubFreeAnchorLine(string rendered)
+        {
+            foreach (DramaEventType type in new[] { DramaEventType.Score, DramaEventType.Momentum })
+                foreach (bool up in new[] { true, false })
+                    for (int step = 0; step < 3; step++)
+                        if (rendered == SweatFlavor.NeitherLine(type, up, step)) return true;
+            return false;
+        }
+
+        /// <summary>THE ANCHOR WINDOW, FRAME B — <c>T163</c>'s SIDE branch, on a leg that names one.
+        ///
+        /// <para>Shot against <c>docs/design/anchor-precommit-2026-08-24.md</c> §2 conditions 5 and 6.</para>
+        ///
+        /// <para><b>THE HANDICAP BACKS AWAY, and that is condition 5.</b> A home-backed handicap
+        /// passes under the OLD defect as well as the new ruling — <c>PickedHomeForPresentation</c>
+        /// returned HOME unconditionally for every non-moneyline kind — so it would photograph
+        /// perfectly and prove nothing. The pre-commitment names this as the condition most likely to
+        /// be met in spirit and missed in fact, citing <c>T149-am</c>.</para>
+        ///
+        /// <para><b>THREE ZONES IN ONE FRAME, and that is condition 6.</b> The lane's own ask ordered
+        /// two — strip and scorebug — and the DD amended it to three, correctly: the <c>●</c> backed
+        /// marker renders on MONEYLINE legs only, so on a handicap the scorebug says which club is
+        /// away but nothing says which club he BACKED. Without the leg's own row the frame shows an
+        /// anchor with nothing to check it against. <c>K17-cl</c>'s console defect was exactly this
+        /// disagreement — backing one club while the strip narrated the other — and it is invisible
+        /// with two zones.</para></summary>
+        [Explicit("Anchor window frame B: T163 side branch on an away-backed handicap. Writes frames. "
+            + "Run by filter only.")]
+        [Timeout(1200000)]
+        [UnityTest]
+        public IEnumerator Capture_AnchorSideBranch_AwayHandicap()
+        {
+            _seed = "ANCHOR-B";
+            s_sceneIndex = 0;
+            Directory.CreateDirectory(OutputDir);
+            TheaterStage.PresentationSeedOverride = StableSeed(_seed);
+            Time.captureDeltaTime = 1f / 50f;
+
+            yield return LoadRoom();
+            var director = Object.FindAnyObjectByType<RunDirector>();
+            var screen = Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = Object.FindAnyObjectByType<SitSpot>();
+            Camera cam = Camera.main;
+            Assert.IsNotNull(director, "RunDirector missing");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+            Assert.IsNotNull(cam, "no main camera — the room band would be lost");
+
+            screen.TimeScaleOverride = 1f;
+            couch.transitionDuration = 0.01f;
+            yield return WaitUntilOrFail(() => director.Run != null,
+                Time.realtimeSinceStartup + 10f, "director never started a run");
+
+            director.StartNewRun(_seed);
+            Run run = director.Run;
+
+            // Searched off the board, never constructed: the first matchup that prices an AWAY
+            // handicap. A board that prices none fails as a RE-SEED rather than quietly shooting a
+            // home-backed leg, which is the one substitution condition 5 forbids.
+            Matchup m = null;
+            MarketSelection hcap = default;
+            foreach (Matchup candidate in run.CurrentSlate.Matchups)
+            {
+                foreach (MarketOffer offer in candidate.Markets)
+                    if (offer.Selection.Kind == MarketKind.Handicap
+                        && offer.Selection.Choice == MarketChoice.Away)
+                    { m = candidate; hcap = offer.Selection; break; }
+                if (m != null) break;
+            }
+            Assert.IsNotNull(m,
+                $"seed '{_seed}' prices no AWAY handicap on any matchup — a RE-SEED. Condition 5 "
+                + "forbids substituting a home-backed leg, which would pass under the old defect too");
+
+            run.PlaceTicket(new List<Pick> { new Pick(m.Index, hcap) }, 25.0);
+            director.LockRound();
+            Assert.AreEqual(Phase.Sweat, run.Phase);
+
+            // CONDITION 5, asserted off the ENGINE's table rather than off the pick we just made:
+            // the anchor must be AWAY. This is the whole premise of the frame.
+            Ticket ticket = director.CurrentTicket;
+            Leg leg = ticket.Legs[0];
+            Assert.AreEqual(Side.Away, MatchModel.AnchorSide(leg),
+                $"the engine's anchor for this leg is not AWAY ({MatchModel.AnchorSide(leg)}), so the "
+                + "frame would test a case that passes under the old defect as well");
+
+            couch.OnInteract(null);
+            yield return WaitUntilOrFail(() => SitSpot.Active != null,
+                Time.realtimeSinceStartup + 15f, "player never sat down");
+
+            // CONDITION 1 — the strip line must come from an ANCHOR-INTERPOLATING table. Established
+            // POSITIVELY, by generating what SweatFlavor.For can produce for THIS leg at THIS anchor
+            // and requiring the rendered line to be one of them. Read off the function rather than a
+            // restated copy, so the harness cannot drift from the tables it checks.
+            var interpolated = new HashSet<string>();
+            foreach (DramaEventType type in new[]
+                { DramaEventType.Score, DramaEventType.BigPlay, DramaEventType.Momentum })
+                foreach (bool dir in new[] { true, false })
+                    for (int step = 0; step < 3; step++)
+                        interpolated.Add(SweatFlavor.For(
+                            new DramaEvent(0, step, 12, type, dir ? 0.62 : 0.38, TensionTag.Swing),
+                            leg, dir, Side.Away));
+
+            string line = null;
+            float deadline = Time.realtimeSinceStartup + 900f;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                string now = screen.DebugFlavorText;
+                if (!string.IsNullOrEmpty(now) && interpolated.Contains(now)) { line = now; break; }
+                if (screen.RevealedView.ClockText == "FT" || run.Phase != Phase.Sweat) break;
+                yield return null;
+            }
+            Assert.IsNotNull(line,
+                "no strip line from an anchor-interpolating table appeared before full time, so this "
+                + "burst would prove nothing about the anchor. Last strip text: "
+                + $"'{screen.DebugFlavorText}'");
+
+            // B1 — THE BINARY, and NOT the pre-commitment's literal wording, which the frames
+            // disproved. B1 reads "the club the strip names is the club the leg backs". THAT HOLDS
+            // ONLY ON UP-BEATS: the tables interpolate {picked} when the number rises and {other}
+            // when it falls, so on a DOWN-beat the correct line names the club he did NOT back. The
+            // first shot failed here on `Gravediggers pass it around, slow and mean.` — MomDown's
+            // {other} slot, filled with the home club on an away-anchored leg, which is the anchor
+            // WORKING.
+            //
+            // The discriminating form is direction-free and strictly stronger: the rendered line must
+            // be producible at anchor AWAY and NOT producible at anchor HOME. The two sets are
+            // disjoint line by line — at anchor Home that same template reads "{away club} pass it
+            // around" — so this proves WHICH anchor produced the line rather than which club appears
+            // in it.
+            string home = SweatFlavor.Short(m.Home.Name), away = SweatFlavor.Short(m.Away.Name);
+            Assume.That(home, Is.Not.EqualTo(away), "the two clubs must differ for this to test anything");
+
+            var atHome = new HashSet<string>();
+            foreach (DramaEventType type in new[]
+                { DramaEventType.Score, DramaEventType.BigPlay, DramaEventType.Momentum })
+                foreach (bool dir in new[] { true, false })
+                    for (int step = 0; step < 3; step++)
+                        atHome.Add(SweatFlavor.For(
+                            new DramaEvent(0, step, 12, type, dir ? 0.62 : 0.38, TensionTag.Swing),
+                            leg, dir, Side.Home));
+
+            Assert.IsTrue(interpolated.Contains(line),
+                $"the strip line is not producible at anchor AWAY. strip='{line}'");
+            Assert.IsFalse(atHome.Contains(line),
+                "the strip line is EQUALLY producible at anchor HOME, so it cannot show which anchor "
+                + $"rendered it — K17-cl's defect would look identical. strip='{line}'");
+
+            // CONDITION 6 — three zones, and the ROW must actually carry the backed club or the
+            // frame has an anchor with nothing to check it against.
+            //
+            // READ PER ROW, NEVER PER SPAN, and the first shot proved why: it read the compact line
+            // alone and got the empty string. A LIVE row BLANKS its compact line by design and
+            // carries its identity on the NEED span instead — T130's own summary states exactly this
+            // ("emptiness of a SPAN is normal and correct; emptiness of the WHOLE ROW is the
+            // defect"), and that per-ROW discipline is the right reading of condition 6 too.
+            string rowLine = LegRowLineTextInHarness(screen, 0) ?? string.Empty;
+            string rowNeed = screen.DebugLegNeed(0) ?? string.Empty;
+            string rowProgress = screen.DebugLegProgress(0) ?? string.Empty;
+            string row = string.Join(" | ", rowLine, rowNeed, rowProgress);
+            Assert.IsNotEmpty(row.Replace("|", string.Empty).Trim(),
+                "the leg row carries no text in ANY span, so condition 6's third zone is not on screen");
+            // CASE-INSENSITIVE, and the last shot is why. The row's name comes through MarketSheet,
+            // which UPPERCASES at the presentation layer exactly where RowGeometry.OfferRow does
+            // (S96, §6.5) — it read `DULUTH AUDITORS`. SweatFlavor.Short does NOT uppercase; it
+            // returns `Auditors`. Comparing them case-sensitively failed on a row that named the
+            // backed club perfectly well, which would have read as a build defect and was a test one.
+            Assert.IsTrue(row.ToUpperInvariant().Contains(away.ToUpperInvariant()),
+                "the leg's own row does not name the backed club in any span, so the frame cannot "
+                + $"show the agreement condition 6 is about. row='{row}' backed='{away}'");
+
+            Debug.Log($"[ANCHOR-B] row='{row}' strip='{line}' home='{home}' away='{away}' "
+                + $"score='{screen.RevealedView.ScoreText}' clock={screen.RevealedView.ClockText}");
+
+            // C55 on all THREE subjects — the agreement is the subject, so a frame missing any one
+            // of them cannot be read.
+            AssertSubjectInFrame(screen, "LegRowLine0", "anchor-side-away-handicap");
+            AssertSubjectInFrame(screen, "Flavor", "anchor-side-away-handicap");
+            AssertSubjectInFrame(screen, "Matchup", "anchor-side-away-handicap");
+
+            yield return CaptureBurst(screen, cam, "anchor-side-away-handicap", 60, 0f);
+
+            Debug.Log($"[TvSweatCaptureHarness] seed={_seed} frame B complete -> {OutputDir}");
+        }
+
+        /// <summary>The compact statement's text by GameObject name — the same lookup the sweat tests
+        /// use. Local to this harness so the two files stay independent.</summary>
+        private static string LegRowLineTextInHarness(TvSweatScreen screen, int i)
+        {
+            foreach (TMP_Text t in screen.GetComponentsInChildren<TMP_Text>(true))
+                if (t.gameObject.name == $"LegRowLine{i}") return t.text;
+            return null;
+        }
+
         /// <summary>The first offer of <paramref name="kind"/> on this matchup matching
         /// <paramref name="want"/>, read OFF the board and never constructed. Fails with the
         /// caller's own re-seed message when the board does not price it.</summary>
