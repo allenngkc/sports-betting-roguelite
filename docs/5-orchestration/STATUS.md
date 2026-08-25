@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 517 - AUTONOMOUS DECISION
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 518 - CI STAGE 1 PUSHED.**
+The architect session's 59485da (.github/workflows/ci.yml: .NET build +
+engine/console tests on GitHub Actions, no Unity; the tracking brief
+docs/5-orchestration/tracking-brief-2026-08-25.md - its Linear part is
+BLOCKED on Allen's setup, not acted on) rode this push. Next: read the
+Actions result (gh is not installed - API/browser), report green/red
+to Allen plainly; on green, 'CI green' joins the clean-merge checklist.
+TV building; DD holding. WITH ALLEN: unchanged + Linear setup when he
+chooses.
+
+*(prior stamp, cycle 517 - AUTONOMOUS DECISION
 (veto window).** The fresh TV seat asked whether Section 3 (the >=2
 name composition) is in scope this seat or gate-only; I took its
 recommendation - BUILD IT TOO: fully authored (batches 189/193/195),
