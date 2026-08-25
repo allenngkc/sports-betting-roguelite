@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 499 - CORRECTION to 498.**
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 500.** The team-total
+fallback measurement is specified as a doc (d8317ed: the surviving
+string, not just the width; a distinctive-word-loss flag; the commit +
+T168-am's build state verified from the tree) and queued to TV behind
+its part-C gate - which found a stopping-rule defect (red kept as
+corroboration of the probe; the one-line remedy applied, re-running).
+DD on its next docket item (T94's multi-fixture half is readable now
+that arm A's engine phase is merged). WITH ALLEN: the team-total scope
+call, the verified-not-built veto, the carve-out bookkeeping, the hold's
+structure, research 8-9, B9's sitting.
+
+*(prior stamp, cycle 499 - CORRECTION to 498.**
 The measurement was NOT withdrawn: batch 187 keeps it, for the copy,
 behind the part-C gate (not expedited), and binds it to C58-am2 - a
 routed width states the commit it was taken at and whether T168-am was
