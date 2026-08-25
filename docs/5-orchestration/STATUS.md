@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 513 - THE PENDING WINDOW
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 514 (heartbeat).** Fresh
+TV seat loading its handoff toward the NEED-copy build; DD reading the
+pending-window build; nothing ahead, nothing to land. WITH ALLEN:
+unchanged.
+
+*(prior stamp, cycle 513 - THE PENDING WINDOW
 IS BUILT AND MERGED (d66710c): it names its dead leg, T143/S85 are
 consumed, batches 192/194 folded in, 631.6 vs 635.0 (reading A), the
 >=3 hole closed on batch 193's number - THE LAST N-LIVE SITE OF THE
