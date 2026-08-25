@@ -3068,6 +3068,151 @@ namespace SBR.Tests.PlayMode
             return null;
         }
 
+        /// <summary>`T169-am`'s OWED VERIFICATION ITEM (DD batch 196): <b>a fixture that drives a
+        /// multi-scorer leg through a goal.</b>
+        ///
+        /// <para>That row ruled the arm *"not Design-verified until a fixture drives it"* — the model
+        /// arm is gated in EditMode over constructed inputs, but <c>_pickedScorerGoals</c>, the
+        /// counter that FEEDS it, lives in <c>TvSweatScreen.OnGoalPlayed</c> and nothing had ever run
+        /// it. **A stated risk that rides quietly becomes a shipped defect no one owns.**</para>
+        ///
+        /// <para><b>REPORT-ONLY ON THE NUMBER, by instruction.</b> This asserts that the CASE
+        /// OCCURRED — that the backed player really scored on this seed — and then REPORTS what the
+        /// counter read. It does not assert the counter is correct and it fixes nothing: whether the
+        /// number is right, and what to do if it is not, are not this fixture's to decide.</para>
+        ///
+        /// <para><b>THE SEED IS SEARCHED, NOT GUESSED, AND THE SEARCH IS PROVEN VALID.</b> A
+        /// multi-scorer leg only exercises the counter if the backed player actually scores, and
+        /// nothing lets a test choose that. So a throwaway <c>Run</c> is locked per seed until a
+        /// player is found in the sampled <c>StatLine</c>'s scorers, and the room run is then pinned
+        /// to that seed. <b>The search is only valid if the stat line does not depend on what was
+        /// bet</b> — <c>Run.LockRound</c> samples every matchup from <c>Rng.Outcomes</c>, a stream
+        /// the betting path never draws from — so the fixture RE-ASSERTS the scoreline after placing
+        /// a different ticket rather than trusting that reading. If the two ever diverge the search
+        /// is void and this fails, which is the honest failure.</para>
+        ///
+        /// <para>A player with TWO goals is preferred over one with a single goal, because a <c>2+</c>
+        /// leg crosses <c>NEED 1</c> → <c>WON</c> only then — but one goal is accepted and reported
+        /// as such rather than failing, since a two-goal player is not guaranteed to exist.</para></summary>
+        [UnityTest]
+        public IEnumerator T169_am_the_multi_scorer_counter_is_driven_by_a_real_goal()
+        {
+            // ---- 1. SEARCH, with no scene: find a seed whose sampled stat line has a repeat scorer.
+            string foundSeed = null;
+            int foundMatchup = -1, foundPlayerIndex = -1, foundGoals = 0;
+            string foundPlayerName = null;
+            for (int s = 0; s < 60 && foundGoals < 2; s++)
+            {
+                string seed = $"MULTI-{s}";
+                var probe = new Run(seed);
+                // One cheap moneyline ticket: LockRound is what samples the stat lines, and a round
+                // with no tickets is not the path this fixture is about.
+                probe.PlaceTicket(new List<Pick> { new Pick(0, Side.Home) }, 10);
+                probe.LockRound();
+                for (int m = 0; m < probe.CurrentSlate.Matchups.Count && foundGoals < 2; m++)
+                {
+                    Matchup mu = probe.CurrentSlate.Matchups[m];
+                    if (mu.StatLine == null) continue;
+                    for (int side = 0; side < 2; side++)
+                    {
+                        IReadOnlyList<Player> scorers = side == 0 ? mu.StatLine.AwayScorers : mu.StatLine.HomeScorers;
+                        IReadOnlyList<Player> roster = side == 0 ? mu.Away.Players : mu.Home.Players;
+                        for (int r = 0; r < roster.Count; r++)
+                        {
+                            int goals = 0;
+                            foreach (Player sc in scorers) if (ReferenceEquals(sc, roster[r])) goals++;
+                            if (goals <= foundGoals) continue;
+                            foundGoals = goals;
+                            foundSeed = seed;
+                            foundMatchup = m;
+                            // PlayerAt indexes AWAY first, then HOME (Domain.cs) — mirrored here
+                            // because MarketSelection.PlayerMultiScorer takes THAT index.
+                            foundPlayerIndex = side == 0 ? r : mu.Away.Players.Count + r;
+                            foundPlayerName = roster[r].Name;
+                        }
+                    }
+                }
+            }
+            Assert.Greater(foundGoals, 0,
+                "C29: no seed in 60 produced a player who scored, so this fixture would have driven NOTHING. "
+                + "T169-am asks for a goal to be driven; a run without one is not a smaller version of that.");
+            Debug.Log($"[MULTI] seed '{foundSeed}' matchup {foundMatchup} player {foundPlayerIndex} "
+                + $"'{foundPlayerName}' scores {foundGoals} — searched by locking throwaway runs, because "
+                + "nothing lets a test choose who scores.");
+
+            // ---- 2. The room, pinned to that seed.
+            yield return LoadRoom();
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            var screen = UnityEngine.Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = UnityEngine.Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+            screen.TimeScaleOverride = 0.0001f;
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            director.StartNewRun(foundSeed);
+            Run run = director.Run;
+            Assert.AreEqual(Phase.Betting, run.Phase, "a pinned run opens in Betting");
+
+            var multi = MarketSelection.PlayerMultiScorer(foundPlayerIndex);
+            run.PlaceTicket(new List<Pick> { new Pick(foundMatchup, multi) }, 10);
+            director.LockRound();
+            Assert.AreEqual(1, run.Sweats.Count, "one session per ticket");
+
+            // ---- 3. THE SEARCH'S OWN PREMISE, RE-ASSERTED. If placing a different ticket moved the
+            // stat line, every number below is about a different match than the one searched.
+            Matchup played = run.CurrentSlate.Matchups[foundMatchup];
+            Assert.IsNotNull(played.StatLine, "the locked round did not sample a stat line");
+            Player backed = played.PlayerAt(foundPlayerIndex);
+            int actualGoals = 0;
+            foreach (Player sc in played.StatLine.HomeScorers) if (ReferenceEquals(sc, backed)) actualGoals++;
+            foreach (Player sc in played.StatLine.AwayScorers) if (ReferenceEquals(sc, backed)) actualGoals++;
+            Assert.AreEqual(foundGoals, actualGoals,
+                $"the stat line MOVED between the probe and the room run ({foundGoals} -> {actualGoals}). "
+                + "Rng.Outcomes is supposed to be independent of the betting path; if it is not, this search "
+                + "is void and so is every number below it.");
+
+            // ---- 4. Watch the counter across the whole sweat. Polled per frame and kept at its MAX:
+            // BeginStageLeg resets it per leg, so a value read only at the end would report the reset
+            // rather than the count.
+            FieldInfo countField = typeof(TvSweatScreen).GetField(
+                "_pickedScorerGoals", BindingFlags.NonPublic | BindingFlags.Instance);
+            FieldInfo stageLegField = typeof(TvSweatScreen).GetField(
+                "_stageLeg", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(countField, "TvSweatScreen._pickedScorerGoals not found — renamed? This fixture "
+                + "exists to drive THAT field and must fail rather than watch nothing.");
+            Assert.IsNotNull(stageLegField, "TvSweatScreen._stageLeg not found — renamed?");
+
+            int maxCount = 0, framesWatched = 0;
+            var stageLegsSeen = new SortedSet<int>();
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+
+            float start = Time.realtimeSinceStartup;
+            while (run.Phase == Phase.Sweat && Time.realtimeSinceStartup - start < 60f)
+            {
+                int c = (int)countField.GetValue(screen);
+                if (c > maxCount) maxCount = c;
+                stageLegsSeen.Add((int)stageLegField.GetValue(screen));
+                framesWatched++;
+                yield return null;
+            }
+            Assert.Greater(framesWatched, 0, "C29: the sweat was never observed — the poll ran zero frames");
+            Assert.AreNotEqual(Phase.Sweat, run.Phase, "the sweat never finished inside 60s");
+
+            // ---- 5. REPORT. The number is not asserted, by instruction: whether it is right and what
+            // follows if it is not are the DD's, not this fixture's.
+            Debug.Log($"[MULTI] DRIVEN: '{foundPlayerName}' scored {actualGoals} on seed '{foundSeed}', "
+                + $"leg is a {(int)multi.Line}+ multi-scorer, ticket has {run.Tickets[0].Legs.Count} leg(s). "
+                + $"_pickedScorerGoals PEAKED AT {maxCount} over {framesWatched} observed frames. "
+                + $"_stageLeg took {string.Join("/", stageLegsSeen)}. "
+                + $"EXPECTED if the counter is wired: {actualGoals}. "
+                + $"** {(maxCount == actualGoals ? "MATCHES" : $"DOES NOT MATCH — read {maxCount}, the player scored {actualGoals}")} ** "
+                + "REPORT ONLY — no fix, no reading; routed.");
+        }
+
         private static int UnusedMatchup(Run run, IReadOnlyList<Pick> used)
         {
             for (int i = 0; i < run.CurrentSlate.Matchups.Count; i++)
