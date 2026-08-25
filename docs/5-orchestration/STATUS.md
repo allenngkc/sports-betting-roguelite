@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 489 (heartbeat - the
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 490 - RESUME. Allen:
+"continue" (his resume word, as before - stated here for veto).** The
+pause lifts; seats re-seating (TV + engine by --continue, DD by session
+ID); Unity 0. Found at resume: TV's armless-kind fix is UNCOMMITTED in
+its tree (TvSweatScreen.cs + the capture harness) and
+ProjectSettings.asset is dirty there - integration-only, must be
+checkout-restored, never committed by the lane. The capture arc
+resumes where it parked: suites for the fix, frame B re-shoot, dock,
+DD read.
+
+*(prior stamp, cycle 489 (heartbeat - the
 pause holds, quiet; seats down by design).**
 
 *(prior stamp, cycle 488 (restart under
