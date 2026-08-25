@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 508 - a time-critical
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 509 (heartbeat).** TV's
+pending-window build in flight with batch 192's amendment folded in
+('chain intact'); suites follow. DD batch 193 landed (37c20ef): the
+three-or-more-dead-legs hole is probably not a hole - N is bounded at
+four, and the alarming number measured copy the DD had already removed;
+self-corrected. DD's desk clean. WITH ALLEN: the team-total scope call
+(two fixes), the veto, the carve-out bookkeeping, the hold's structure,
+research 8-9, B9's sitting.
+
+*(prior stamp, cycle 508 - a time-critical
 intercept.** DD batch 192 (3b9be2b, T143-am5): the pending window's leg
 name is built TO THE RULING, not the build state - and for the three
 team-total kinds it inherits T156 wholesale; the DD's own copy spec had
