@@ -134,6 +134,71 @@ what that clause forbids.
 
 ---
 
+## 0-U20. THE CAPTURE WINDOW FOUND A SHIPPING DEFECT — TWICE, IN ONE CHAIN · 2026-08-24
+
+**EditMode 332/331/0/1 · PlayMode 152/125/0/27** (+2 skipped = frames A and B, `[Explicit]`).
+
+**The anchor window was granted to EVIDENCE a change. Its binding conditions found two defects no
+suite could reach.** That is the argument for the conditions, not just for the frames.
+
+### DEFECT 1 — `DescribeActiveLeg`'s `default:` RETURNED AN ALL-EMPTY COPY
+
+A LIVE row blanks its compact line by design, so NEED and progress are the only spans it has. An
+empty copy therefore rendered **a leg of the player's ticket as a completely blank row** — `T130`'s
+defect exactly.
+
+**It is item `1.3`'s defect surviving on other kinds.** `1.3`'s own record: *"the arm AND the caller
+wiring — the arm alone would not have fixed it, the caller's `default:` returned an empty copy, which
+IS the blank column."* `1.3` added the `CorrectScore` arm **and left the `default:` standing**.
+
+**SEVEN OFFERED KINDS REACHED IT:** `Handicap` (4 selections), `TeamTotalGoals`/`Corners`/`Cards` and
+`TotalGoalsOddEven` (2 each), `WinningMargin` and `PlayerMultiScorer` (1 each). Half the board.
+
+### DEFECT 2 — AND THE CONSOLE HAD ALREADY RULED IT
+
+Fixing (1) exposed `LegStatement`'s `default: leg.DisplayLabel`, which gave a live `Handicap` row the
+bare word **`Handicap`** — a leg naming its market TYPE instead of the player's bet.
+
+**`SweatLines.LegName` states the rule outright:** *"Nothing here falls back to the enum name:
+**THAT FALLBACK IS K16/T130**."* The console removed it; **the TV kept it.** Same defect, on the
+surface that did not get the ruling.
+
+Both now read **`MarketSheet`** — the one composer this surface, the laptop and the console all print
+through (`S96`, §6.5) — so an unauthored kind names the bet **in the words the board offered it in**.
+No copy is invented, which is what `G1` actually asks for.
+
+### THE GATE IS EXHAUSTIVE OVER THE BOARD, AND THAT SHAPE IS THE POINT
+
+`ActiveLegCopyIsNeverBlankTests` sweeps **every selection the board prices** across three seeds —
+measured at **25 selections, 14 kinds** — and treats a THROW as a failure too, since
+`SweatActiveLegModel.Describe` throws on unarmed kinds and the caller's `default:` was what turned
+that into silence.
+
+**`T130` walks what the policy DEALS; its forced sibling walks ONE kind chosen in advance. The defect
+was on a kind nobody thought to choose.** Enumerating the board is the only form that catches the
+next one — it fails when a market joins the offered set without copy, rather than when someone
+remembers to add a case.
+
+### FOUR CHECKS, EACH CATCHING WHAT THE PREVIOUS ONE STRUCTURALLY COULD NOT
+
+1. `T130` — proved a blank row is caught, on the one kind the policy deals.
+2. The **mutation audit** — proved the gate DETECTS the defect. Says nothing about coverage.
+3. The **forced-kind fixture** — proved `CorrectScore`. One chosen kind.
+4. The **capture window** — forced a market NO test had rendered, and found it live on seven.
+
+**A mutant proves detection, never coverage. A forced fixture proves the kind you chose, never the
+one you did not. Only enumeration catches the market nobody thought about — and only a capture forced
+it into view.**
+
+### OWED, ROUTED NOT INVENTED
+
+**Seven offered kinds have no authored NEED copy** and now fall back to the row's identity string.
+NEED asks *"what does my money still need"*; the fallback answers *"which bet is this"*. **That is a
+compromise and it is deliberate** — authoring NEED lines for those kinds is a DESIGN question and
+belongs with the DD. What is fixed is the SILENCE.
+
+---
+
 ## 0-U19. `T130` MEETS ITS SUBJECT — THE FORCED-KIND GATE · 2026-08-24
 
 **PlayMode 150/125/0/25** — +1, so the file recompiled and the gate really ran.
