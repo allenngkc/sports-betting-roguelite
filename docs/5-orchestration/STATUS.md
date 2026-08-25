@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 503.** DD batch 188
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 504.** Landed: DD batch
+189 + the pending-window COPY spec (owed since 186 - the placeholder
+asserted a death that had not happened; 5283b3c), bundled into TV's
+height-consumption build. THE DD DOCKET REFRESHED
+(dd-docket-2026-08-25.md, 703f83c - supersedes 08-20; closed threads
+listed, TV's chain in order, Allen's items). TV re-running the
+team-total measurement after fixing its report's two defects; the
+preliminary city-only survivor is NOT yet a report. WITH ALLEN:
+unchanged.
+
+*(prior stamp, cycle 503.** DD batch 188
 landed (08610b5): T94's multi-fixture half is READABLE now - the gate
 discharges and the answer is NO: arm A narrowed the desync to ONE
 window and preserved it deliberately (T94-am3); T140-am3 binds what the
