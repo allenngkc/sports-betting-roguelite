@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 491 - THEATER-ENGINE
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 492 (heartbeat).** THE
+ANCHOR WINDOW IS SHOT AND DOCKED (8983c80 via bf7dfea; the live-row fix
+merged at 7dd5686 - item 1.3's defect had survived on seven markets and
+the capture found it). The DD is reading the dock against its
+pre-commitment (TV's README states frame B's 'before' is not a true
+before/after). TV building the pending-loss window - the LAST N-live
+site of the one-telling ending. theater-engine retired (cycle 491).
+WITH ALLEN: the carve-out bookkeeping, the hold's structure, research
+8-9, B9's sitting.
+
+*(prior stamp, cycle 491 - THEATER-ENGINE
 RETIRED (Allen: remove worktrees with no work pending).** Verified 0
 ahead, fully merged, tree clean; seat stood down; worktree + branch
 deleted; registry updated. KEPT with reasons: markets-pregame (the K21
