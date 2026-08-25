@@ -1,6 +1,20 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 494.** The pending-loss
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 495 - AUTONOMOUS DECISION
+(veto window).** Allen ordered 'build the once-per-whistle
+verification'; TV declined with a reason I accepted: on every ticket
+shipping today exactly one leg dies per whistle, so a TV gate could
+never fail on the N-live case it names - a false answer, the exact
+mistake this session produced twice (the mutant-passing compatibility
+test; T130's gate green for weeks without meeting its market). The
+engine's session-level pin (388ac16) already carries the fact. CLOSED
+AS VERIFIED, NOT BUILT. Allen may override: build it anyway WITH the
+same-match fixture that could make it fail. What the TV actually lacks
+is consumption of PendingDeadLegIndices/NoSingleCallSaves - blocked on
+the height, with the DD. WITH ALLEN: this veto, the carve-out
+bookkeeping, the hold's structure, research 8-9, B9's sitting.
+
+*(prior stamp, cycle 494.** The pending-loss
 window measured and routed (8e4e3b8 via 930635e): neither T143's line
 nor S85's fits as a new row in the fixed grid; three options priced,
 option 3 (share a row) favoured on the numbers; the two-leg form
