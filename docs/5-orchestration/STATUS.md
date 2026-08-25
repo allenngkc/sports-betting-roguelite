@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 522 - CI IS GREEN.** Run
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 523 (heartbeat).** CI green
+held on the checklist commit too (dd6e9e9). TV finishing its wrap-up
+build (step A merged at b7fdaa3; the rest + handoff pending); DD
+holding for that merge. Nothing ahead, nothing to land. WITH ALLEN:
+unchanged.
+
+*(prior stamp, cycle 522 - CI IS GREEN.** Run
 on c70a2b6 concluded success: .NET build, engine tests, console tests
 (the stale anchor-shape gate rewritten at 9c6df0f). 'CI green' now sits
 in STUDIO.md's clean-merge checklist - every autonomous merge reads the
