@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 538 heartbeat - TV's
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 539 heartbeat - TV
+still on the counter: its diagnostic shows one transition at frame 70
+revealing picked=5 opponent=0 against a 0-5 statline with the backed
+player AWAY - a side-orientation read inside the counter, under
+investigation (may touch T140-am2, which stays Allen's). DD holding.
+WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 538 heartbeat - TV's
 counter remedy: the counter is per-leg (an array) and the T169-am
 fixture's pin is being updated to read it; PlayMode re-running. DD
 holding. WITH ALLEN: unchanged.**
