@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 518 - CI STAGE 1 PUSHED.**
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 519 (heartbeat) - CI IS
+RED.** Run 32813184040 on b1b9743: build green, engine tests green,
+CONSOLE TESTS FAIL (the earlier run on 59485da was cancelled by the
+follow-up push - concurrency, normal). Reproducing the console tests
+locally to separate a code failure from a runner-environment one; then
+the fix routes (the CI author or the console tests' owner). 'CI green'
+does NOT join the checklist until it is green. TV building; DD holding.
+WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 518 - CI STAGE 1 PUSHED.**
 The architect session's 59485da (.github/workflows/ci.yml: .NET build +
 engine/console tests on GitHub Actions, no Unity; the tracking brief
 docs/5-orchestration/tracking-brief-2026-08-25.md - its Linear part is
