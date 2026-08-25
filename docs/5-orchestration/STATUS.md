@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 492 (heartbeat).** THE
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 493 - T163 DESIGN-VERIFIED
+on both branches (batch 184, b22c6d0): the flavour anchor holds on 120
+frames; the DD records the dock catching three of its own errors. DD
+now speccing the seven kinds' NEED copy + T168 together (Allen). TV
+measuring the pending-loss window's composition before any copy (its
+early read: T143's line pays its way every whistle; S85's fires only on
+two-dead-at-one-whistle, which no shipping ticket produces - the height
+is the DD's). WITH ALLEN: the carve-out bookkeeping, the hold's
+structure, research 8-9, B9's sitting.
+
+*(prior stamp, cycle 492 (heartbeat).** THE
 ANCHOR WINDOW IS SHOT AND DOCKED (8983c80 via bf7dfea; the live-row fix
 merged at 7dd5686 - item 1.3's defect had survived on seven markets and
 the capture found it). The DD is reading the dock against its
