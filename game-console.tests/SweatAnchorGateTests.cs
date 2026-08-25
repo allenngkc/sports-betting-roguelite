@@ -254,62 +254,109 @@ public class SweatAnchorGateTests
     }
 
     // =====================================================================================
-    // 4. THE PROHIBITION — the sibling on the TV must not have been widened into this one.
+    // 4. THE SINGLE SOURCE — the sibling on the TV must derive from MatchModel.AnchorSide, and
+    //    the console's own table must still mirror it everywhere except the one ruled exception.
     // =====================================================================================
 
     /// <summary>
-    /// <b><c>K17-cl</c> forbids fixing this by widening <c>SweatFlavor.PickedHomeForPresentation</c></b>:
-    /// its docstring states in terms that it answers a DIFFERENT question and that <i>"neither" would
-    /// leave the flavour with no names</i>. The two are two correct shapes for two questions and
-    /// collapsing them re-creates the conflation <c>T143-am</c> split apart one batch ago.
+    /// <b>Superseded premise, recorded so the history reads straight.</b> This gate used to pin
+    /// <c>SweatFlavor.PickedHomeForPresentation</c>'s STRUCK five-line predicate and assert that it
+    /// and the console's table always gave DIFFERENT answers — a guard against a premature
+    /// unification. <c>MatchModel.AnchorSide</c> (engine, 622abf3) then became the ENGINE's single
+    /// source for "which club the prose names", and Allen ruled 2026-08-24 that
+    /// <c>PickedHomeForPresentation</c> becomes a thin adapter over it: <i>AnchorSide where it
+    /// answers, the HOME convention where it is NEITHER</i> — see <c>SweatFlavor.cs</c>'s own
+    /// docstring on the function ("SUPERSEDED AS A TABLE, RETAINED AS THE GEOMETRY ADAPTER"). The
+    /// two shapes were never meant to unify forever; they were meant to stop being TWO INDEPENDENT
+    /// TABLES that could silently drift, which is exactly what <c>K17-cl</c> was about. So the
+    /// premise this test rules on flipped: the TV's function is now SUPPOSED to agree with the
+    /// engine's single source, and what stays gated is (a) that it still goes THROUGH that source
+    /// rather than re-growing its own table, and (b) that the console's <c>BackedSide</c> — a
+    /// deliberately separate answer to a deliberately different question ("who PAYS", not "who the
+    /// prose names") — keeps mirroring <c>AnchorSide</c> everywhere except the one family the DD
+    /// named as the intended divergence: the player-scorer kinds, where a man can score in a losing
+    /// leg and <c>BackedSide</c> is right to say NEITHER while the prose still names his club.
     ///
-    /// <para>The console's test assembly cannot load a Unity runtime type, so this asserts on the
-    /// SOURCE: the function still returns <c>bool</c>, still answers HOME for every non-moneyline
-    /// kind, and has not grown a <c>Side?</c>. Paired with a behavioural half — the console's own
-    /// table answers where that function does not — so the claim is not purely textual.</para>
+    /// <para>The console's test assembly cannot load a Unity runtime type, so the SweatFlavor half
+    /// still asserts on the SOURCE TEXT: the function still returns <c>bool</c>, and its body is
+    /// pinned to the adapter formula rather than to a hand-rolled table. The behavioural half calls
+    /// <c>MatchModel.AnchorSide</c> for real — it is an engine type, not a Unity one, so this
+    /// assembly reaches it directly — and checks it against <c>BackedSide</c> over the whole priced
+    /// pool, so a re-introduced second table (on either surface) or a collapsed divergence both have
+    /// somewhere to fail.</para>
     /// </summary>
     [Fact]
-    public void PickedHomeForPresentation_was_not_widened_and_the_two_shapes_still_differ()
+    public void PickedHomeForPresentation_is_the_AnchorSide_adapter_and_BackedSide_still_asks_its_own_question()
     {
         string path = Path.Combine(RepoRoot(), "unity", "SBR", "Assets", "SBR", "Runtime", "SweatFlavor.cs");
         Assert.True(File.Exists(path), $"SweatFlavor.cs was not found at {path}");
         string flat = Regex.Replace(File.ReadAllText(path), @"\s+", " ");
 
+        // Allen's ruling 2026-08-24: AnchorSide WHERE IT ANSWERS, the HOME convention where NEITHER.
         const string Pinned =
             "public static bool PickedHomeForPresentation(Leg leg) "
-            + "=> leg.Selection.Kind == MarketKind.AnytimeScorer "
-            + "? leg.Matchup.PlayerSide(leg.Selection.PlayerIndex) == Side.Home "
-            + ": leg.Selection.Kind != MarketKind.Moneyline "
-            + "|| leg.Selection.Choice == MarketChoice.Home "
-            + "|| leg.Selection.Choice == MarketChoice.Draw;";
+            + "=> (MatchModel.AnchorSide(leg) ?? Side.Home) == Side.Home;";
 
         Assert.True(flat.Contains(Pinned, StringComparison.Ordinal),
-            "SweatFlavor.PickedHomeForPresentation is not the function K17-cl was ruled against. "
-            + "If the TV lane changed it deliberately, re-pin this string and say so; if the change "
-            + "came from someone fixing K17-cl by widening it, that is the thing the ruling forbids.");
+            "SweatFlavor.PickedHomeForPresentation is not the AnchorSide adapter Allen ruled "
+            + "2026-08-24. If the TV lane changed it deliberately, re-pin this string and say so; "
+            + "if a second hand-rolled per-kind table came back instead of calling "
+            + "MatchModel.AnchorSide, that is K17-cl's defect returning under a passing build.");
 
         Assert.False(flat.Contains("Side? PickedHomeForPresentation", StringComparison.Ordinal),
             "PickedHomeForPresentation now returns Side? — it has been widened into the backed-side "
-            + "question, which K17-cl forbids (T143-am's conflation).");
+            + "question, which is still forbidden (T143-am's conflation): the adapter must stay a "
+            + "bool that falls to HOME, not grow a third shape of its own.");
 
-        // The behavioural half: on the nine team-agnostic kinds that function answers HOME (it
-        // returns true for every non-moneyline kind), and the console's table answers NEITHER. On
-        // an AWAY-backed side-carrying kind it still answers HOME and the console answers AWAY.
-        // Two questions, two answers — if these ever coincide the shapes have been collapsed.
-        int diverged = 0;
-        foreach (MarketSelection s in EveryPricedSelection())
+        // The behavioural half, run against the whole priced pool. MatchModel.AnchorSide is called
+        // for real here — the same function the pinned adapter calls — so this checks the
+        // SUBSTANCE the source pin above can only check the SHAPE of.
+        int agreedOnASide = 0;
+        int fellToHomeConvention = 0;
+        int scorerDivergence = 0;
+        var offenders = new List<string>();
+
+        foreach ((Matchup m, MarketSelection s) in EveryPricedSelectionWithMatchup())
         {
-            bool tvSaysHome = s.Kind == MarketKind.AnytimeScorer
-                || s.Kind != MarketKind.Moneyline
-                || s.Choice == MarketChoice.Home
-                || s.Choice == MarketChoice.Draw;
-            if (!tvSaysHome) continue;
-            if (BackedSide(s) != Side.Home) diverged++;
+            var leg = new Leg(m, s, 2.0);
+            Side? anchor = MatchModel.AnchorSide(leg);
+            Side? backed = BackedSide(s);
+
+            if (s.Kind is MarketKind.AnytimeScorer or MarketKind.PlayerMultiScorer)
+            {
+                // THE ONE RULED DIVERGENCE (622abf3's docstring). BackedSide answers who PAYS and
+                // is NEITHER on a scorer leg — a man can score in a losing leg and it still wins —
+                // while AnchorSide (and so the TV's adapter) names the player's own club. If these
+                // ever coincide, the two questions have been collapsed back into one, which is the
+                // mistake 622abf3 states it deliberately avoided.
+                if (backed != null)
+                    offenders.Add($"[{s.Kind}] BackedSide answered {backed} instead of NEITHER — "
+                        + "the who-pays/who-is-named split has collapsed");
+                else
+                    scorerDivergence++;
+                continue;
+            }
+
+            // Every other kind: the console's own table is a SECOND implementation of the same
+            // facts AnchorSide holds, and this is the check that it has not drifted from the
+            // single source it mirrors.
+            if (anchor != backed)
+                offenders.Add($"[{s.Kind}] AnchorSide says {anchor?.ToString() ?? "neither"} but "
+                    + $"BackedSide says {backed?.ToString() ?? "neither"} — the console's table has "
+                    + "drifted from the engine's single source");
+            else if (anchor == null) fellToHomeConvention++;
+            else agreedOnASide++;
         }
-        _output.WriteLine($"selections where the two shapes give different answers : {diverged}");
-        Assert.True(diverged > 0,
-            "the console's anchor now agrees with PickedHomeForPresentation everywhere, which means "
-            + "one of the two questions stopped being asked");
+
+        _output.WriteLine($"non-scorer selections agreeing with AnchorSide on a side : {agreedOnASide}");
+        _output.WriteLine($"non-scorer selections falling to the HOME convention     : {fellToHomeConvention}");
+        _output.WriteLine($"scorer selections exercising the ruled divergence        : {scorerDivergence}");
+
+        Assert.True(agreedOnASide > 0, "C29: no side-carrying selection exercised the mirror");
+        Assert.True(fellToHomeConvention > 0, "C29: no neither selection exercised the HOME convention");
+        Assert.True(scorerDivergence > 0, "C29: no scorer selection exercised the ruled divergence");
+        AssertNone(offenders, "the console's BackedSide and the engine's AnchorSide disagree outside "
+            + "the one ruled exception");
     }
 
     // =====================================================================================
