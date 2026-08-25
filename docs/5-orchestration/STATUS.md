@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 527 - T94 REVERSED
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 528 - T156 re-take
+committed at TV (5e5348e: the city-only survivor is gone, the control is
+safe again, the pair is not); TV still mid-turn on PlayMode, merge on its
+report. T94 correction consumed. DD holding, nothing open. Untracked
+docs/design/linear-import/ is the architect session's - not touched.
+WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 527 - T94 REVERSED
 (batch 197, b8d25af).** The DD found its own T140-am3 protected the very
 behaviour T94 is about: the pre-emption is not a feature to preserve
 around the defect - IT IS THE DEFECT. TV corrected before it reaches
