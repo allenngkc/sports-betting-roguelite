@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 514 (heartbeat).** Fresh
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 515.** THE PENDING-WINDOW
+BUILD IS ACCEPTED by the DD (batch 195, a42fe44 - T143-am8; the >=3
+escalation withdrawn in full by the pre-committed reading; a gate owed
+on a 3.4px margin) - and the read found the window's NAME wrong: the
+club alone MISNAMES the scorer markets and is AMBIGUOUS on a same-match
+ticket today (T143-am9). Both queued to the fresh TV seat with the
+NEED-copy build (shared source); T94's seam last. WITH ALLEN: the
+team-total scope call (its club-alone shape now also touches the
+window's name), the veto, the carve-out bookkeeping, the hold's
+structure, research 8-9, B9's sitting.
+
+*(prior stamp, cycle 514 (heartbeat).** Fresh
 TV seat loading its handoff toward the NEED-copy build; DD reading the
 pending-window build; nothing ahead, nothing to land. WITH ALLEN:
 unchanged.
