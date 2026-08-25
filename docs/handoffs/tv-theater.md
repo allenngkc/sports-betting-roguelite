@@ -134,6 +134,68 @@ what that clause forbids.
 
 ---
 
+## 0-U23. PART C's DIRECTION MEETS ITS SHAPE — AND THE ARGUMENT IT SHIPPED ON WAS INCOMPLETE · 2026-08-25
+
+**EditMode 335/334/0/1.**
+
+```
+[PARTC-DIR] seed PARTC-DIR-A matchup 3 OVER 1.5 + UNDER 2.5 | legs 2 fixtures 1
+sameMatchBlock True p(t=0) 0.2169 | beats 4 · divergent-leg 3 · SIGN-DIFFERING 2
+|| pool examined 10 diverged 10
+```
+
+### THE JUSTIFICATION PART C SHIPPED ON DOES NOT COVER THE CASE PART C EXISTS FOR
+
+`0-U16` recorded the reason: *"the ticket's probability is a product of positive per-leg factors, so
+it is monotone in each — while one telling is live the sign of the ticket delta equals the sign of
+the moving leg's."*
+
+**That is true of ORDINARY tickets and FALSE of same-match ones.** There the ticket's probability is a
+**JOINT** (`Ticket.SameMatch.PTicket`, via `JointModel`), not a product, so monotonicity in each leg's
+probability does not follow. **The code was never known to be wrong; the ARGUMENT was incomplete**,
+and only a fixture settles it.
+
+**Now measured: the ticket's sign departed from the anchor leg's on 2 of 4 beats.** The joint IS
+non-monotone in its anchor, which is exactly why the spec's *"a single up/down ONLY because the
+displayed probability is the TICKET's"* is load-bearing rather than decorative.
+
+### ⚠ THE FIRST VERSION SHIPPED RED, ON PURPOSE, AND THAT IS THE LESSON
+
+The brief's stopping rule was *the first LEGAL same-match combination*. It landed on
+`PARTC-DIR-A / matchup 0 / OVER 1.5 + UNDER 2.5`: **4 beats, legs diverging on 3, sign-differing 0.**
+On that fixture the retired leg-scoped rule and `T164`'s ticket-scoped rule print the IDENTICAL
+direction on every beat — **a green there would have proven nothing.** Observed, not predicted:
+`EditMode-partc-dir.xml`.
+
+**The delegate refused to hunt a greener fixture** on the ground that it would make the assertion
+tautological, and reported it instead. That was the right call and it is why this gate is real.
+
+### THE REMEDY, AND THE DISTINCTION IT TURNS ON
+
+The stopping rule became *the first combination that DISCRIMINATES*. **That is selecting a CASE, not
+an OUTCOME**, and the difference is not rhetorical:
+
+- The claim is an EXISTENCE one — the joint's sign CAN depart from its anchor's. A fixture where it
+  cannot happen cannot test it, exactly as `T130`'s gate could not test `CorrectScore` while the
+  policy dealt moneylines.
+- **THE POOL IS REPORTED**: `pool examined N diverged k` on every run. A fixture chosen because it
+  discriminates is honest only if the size of the pool it came from is stated.
+- **"NONE FOUND" IS A RESULT, NOT A REASON TO KEEP LOOKING.** The search's failure message says so:
+  if no combination discriminates, the re-base is UNOBSERVABLE and that is a finding about part C.
+  *A search that runs until it finds agreement is not evidence of anything.*
+
+**It settled on matchup 3 of the FIRST seed — two matchups from the blind one — with 10 of 10
+examined combinations diverging.** Common, not exotic.
+
+### `T166` IS PINNED HERE TOO
+
+The gate asserts `MagnitudeBand` still partitions at 0.04/0.10 on both signs. Ticket-level deltas are
+COMPRESSED by the other legs' probabilities, so moving those thresholds is the natural "fix" for a
+later seat who notices the tape quietening — and `T166` ruled the quietening TRUE. The guard stops a
+future correction from undoing a ruling.
+
+---
+
 ## 0-U22. THE COUNTER MEETS ITS SHAPE — THE FIRST SAME-MATCH FIXTURE · 2026-08-24
 
 **EditMode 334/333/0/1** (+1, so the file recompiled and the gate ran).
