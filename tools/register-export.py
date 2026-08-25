@@ -14,15 +14,18 @@ SURFACE_BY_PREFIX = {"S": "laptop", "T": "tv", "R": "room", "C": "cross-surface"
 
 # Normalize the register's free-text state vocabulary onto the Linear workflow.
 STATE_RULES = [
+    # order matters: terminal/negative words first, then laws, then positive rulings
     (r"design-?verified", "Design-verified"),
-    (r"\bstruck\b|\bstrike\b", "Struck"),
-    (r"\bparked\b|\bdeferred\b", "Parked"),
-    (r"\bclosed\b", "Closed"),
-    (r"\bimplemented\b|\blanded\b|\bshipped\b", "Implemented"),
-    (r"\bin build\b|\bbuilding\b|\bdispatched\b", "In Build"),
-    (r"\bgranted\b|\bapproved\b|\bruled\b", "Approved"),
-    (r"\bcandidate\b|\bproposed\b", "Candidate"),
-    (r"\bexploration\b|\bopen\b|\bpending\b", "Exploration"),
+    (r"struck|strike|revoked|dumped|deprecated|superseded|withdrawn|cancell?ed|void", "Struck"),
+    (r"parked|deferred|held|quarantined?", "Parked"),
+    (r"^\s*≡|re-?pointed|alias", "Closed"),          # alias rows point at the base row
+    (r"closed|retired", "Closed"),
+    (r"implemented|landed|shipped|merged", "Implemented"),
+    (r"in build|building|dispatched|flagged|owed|violation", "In Build"),
+    (r"law|constitution|standing", "Law"),         # not work: becomes a rule, not a ticket
+    (r"granted|approved|ruled|signed|authored|confirmed|amended|new|spec issued|reasoning corrected", "Approved"),
+    (r"debt|candidate|proposed", "Candidate"),
+    (r"exploration|open|pending", "Exploration"),
 ]
 
 def normalize(state_cell):
