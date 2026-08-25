@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 502 (heartbeat).** Quiet:
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 503.** DD batch 188
+landed (08610b5): T94's multi-fixture half is READABLE now - the gate
+discharges and the answer is NO: arm A narrowed the desync to ONE
+window and preserved it deliberately (T94-am3); T140-am3 binds what the
+fix must not change (the pre-emption is right; the missing boundary is
+the defect). Queued to TV at the end of its chain: measurement ->
+height-consumption build -> NEED-copy build -> T94's seam. Register
+current, scan green, backlog zero. TV's measurement shell running.
+WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 502 (heartbeat).** Quiet:
 TV running the team-total measurement; DD on its docket item; nothing
 ahead, nothing to land. WITH ALLEN: unchanged.
 
