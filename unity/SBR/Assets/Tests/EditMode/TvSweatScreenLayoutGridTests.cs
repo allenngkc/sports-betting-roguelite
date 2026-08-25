@@ -1807,8 +1807,12 @@ namespace SBR.Tests.EditMode
                     $"measured in '{need.font.name}', not Encode Sans — the mistake T20 made once");
 
                 float box = need.rectTransform.rect.width;
-                Debug.Log($"[TT-FIT] NEED box {box:0.0}px · commit {CommitAtMeasurement()} · T168-am BUILT: false "
-                    + "(no reference to T168 anywhere under Assets/**; the club token is still the FULL name)");
+                Debug.Log($"[TT-FIT] NEED box {box:0.0}px · commit {CommitAtMeasurement()} · T168-am BUILT: YES "
+                    + "(64b3f70, TvSweatScreen.ShortenSubject). The RE-TAKE the first run's own last condition "
+                    + "required. Both forms are measured in THIS run at THIS commit — the pre-T168 input is "
+                    + "reconstructed from MatchModel.Fields' own composed line, which is character-for-character "
+                    + "what SheetName returned before the fix — so the before/after pair does not depend on "
+                    + "comparing two commits, and the delta cannot be attributed to anything else that moved.");
 
                 MethodInfo legStatement = typeof(TvSweatScreen).GetMethod(
                     "LegStatement", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -1850,19 +1854,52 @@ namespace SBR.Tests.EditMode
 
                     var leg = new Leg(m, sel, 2.00);
                     var input = (string)legStatement.Invoke(screen, new object[] { leg });
-                    var fitted = (string)fitToColumn.Invoke(null, new object[] { need, input });
-                    float wIn = need.GetPreferredValues(input, 100000f, 0f).x;
-                    float wOut = need.GetPreferredValues(fitted, 100000f, 0f).x;
 
-                    // THE TWO FLAGS THE ASK REQUIRES, both stated rather than left to the reader.
-                    string[] inWords = input.Split(' ');
-                    string distinctive = inWords[inWords.Length - 1];
-                    bool distinctiveSurvived = fitted.EndsWith(distinctive);
-                    bool singleWordWhole = !fitted.Contains(" ") && wOut > box;
+                    // THE PRE-`T168` INPUT, reconstructed at THIS commit rather than remembered from
+                    // the last one. `MarketSheet.NameOf` returns `fields.Line` for every team total
+                    // and `SheetName` uppercased it — so this IS, character for character, the string
+                    // the shipped path produced before `ShortenSubject` was inserted. Measuring both
+                    // here means the delta cannot be attributed to anything else that moved between
+                    // `b60d2bd` and now.
+                    MatchModel.MarketFields fields = MatchModel.Fields(m, sel);
+                    string before = fields.Line.ToUpperInvariant();
 
-                    Debug.Log($"[TT-FIT] {label,-34} in '{input}' {wIn,7:0.0}px  ->  OUT '{fitted}' {wOut,7:0.0}px "
-                        + $"vs box {box:0.0}  · distinctive '{distinctive}' {(distinctiveSurvived ? "SURVIVES" : "** LOST **")}"
-                        + $"{(singleWordWhole ? "  · ** T46 BACKSTOP REACHED: one over-wide word returned whole **" : "")}");
+                    // THE THREE FLAGS §2 AND §4 REQUIRE, and the first run CONFLATED TWO OF THEM.
+                    // It took "the distinctive word" to be the INPUT's last token — which for
+                    // `RENO FERRETS OVER 1.5 GOALS` is `GOALS`, the MARKET NOUN. The ask means two
+                    // different things by them and hangs different readings on each: the NOUN
+                    // surviving is §4(a) (goals and cards distinguishable, batch 187 falsified); the
+                    // CLUB's distinctive word failing to survive is §4(c) (a second, worse defect
+                    // that inverts `T69`). They are reported separately here.
+                    string noun = input.Split(' ')[input.Split(' ').Length - 1];
+                    string clubWord = SweatFlavor.Short(fields.Subject).ToUpperInvariant();
+
+                    void One(string state, string s)
+                    {
+                        var fitted = (string)fitToColumn.Invoke(null, new object[] { need, s });
+                        float wIn = need.GetPreferredValues(s, 100000f, 0f).x;
+                        float wOut = need.GetPreferredValues(fitted, 100000f, 0f).x;
+                        bool nounSurvived = fitted.EndsWith(noun, System.StringComparison.Ordinal);
+                        bool clubSurvived = fitted.Contains(clubWord);
+                        bool singleWordWhole = !fitted.Contains(" ") && wOut > box;
+                        Debug.Log($"[TT-FIT] {label,-34} {state,-9} in '{s}' {wIn,7:0.0}px  ->  OUT '{fitted}' "
+                            + $"{wOut,7:0.0}px vs box {box:0.0}  · market noun '{noun}' "
+                            + $"{(nounSurvived ? "SURVIVES" : "** LOST **")} · club word '{clubWord}' "
+                            + $"{(clubSurvived ? "SURVIVES" : "** LOST **")}"
+                            + $"{(singleWordWhole ? "  · ** T46 BACKSTOP REACHED: one over-wide word returned whole **" : "")}");
+                    }
+                    One("pre-T168", before);
+                    One("SHIPPED", input);
+
+                    // THE FIX MUST HAVE ACTUALLY FIRED FOR THIS CASE, or the row above is a before/
+                    // after pair with nothing between it — a green that measured one string twice.
+                    // Only clubs whose city is really present can show it, and every case in this ask
+                    // is a team total, whose `Subject` is always a club.
+                    if (fields.Subject != SweatFlavor.Short(fields.Subject))
+                        Assert.AreNotEqual(before, input,
+                            $"{label}: T168-am is reported BUILT but the shipped string is identical to the "
+                            + $"pre-T168 one ('{input}'), on a club whose city IS present. Either the fix does "
+                            + "not reach this kind or this measurement is comparing one string with itself.");
                 }
 
                 Measure("1 TeamTotalGoals 1.5 (1-word city)", oneWord, MarketKind.TeamTotalGoals,
