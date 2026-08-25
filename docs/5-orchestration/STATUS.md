@@ -1,6 +1,19 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 535 - CI green on the seam
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 536 - batch 199 landed
+(7eb6b2c): the seam ACCEPTED; the gate accepted with one change owed
+(prefer a both-states seed over the split - only a ticket passing through
+both states catches a value that fails to update on the transition); the
+counter's remedy ruled (T140-am8: per-leg counters with per-leg reveal
+gates; _stageLeg answers match questions, never bet questions).
+AUTONOMOUS DECISION, veto window open: TV ordered to BUILD the counter
+fix + the seed change now - a DD-ruled defect surfaced by the shipped
+four-arm build, inside the lane's standing scope. WITH ALLEN: the
+orientation question (two legs backing opposite sides on one match,
+T140-am2) is deliberately left unsettled by the counter fix - it is
+yours; the rest unchanged.**
+
+*(prior stamp, cycle 535 - CI green on the seam
 merge (fc572b4). TV's handoff rotation section merged (b3b256f: lane
 state at 7b28fa8, the counter open, the gate's new shape, two bugs a
 search inherits). TV holding on T140-am6's remedy; DD reading the build.
