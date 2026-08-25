@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 536 - batch 199 landed
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 537 heartbeat - TV
+building the counter remedy (T140-am8) + the both-states seed; DD holding
+for the T94 verification frames. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 536 - batch 199 landed
 (7eb6b2c): the seam ACCEPTED; the gate accepted with one change owed
 (prefer a both-states seed over the split - only a ticket passing through
 both states catches a value that fails to update on the transition); the
