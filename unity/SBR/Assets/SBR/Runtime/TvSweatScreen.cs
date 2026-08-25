@@ -2160,13 +2160,35 @@ namespace SBR.Game
             // that is over. Marked only NOW — after the final scene has played — which is what
             // keeps the reveal gate above the raw engine truth.
             MarkPresentedResolved(evt.LegIndices);
-            // The NEXT FIXTURE's legs go live, not `evt.LegIndex + 1`. On a ticket where every
-            // fixture holds one leg those are the same set, so this is a no-op there — which is the
-            // point; the pre-emptive "next leg reads LIVE once its events start" behaviour is
-            // PRESERVED, not replaced with "nothing is live between fixtures". `+ 1` only ever
-            // computed the next fixture by coincidence, and on [A,B,A] it names leg 1 — a leg on a
-            // fixture that was already told — while the fixture actually next is none at all.
-            UpdateTicketColumn(LegsOfFixtureAfter(evt.LegIndex));
+            // ═══ `T94`'s SEAM, CLOSED — `T140-am5` (DD batch 198). THE PRE-EMPTION WAS THE DEFECT.
+            //
+            // This line used to advance the column to the NEXT FIXTURE's legs. That is `T94` in its
+            // original words — batch 62 raised it as *the column advances to leg N+1 while the
+            // scorebug holds leg N* — and on a ticket where each fixture holds one leg
+            // `LegsOfFixtureAfter(evt.LegIndex)` IS `evt.LegIndex + 1`, so this call WAS the
+            // behaviour the row was raised about. `T140-am3` preserved it while ruling on it;
+            // `T140-am4` withdrew that; this is the remedy.
+            //
+            // ⚠ AND IT IS A SUBSTITUTION, NOT A DELETION — the distinction is the whole build.
+            // `MarkPresentedResolved` above sets `_presentedResolved[i]` and REPAINTS NOTHING: it is
+            // a bare loop over a flag array. `UpdateTicketColumn` is the only writer of
+            // `_legRow[i].IsLive`, and `AnimateLegPulse` reads that CACHED flag every frame. So
+            // deleting this line outright would leave the ended fixture's rows on their last paint —
+            // LIVE, STILL PULSING — for the whole whistle-and-slam beat: **`T94` INVERTED**, fixture
+            // f lit too long instead of f+1 lit too early. Same class, opposite direction.
+            //
+            // Passing `_liveLegsShown` re-paints at the CURRENT set instead of choosing a new one —
+            // `T62`'s idiom, used verbatim at the score-repaint site, and the `ReferenceEquals` guard
+            // at the top of `UpdateTicketColumn` makes the self-pass a repaint-without-copy BY
+            // DESIGN. The rows re-derive through `isLive = IsLiveShown(i) && !IsPresentedResolved(i)
+            // && !ticketSettled`, so the ended legs render RESOLVED and NOTHING reads live — which is
+            // correct, because this beat is ABOUT the fixture that just ended.
+            //
+            // The next fixture lights with no new code: `RenderEvent` already calls `UpdateScorebug`
+            // and `UpdateTicketColumn(evt.LegIndices)` in the same pass, so f+1's legs go live as its
+            // match appears. **No boundary is needed to close `T94`** — what the player sees BETWEEN
+            // matches is `D2`'s separate question and `T140-am4` uncoupled the two.
+            UpdateTicketColumn(_liveLegsShown);
             // The human-facing number stays the ANCHOR's. What a shared telling's copy should call
             // itself ("LEG 1", "LEGS 1 & 3", something else) is a DESIGN question and it is NOT
             // ruled; inventing a form here would be this lane deciding it. Left as-is, and named.
@@ -3373,24 +3395,19 @@ namespace SBR.Game
             return System.Array.Empty<int>();
         }
 
-        /// <summary>The legs of the fixture AFTER the one containing <paramref name="legIndex"/>,
-        /// empty when that fixture is the ticket's last (or when the leg is not on the ticket).
-        ///
-        /// <para>This is the correct generalisation of the resolve sites' <c>evt.LegIndex + 1</c>,
-        /// which pre-emptively marks the next thing live at the whistle so it reads LIVE the moment
-        /// its events start. On a ticket where every fixture holds one leg the two agree exactly —
-        /// which is the requirement, not a happy accident: the behaviour is preserved, and only the
-        /// referent is corrected from "the next leg in ticket order" to "the next telling".</para></summary>
-        private IReadOnlyList<int> LegsOfFixtureAfter(int legIndex)
-        {
-            List<List<int>> fixtures = TicketFixtures();
-            for (int f = 0; f < fixtures.Count; f++)
-                if (fixtures[f].Contains(legIndex))
-                    return f + 1 < fixtures.Count
-                        ? (IReadOnlyList<int>)fixtures[f + 1]
-                        : System.Array.Empty<int>();
-            return System.Array.Empty<int>();
-        }
+        // `LegsOfFixtureAfter(int)` LIVED HERE AND IS DELETED — `T140-am5` (DD batch 198).
+        //
+        // It answered "the legs of the fixture AFTER this one", and it had exactly two callers: the
+        // two pre-emptive advances that WERE `T94`'s defect. With the seam closed it has none.
+        // Deleted rather than kept for a future caller, which is this file's own precedent — `T42`
+        // removed `TeamColor(Leg, bool)` on the same ground: a ready-made helper for the exact
+        // behaviour a ruling just retired is how that behaviour comes back.
+        //
+        // What it generalised is NOT lost. `LegsOfFixtureContaining` and `TicketFixtures` remain,
+        // and the correction it carried — that a fixture's legs NEED NOT BE CONTIGUOUS, so `+ 1`
+        // names the wrong leg on `[A, B, A]` — is recorded at `TicketFixtures`, which is where the
+        // grouping rule actually lives. The `+ 1` it replaced is not coming back either: the sites
+        // that used it no longer choose a next set at all.
 
         /// <summary>One leg's grade, by the same <c>IsVoided</c>/<c>GradesWon</c> idiom every other
         /// site in this file reads it with (see <c>ResolveBeat</c> and the resolved-row branch).
@@ -4863,11 +4880,12 @@ namespace SBR.Game
                 yield return DeadLegBeat(k);
             }
 
-            // Same pair as FinalSlam's, for the theaterless path: the whole live set is marked at
-            // the one whistle, and the NEXT FIXTURE's legs read LIVE once their events start.
-            // `+ 1` computed that only on a ticket with no same-match pair (see LegsOfFixtureAfter).
+            // Same pair as FinalSlam's, for the theaterless path: the whole live set is marked at the
+            // one whistle, and then the column is REPAINTED at that same set rather than advanced.
+            // `T94`'s seam is both of these sites or neither — see FinalSlam's own note for why the
+            // substitution is not a deletion (`T140-am5`, DD batch 198).
             MarkPresentedResolved(evt.LegIndices);
-            UpdateTicketColumn(LegsOfFixtureAfter(evt.LegIndex));
+            UpdateTicketColumn(_liveLegsShown);
         }
 
         private IEnumerator WonLegBeat(int k)

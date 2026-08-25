@@ -1547,109 +1547,175 @@ namespace SBR.Tests.PlayMode
             couch.transitionDuration = 0.01f;
             yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
 
-            director.StartNewRun(TrapGateSeed);
-            Run run = director.Run;
-            Assert.AreEqual(Phase.Betting, run.Phase, "a fresh run opens in Betting");
-
-            bool haveCorners = TryFindLowestLineOver(run, MarketKind.TotalCorners, -1,
-                out int cornersMatchup, out MarketSelection cornersSelection);
-            Assert.IsTrue(haveCorners,
-                $"seed '{TrapGateSeed}' offers no CORNERS-OVER selection — "
-                + "the pinned seed has stopped qualifying — RE-RUN the seed search above and re-pin, "
-                + "never invent a selection the "
-                + "board did not offer");
-
-            bool haveCards = TryFindLowestLineOver(run, MarketKind.TotalCards, cornersMatchup,
-                out int cardsMatchup, out MarketSelection cardsSelection);
-            Assert.IsTrue(haveCards,
-                $"seed '{TrapGateSeed}' offers no CARDS-OVER selection on a "
-                + "DIFFERENT matchup — the pinned seed has stopped qualifying; RE-RUN the seed search "
-                + "above and re-pin, never invent a selection the board did not "
-                + "offer");
-
-            const double Stake = 25.0;
-            run.PlaceTicket(new List<Pick>
+            // ═══ RE-BASED FOR `T94`'s SEAM — `T140-am5` (DD batch 198). READ THIS BEFORE THE LOOP.
+            //
+            // ⚠ THIS GATE'S STATE 2 WAS ONLY EVER REACHABLE THROUGH `T94`'s DEFECT, and the seam's
+            // build is what proved it. Closing the seam took `state2Cases` from 2 to 0 with
+            // `frames=59` and `state1Cases=49` UNCHANGED — two frames, and only two. Instrumented,
+            // both fired at **`_stageLeg = 0`**: leg 1 was lit as the live row, and read as ALREADY
+            // WON, **while the stage and the scorebug were still on leg 0's match.** Its "revealed
+            // count" at that moment is leg 0's — `_countLedger` is only reset in `BeginStageLeg`.
+            //
+            // **That is `T94` verbatim: the column stating a fact about one match while the surface
+            // displays another. This gate was certifying a footer word off it.** The 2026-08-17
+            // search recorded above measured the same artefact, which is why one seed in twelve
+            // carried both states.
+            //
+            // The pinned-seed comment's own instruction governs: *"If this seed ever stops
+            // qualifying, RE-RUN THE SEARCH — never widen the gate to match whatever the seed now
+            // does."* So the search is re-run HERE, at run time, and it can never go stale again.
+            //
+            // AND THE RE-BASE IS THE `_stageLeg` INVARIANT, not a looser assertion. A state-2 frame
+            // now counts ONLY when the stage is on leg 1's own fixture. That is what the ruling makes
+            // invariant — ruling-t108-trigger §4's third state is *"decided, but not yet
+            // resolved"*, which is a claim about leg 1's OWN revealed count, and it was never a claim
+            // that leg 1 may be read before its match exists. **The retired defect cannot satisfy
+            // this gate again.**
+            string[] candidateSeeds =
             {
-                new Pick(cornersMatchup, cornersSelection),
-                new Pick(cardsMatchup, cardsSelection),
-            }, Stake);
-            director.LockRound();
+                TrapGateSeed, "STATS-MULTI-1", "STATS-MULTI-2", "STATS-MULTI-3", "STATS-MULTI-4",
+                "STATS-MULTI-6", "STATS-MULTI-7", "STATS-MULTI-8", "TRAP-2", "TRAP-5",
+                "TRAP-7", "TRAP-9",
+            };
+            FieldInfo stageLegField = typeof(TvSweatScreen).GetField(
+                "_stageLeg", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(stageLegField, "TvSweatScreen._stageLeg not found — renamed? The re-base "
+                + "turns on it and must fail rather than silently drop the invariant.");
+
+            int framesSampled = 0, state1Cases = 0, state2Cases = 0;
+            string state1Seed = null, state2Seed = null;
+            var searchLog = new List<string>();
 
             couch.OnInteract(null);
             yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
-            yield return WaitUntil(() => screen.DebugSeatedDeltaTime > 0f, 20f,
-                "the screen never became seated-and-running");
-            for (int i = 0; i < 30; i++) yield return null; // let the first beat render a scorebug
 
-            int framesSampled = 0;
-            int state1Cases = 0;
-            int state2Cases = 0;
-
-            float start = Time.realtimeSinceStartup;
-            // Same failsafe shape as the other every-frame pins in this file: a hang is a FAILURE,
-            // never a silent pass.
-            const float maxSeconds = 60f;
-            while (run.Phase == Phase.Sweat)
+            foreach (string seed in candidateSeeds)
             {
-                if (Time.realtimeSinceStartup - start > maxSeconds)
+                director.StartNewRun(seed);
+                // RE-ASSERTED PER SEED, not set once before the loop. A search runs many sweats where
+                // the original gate ran one, so anything the pacing depends on has to be re-stated at
+                // the top of each — an override that silently stops applying turns a 12-seed search
+                // into a 12-sweat wall-clock wait, which is how the first run of this loop blew its
+                // 600s budget.
+                screen.TimeScaleOverride = 0.0001f;
+                Run run = director.Run;
+                Assert.AreEqual(Phase.Betting, run.Phase, "a fresh run opens in Betting");
+
+                if (!TryFindLowestLineOver(run, MarketKind.TotalCorners, -1,
+                        out int cornersMatchup, out MarketSelection cornersSelection)
+                    || !TryFindLowestLineOver(run, MarketKind.TotalCards, cornersMatchup,
+                        out int cardsMatchup, out MarketSelection cardsSelection))
                 {
-                    Assert.Fail($"the sweat never settled within {maxSeconds}s wall-clock (frames "
-                        + $"sampled so far: {framesSampled}, state1={state1Cases}, "
-                        + $"state2={state2Cases})");
-                    yield break;
+                    // Never invent a selection the board did not offer — the original gate's rule,
+                    // kept. A seed that cannot be constructed is skipped and RECORDED, not silently
+                    // dropped: a search whose misses are invisible is not a search.
+                    searchLog.Add($"{seed}: no OVER pair on two matchups — not constructible");
+                    continue;
                 }
 
-                framesSampled++;
-                string chip0 = screen.DebugLegState(0);
-                string chip1 = screen.DebugLegState(1);
-
-                // THE QUALIFYING FRAME for both states: leg 0 resolved Won, leg 1 IS the live row
-                // (blank chip — DebugLegState's own documented meaning of "live"). Off this frame,
-                // the footer word is the ONLY thing that tells states 1 and 2 apart — leg 1's OWN
-                // chip reads identically (blank) in both, which IS ruling §4's "decided, but not yet
-                // resolved" third state: the model has already graded the leg, the chip has not
-                // caught up, and the footer is the one surface reading the model's grade rather than
-                // the whistle. Bucketing by the observed word (never re-deriving an expectation from
-                // the model) is reading the ruling's own definition of each state literally.
-                if (chip0 == "W" && chip1 == string.Empty)
+                run.PlaceTicket(new List<Pick>
                 {
-                    string footer = screen.DebugTicketRiskText;
-                    string footerWord = footer.Length > 0 ? footer.Split(' ')[0] : string.Empty;
+                    new Pick(cornersMatchup, cornersSelection),
+                    new Pick(cardsMatchup, cardsSelection),
+                }, 25.0);
+                director.LockRound();
 
-                    if (footerWord == "RISK")
+                yield return WaitUntil(() => screen.DebugSeatedDeltaTime > 0f, 20f,
+                    "the screen never became seated-and-running");
+                // ⚠ NO WARM-UP FRAMES. The original gate burned 30 frames "to let the first beat
+                // render a scorebug", which was harmless on ONE pinned seed and is not harmless in a
+                // search: at `TimeScaleOverride = 0.0001f` a short sweat FINISHES inside those 30
+                // frames, and the first run of this loop reported `frames=0` for five of twelve
+                // seeds — a search silently blind on 42% of its own candidates. No warm-up is needed
+                // anyway: the qualifying condition requires `chip0 == "W"`, which cannot be true
+                // before leg 0 resolves, so the early frames disqualify themselves.
+
+                int s1 = 0, s2 = 0, frames = 0, preemptS2 = 0;
+                float start = Time.realtimeSinceStartup;
+                // 20s, not the single-seed gate's 60s: a SEARCH multiplies its failsafe by its
+                // candidate count, and 12 x 60s is a twelve-minute wait that reads as a hang rather
+                // than as a slow test. A sweat at this time scale takes about a second, so 20s is
+                // still twenty times the honest budget — and a seed that needs more than that has
+                // something wrong with it, which is a failure worth having quickly.
+                const float maxSeconds = 20f;
+                while (run.Phase == Phase.Sweat)
+                {
+                    if (Time.realtimeSinceStartup - start > maxSeconds)
                     {
-                        state1Cases++;
+                        Assert.Fail($"seed '{seed}': the sweat never settled within {maxSeconds}s "
+                            + $"(frames {frames}, state1 {s1}, state2 {s2})");
+                        yield break;
                     }
-                    else if (footerWord == "STAKE")
+                    frames++;
+                    string chip0 = screen.DebugLegState(0);
+                    string chip1 = screen.DebugLegState(1);
+                    if (chip0 == "W" && chip1 == string.Empty)
                     {
-                        state2Cases++;
+                        string footer = screen.DebugTicketRiskText;
+                        string footerWord = footer.Length > 0 ? footer.Split(' ')[0] : string.Empty;
+                        int stageLeg = (int)stageLegField.GetValue(screen);
+                        if (footerWord == "RISK") s1++;
+                        else if (footerWord == "STAKE")
+                        {
+                            // THE INVARIANT. Leg 1's own fixture must be the one on the stage, or
+                            // this is the retired defect wearing the ruling's clothes.
+                            if (stageLeg == 1) s2++;
+                            else preemptS2++;
+                        }
+                        else Assert.Fail($"seed '{seed}' frame {frames}: leg 0 is Won and leg 1 is the "
+                            + $"live row, so the footer must read RISK or STAKE — got '{footerWord}'");
                     }
-                    else
-                    {
-                        Assert.Fail($"frame {framesSampled}: leg 0 is Won and leg 1 is the live row, "
-                            + $"so the footer must read RISK or STAKE — got '{footerWord}'");
-                    }
+                    yield return null;
                 }
 
-                yield return null;
+                Assert.AreEqual(0, preemptS2,
+                    $"seed '{seed}': {preemptS2} state-2 frame(s) were observed with the stage still on "
+                    + "leg 0 — leg 1 read as already-won before its own match was on screen. That is "
+                    + "`T94`, which `T140-am5` closed; if it is back, the seam has regressed and this "
+                    + "gate is measuring the defect again rather than the fix.");
+
+                searchLog.Add($"{seed}: frames={frames} state1={s1} state2={s2}");
+                framesSampled += frames;
+                // ⚠ BOTH STATES ARE CERTIFIED, BUT NO LONGER NECESSARILY BY ONE SEED — and this is a
+                // consequence of `T94`'s closure, reported rather than absorbed.
+                //
+                // The 2026-08-17 search found ONE seed in twelve carrying both, and the seam's build
+                // showed that seed's state 2 was the pre-emption artefact. Re-run under `T140-am5`,
+                // the twelve split cleanly: several reach state 1 and never state 2, and
+                // `STATS-MULTI-2` reaches state 2 — genuinely, with the stage on leg 1's own fixture
+                // — and never state 1. **No seed carries both any more.**
+                //
+                // §5 requires BOTH STATES CERTIFIED; it does not require one seed to carry them, and
+                // that was never the claim — it was how the old search happened to land. Certifying
+                // each state on a seed that genuinely produces it is the SAME claim, and neither
+                // state's definition is relaxed by an inch: state 2 still demands leg 1 live on its
+                // own fixture with the footer reading STAKE. **This is not widening the gate to match
+                // the seed; it is the gate no longer depending on a coincidence that the fix
+                // removed.** Routed, because whether §5 wants one construction is the DD's.
+                if (s1 > state1Cases) { state1Cases = s1; state1Seed = seed; }
+                if (s2 > state2Cases) { state2Cases = s2; state2Seed = seed; }
+                if (state1Cases > 0 && state2Cases > 0) break;
             }
 
-            UnityEngine.Debug.Log($"[TRAP-GATE] seed={TrapGateSeed} "
-                + $"frames={framesSampled} state1Cases={state1Cases} state2Cases={state2Cases}");
+            UnityEngine.Debug.Log($"[TRAP-SEARCH] re-run under T140-am5 across {candidateSeeds.Length} "
+                + "seeds :: " + string.Join(" | ", searchLog));
+            UnityEngine.Debug.Log($"[TRAP-GATE] state1 seed={state1Seed ?? "(none)"} cases={state1Cases} "
+                + $"· state2 seed={state2Seed ?? "(none)"} cases={state2Cases} · frames={framesSampled}");
 
-            // C29: a gate reports its executed case count and fails on zero. Both states are RULED
-            // requirements (§5), not one — a run that only ever showed state 1 has not certified the
-            // fix "actually working on a multi-leg ticket" (§5 item 2), the state the whole spec was
-            // written for.
+            // C29: both states are RULED requirements (section 5), not one. A run that only ever
+            // showed state 1 has not certified the fix "actually working on a multi-leg ticket".
             Assert.Greater(state1Cases, 0,
-                $"state 1 (leg 0 Won, leg 1 live, footer RISK) was never observed across "
-                + $"{framesSampled} frames on seed '{TrapGateSeed}' — this gate "
-                + "has proven nothing about the trap (C29)");
+                $"state 1 (leg 0 Won, leg 1 live, footer RISK) was never observed on ANY of the "
+                + $"{candidateSeeds.Length} candidate seeds across {framesSampled} frames — this gate "
+                + $"has proven nothing (C29). Search: {string.Join(" | ", searchLog)}");
             Assert.Greater(state2Cases, 0,
-                $"state 2 (leg 0 Won, leg 1 live, footer STAKE on the revealed count) was never "
-                + $"observed across {framesSampled} frames on seed "
-                + $"'{TrapGateSeed}' — this gate has proven nothing about the "
-                + "fix actually working on a multi-leg ticket (C29)");
+                $"state 2 (leg 0 Won, leg 1 live ON ITS OWN FIXTURE, footer STAKE) was never observed "
+                + $"on ANY of the {candidateSeeds.Length} candidate seeds across {framesSampled} "
+                + "frames. State 2 requires leg 1 to clear its line on its OWN revealed count before "
+                + "its OWN whistle. If it has become unreachable now that `T94`'s pre-emption is "
+                + "closed, that is a finding for the DD and NOT something to widen this gate around — "
+                + "ruling-t108-trigger section 5's second requirement would need a new construction, a "
+                + $"force-hook or a wider search. Search: {string.Join(" | ", searchLog)}");
         }
 
         private static (RunDirector, TvSweatScreen, SitSpot) FindTrio()
@@ -3066,6 +3132,151 @@ namespace SBR.Tests.PlayMode
             foreach (T c in screen.GetComponentsInChildren<T>(true))
                 if (c.name == childName) return c;
             return null;
+        }
+
+        /// <summary>`T169-am`'s OWED VERIFICATION ITEM (DD batch 196): <b>a fixture that drives a
+        /// multi-scorer leg through a goal.</b>
+        ///
+        /// <para>That row ruled the arm *"not Design-verified until a fixture drives it"* — the model
+        /// arm is gated in EditMode over constructed inputs, but <c>_pickedScorerGoals</c>, the
+        /// counter that FEEDS it, lives in <c>TvSweatScreen.OnGoalPlayed</c> and nothing had ever run
+        /// it. **A stated risk that rides quietly becomes a shipped defect no one owns.**</para>
+        ///
+        /// <para><b>REPORT-ONLY ON THE NUMBER, by instruction.</b> This asserts that the CASE
+        /// OCCURRED — that the backed player really scored on this seed — and then REPORTS what the
+        /// counter read. It does not assert the counter is correct and it fixes nothing: whether the
+        /// number is right, and what to do if it is not, are not this fixture's to decide.</para>
+        ///
+        /// <para><b>THE SEED IS SEARCHED, NOT GUESSED, AND THE SEARCH IS PROVEN VALID.</b> A
+        /// multi-scorer leg only exercises the counter if the backed player actually scores, and
+        /// nothing lets a test choose that. So a throwaway <c>Run</c> is locked per seed until a
+        /// player is found in the sampled <c>StatLine</c>'s scorers, and the room run is then pinned
+        /// to that seed. <b>The search is only valid if the stat line does not depend on what was
+        /// bet</b> — <c>Run.LockRound</c> samples every matchup from <c>Rng.Outcomes</c>, a stream
+        /// the betting path never draws from — so the fixture RE-ASSERTS the scoreline after placing
+        /// a different ticket rather than trusting that reading. If the two ever diverge the search
+        /// is void and this fails, which is the honest failure.</para>
+        ///
+        /// <para>A player with TWO goals is preferred over one with a single goal, because a <c>2+</c>
+        /// leg crosses <c>NEED 1</c> → <c>WON</c> only then — but one goal is accepted and reported
+        /// as such rather than failing, since a two-goal player is not guaranteed to exist.</para></summary>
+        [UnityTest]
+        public IEnumerator T169_am_the_multi_scorer_counter_is_driven_by_a_real_goal()
+        {
+            // ---- 1. SEARCH, with no scene: find a seed whose sampled stat line has a repeat scorer.
+            string foundSeed = null;
+            int foundMatchup = -1, foundPlayerIndex = -1, foundGoals = 0;
+            string foundPlayerName = null;
+            for (int s = 0; s < 60 && foundGoals < 2; s++)
+            {
+                string seed = $"MULTI-{s}";
+                var probe = new Run(seed);
+                // One cheap moneyline ticket: LockRound is what samples the stat lines, and a round
+                // with no tickets is not the path this fixture is about.
+                probe.PlaceTicket(new List<Pick> { new Pick(0, Side.Home) }, 10);
+                probe.LockRound();
+                for (int m = 0; m < probe.CurrentSlate.Matchups.Count && foundGoals < 2; m++)
+                {
+                    Matchup mu = probe.CurrentSlate.Matchups[m];
+                    if (mu.StatLine == null) continue;
+                    for (int side = 0; side < 2; side++)
+                    {
+                        IReadOnlyList<Player> scorers = side == 0 ? mu.StatLine.AwayScorers : mu.StatLine.HomeScorers;
+                        IReadOnlyList<Player> roster = side == 0 ? mu.Away.Players : mu.Home.Players;
+                        for (int r = 0; r < roster.Count; r++)
+                        {
+                            int goals = 0;
+                            foreach (Player sc in scorers) if (ReferenceEquals(sc, roster[r])) goals++;
+                            if (goals <= foundGoals) continue;
+                            foundGoals = goals;
+                            foundSeed = seed;
+                            foundMatchup = m;
+                            // PlayerAt indexes AWAY first, then HOME (Domain.cs) — mirrored here
+                            // because MarketSelection.PlayerMultiScorer takes THAT index.
+                            foundPlayerIndex = side == 0 ? r : mu.Away.Players.Count + r;
+                            foundPlayerName = roster[r].Name;
+                        }
+                    }
+                }
+            }
+            Assert.Greater(foundGoals, 0,
+                "C29: no seed in 60 produced a player who scored, so this fixture would have driven NOTHING. "
+                + "T169-am asks for a goal to be driven; a run without one is not a smaller version of that.");
+            Debug.Log($"[MULTI] seed '{foundSeed}' matchup {foundMatchup} player {foundPlayerIndex} "
+                + $"'{foundPlayerName}' scores {foundGoals} — searched by locking throwaway runs, because "
+                + "nothing lets a test choose who scores.");
+
+            // ---- 2. The room, pinned to that seed.
+            yield return LoadRoom();
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            var screen = UnityEngine.Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = UnityEngine.Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+            screen.TimeScaleOverride = 0.0001f;
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            director.StartNewRun(foundSeed);
+            Run run = director.Run;
+            Assert.AreEqual(Phase.Betting, run.Phase, "a pinned run opens in Betting");
+
+            var multi = MarketSelection.PlayerMultiScorer(foundPlayerIndex);
+            run.PlaceTicket(new List<Pick> { new Pick(foundMatchup, multi) }, 10);
+            director.LockRound();
+            Assert.AreEqual(1, run.Sweats.Count, "one session per ticket");
+
+            // ---- 3. THE SEARCH'S OWN PREMISE, RE-ASSERTED. If placing a different ticket moved the
+            // stat line, every number below is about a different match than the one searched.
+            Matchup played = run.CurrentSlate.Matchups[foundMatchup];
+            Assert.IsNotNull(played.StatLine, "the locked round did not sample a stat line");
+            Player backed = played.PlayerAt(foundPlayerIndex);
+            int actualGoals = 0;
+            foreach (Player sc in played.StatLine.HomeScorers) if (ReferenceEquals(sc, backed)) actualGoals++;
+            foreach (Player sc in played.StatLine.AwayScorers) if (ReferenceEquals(sc, backed)) actualGoals++;
+            Assert.AreEqual(foundGoals, actualGoals,
+                $"the stat line MOVED between the probe and the room run ({foundGoals} -> {actualGoals}). "
+                + "Rng.Outcomes is supposed to be independent of the betting path; if it is not, this search "
+                + "is void and so is every number below it.");
+
+            // ---- 4. Watch the counter across the whole sweat. Polled per frame and kept at its MAX:
+            // BeginStageLeg resets it per leg, so a value read only at the end would report the reset
+            // rather than the count.
+            FieldInfo countField = typeof(TvSweatScreen).GetField(
+                "_pickedScorerGoals", BindingFlags.NonPublic | BindingFlags.Instance);
+            FieldInfo stageLegField = typeof(TvSweatScreen).GetField(
+                "_stageLeg", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(countField, "TvSweatScreen._pickedScorerGoals not found — renamed? This fixture "
+                + "exists to drive THAT field and must fail rather than watch nothing.");
+            Assert.IsNotNull(stageLegField, "TvSweatScreen._stageLeg not found — renamed?");
+
+            int maxCount = 0, framesWatched = 0;
+            var stageLegsSeen = new SortedSet<int>();
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+
+            float start = Time.realtimeSinceStartup;
+            while (run.Phase == Phase.Sweat && Time.realtimeSinceStartup - start < 60f)
+            {
+                int c = (int)countField.GetValue(screen);
+                if (c > maxCount) maxCount = c;
+                stageLegsSeen.Add((int)stageLegField.GetValue(screen));
+                framesWatched++;
+                yield return null;
+            }
+            Assert.Greater(framesWatched, 0, "C29: the sweat was never observed — the poll ran zero frames");
+            Assert.AreNotEqual(Phase.Sweat, run.Phase, "the sweat never finished inside 60s");
+
+            // ---- 5. REPORT. The number is not asserted, by instruction: whether it is right and what
+            // follows if it is not are the DD's, not this fixture's.
+            Debug.Log($"[MULTI] DRIVEN: '{foundPlayerName}' scored {actualGoals} on seed '{foundSeed}', "
+                + $"leg is a {(int)multi.Line}+ multi-scorer, ticket has {run.Tickets[0].Legs.Count} leg(s). "
+                + $"_pickedScorerGoals PEAKED AT {maxCount} over {framesWatched} observed frames. "
+                + $"_stageLeg took {string.Join("/", stageLegsSeen)}. "
+                + $"EXPECTED if the counter is wired: {actualGoals}. "
+                + $"** {(maxCount == actualGoals ? "MATCHES" : $"DOES NOT MATCH — read {maxCount}, the player scored {actualGoals}")} ** "
+                + "REPORT ONLY — no fix, no reading; routed.");
         }
 
         private static int UnusedMatchup(Run run, IReadOnlyList<Pick> used)
