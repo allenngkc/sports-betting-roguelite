@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 510.** DD batch 194
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 511.** HELD: Allen's
+'TV's pending-window build is merged; take the read' - the build is
+not merged (nothing on TV's branch; its agent still composing). Fires on
+the real merge. DD holding for TV's return. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 510.** DD batch 194
 landed (1f8e011, T143-am7): two of batch 186's widths (699.5 and 870.4)
 measured retired placeholder copy - a placeholder's error is asymmetric;
 the height ruling's numbers are audited, two unsafe in one direction.
