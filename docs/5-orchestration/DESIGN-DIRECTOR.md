@@ -105,10 +105,24 @@ authority.
    You are the Design Director. Read and follow:
    docs/5-orchestration/DESIGN-DIRECTOR.md
    docs/5-orchestration/STUDIO.md
-   Then read docs/design/REGISTER.md and docs/design/constitution.md, confirm
-   the register row count to the orchestrator terminal, and take the next batch.
+   Then read docs/design/REGISTER.md and docs/design/constitution.md, run
+   `node tools/register-scan.js`, report its row count and PROBLEMS line to the
+   orchestrator terminal, and take the next batch.
    Do not rebuild the register.
    ```
+
+   **Confirm the row count with the scan, never by eye or by a hand-written
+   `awk`.** `tools/register-scan.js` is the seating routine as one command — cell
+   count, duplicate IDs (inline-aware), and the files-to-log-entry reconciliation
+   `C22-am7` requires. It exits non-zero on any failure and takes an optional path
+   argument, so it can be pointed at a git snapshot to prove it still fires.
+
+   Every seat that hand-rolled this got it wrong in a different way: a regex with
+   no `\.` branch silently skipped the dotted IDs (`C22.1`, `R23.1`, `T32.1`) and
+   under-reported by three; reading the transcription log's *tail* reported
+   HEALTHY while batches 163–172 sat untranscribed in the middle and a lead was
+   handed a ruling it could not grep. **A gap in the middle is invisible from the
+   newest end** — which is why the check reconciles batch *files* to log entries.
 
 Session hygiene mirrors the leads: at high context, write state into the
 register/rulings files (they are the durable memory), then /clear and re-seat.
