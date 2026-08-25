@@ -1,0 +1,112 @@
+[
+ {
+  "old_id": "R19",
+  "title": "Materials — highest in the slice",
+  "surface": "room",
+  "section": "Room",
+  "lifecycle": "Struck",
+  "linear_state": "Canceled",
+  "state_raw": "**Ruled — violation** · DD 2026-08-01: (a) laptop/TV/phone share one material `#3C3C38` — the laptop must differ from the TV housing on ≥2 of value/hue-temperat",
+  "batch": "batch 5 + 6 + 7 + 8",
+  "body": "Materials — highest in the slice | **Ruled — violation** · DD 2026-08-01: (a) laptop/TV/phone share one material `#3C3C38` — the laptop must differ from the TV housing on ≥2 of value/hue-temperature/finish and read lighter, warmer, lower-cost; the phone is his and sits near the laptop. **Outranks all room polish** (batch 6 fold). (b) steel and conduit return to spec hues `#3A3F42`/`#22252A` — built values are hue-flipped warm; too-dark-after is an R12 lighting finding, never an albedo licence. **C22.1 addition: the hue does not wait for T48; the value does** — re-measure both after the neutral black point (a blue black point has been misreporting every warm-neutral surface). (c) drab green `#3A4230` built at §2's placements — ratified; **sequence after T48, hold the 43.9 mattress value** (batch 6 fold). **R19(b)-am** · DD 2026-08-03: \"colder\" is STRUCK as a requirement — under one warm source the room cannot return saturated cool and that applies to steel too (a metal-colder-than-room requirement asks the room to break Law 1.1 in one region). The ≥2-channel rule stands on **value + finish** (harder darker diffuse; tight bright specular vs dull plastic, hard-edged chips vs worn smooth). Lighting instrument REFUSED explicitly (T48's rejected Option D in new clothes). R19(a) proceeds now — do not hold for surface-pure numbers; cut harness regions anyway, numbers to the handoff. Lead's albedo-line hold + unprompted caveat endorsed as the standard | batch 5 + 6 + 7 + 8"
+ },
+ {
+  "old_id": "T99-cl",
+  "title": "The first run FAILED, and it is the most valuable thing in the set",
+  "surface": "tv",
+  "section": "TV — match theater",
+  "lifecycle": "Parked",
+  "linear_state": "Backlog",
+  "state_raw": "**RECORDED; one formulation PROMOTED** · DD 2026-08-15 batch 85. **The first shoot passed its harness and its own per-frame log disproved its own claim: the sco",
+  "batch": "batch 85",
+  "body": "The first run FAILED, and it is the most valuable thing in the set | **RECORDED; one formulation PROMOTED** · DD 2026-08-15 batch 85. **The first shoot passed its harness and its own per-frame log disproved its own claim: the score held while the minute ticked `18′ → 21′` behind the panel.** **The mechanism is the class this seat ruled on three times the same day: `TickClock` advanced on `Time.deltaTime` while the `!_seated` guard is what actually froze the clock on stand-up — two expressions of one rule, agreeing by convention — so when the panel added a THIRD freeze condition the clock never received it.** **PROMOTED, the lane's own formulation, better than anything this seat wrote for the class: *A CHANNEL THAT NEVER READS THE AUTHORITY IS INVISIBLE TO A PIN ON THE AUTHORITY.*** That is why the pin could not catch it — it asserted `SeatedDeltaTime`, and `SeatedDeltaTime` was correct. **The FRAMES caught it.** The clock now reads the single authority so a future freeze condition reaches it by construction, and the harness asserts the clock across the open burst so it cannot recur silently. **AND THE STANDING CONDITION EARNED ITS KEEP WITHIN HOURS: batch 79 ruled the licence conditionally — *for as long as time is frozen* — and wrote it as standing BECAUSE the danger was a later change that looks unrelated. The first run was that exact case, and the condition is what made it a failure rather than a shipped frame. A ruling written as *approved* rather than *approved while X h"
+ },
+ {
+  "old_id": "S79",
+  "title": "The 46.1% silence — RULED CORRECT",
+  "surface": "laptop",
+  "section": "SureThing — the laptop",
+  "lifecycle": "In Build",
+  "linear_state": "In Progress",
+  "state_raw": "**RULED — canon working, not a gap to fill** — DD 2026-08-15 batch 71, at su's request that it be ruled rather than rediscovered. **S73 binds in the opposite di",
+  "batch": "batch 71",
+  "body": "The 46.1% silence — RULED CORRECT | **RULED — canon working, not a gap to fill** — DD 2026-08-15 batch 71, at su's request that it be ruled rather than rediscovered. **S73 binds in the opposite direction from how a reviewer first reads it**: *where a correlation cannot be labelled, the price does not move* — so **a null `Principal` means the price did NOT move, and there is no cost to disclose because nothing was taken.** **The statement exists to explain a price that shortened; where nothing shortened, nothing is owed.** **The silence is not an absence of copy — it is the absence of a thing to explain.** **And the number is evidence of HONESTY**: if every slip carried a statement the model would be labelling relations it cannot name, **the precise failure S73 forbids** — a high blank rate is what a correctly-behaving model looks like from the surface. **No statement is ever authored to fill it and no future review reopens it on the strength of the number alone.** `MutuallyExclusive`/`Independent` correctly never appear as principals — the first is a refusal, the second is nothing to state | batch 71"
+ },
+ {
+  "old_id": "T163-vf",
+  "title": "`T163` VERIFIED on both branches — `A1`/`A2`/`B1`/`B2` all pass, and three of my own claims did not",
+  "surface": "tv",
+  "section": "TV — match theater",
+  "lifecycle": "Design-verified",
+  "linear_state": "Done",
+  "state_raw": "**DESIGN-VERIFIED — DD 2026-08-24 batch 184, on `dd-import/anchor-window-2026-08-24/`, frames read at this seat.** **`A1` PASSES — BINARY. Frame A's strip reads",
+  "batch": "batch 184",
+  "body": "`T163` VERIFIED on both branches — `A1`/`A2`/`B1`/`B2` all pass, and three of my own claims did not | **DESIGN-VERIFIED — DD 2026-08-24 batch 184, on `dd-import/anchor-window-2026-08-24/`, frames read at this seat.** **`A1` PASSES — BINARY. Frame A's strip reads `a goal in the churn; the number moves.` on a `Score` beat: **no club named, from an anchor-interpolating table.** `T163` branch (3), and the line is `T163-am`'s own §5 variant, authored at batch 171 and now shipping.** **`A2` PASSES, AND MY LEAN WAS WRONG — for a reason the frame supplies and I could not have argued from source. I expected *\"a strip that names clubs on most beats and suddenly names none may read as an OMISSION rather than a choice.\"* **IT DOES NOT, AND THE STRUCTURAL REASON IS THAT THE BRANCH AND ITS CONTEXT ARE THE SAME CONDITION:** the neither branch fires exactly when no live leg names a side — which is exactly when the live COLUMN has no club names either. On frame A the two live rows read `UNDER 1.5 GOALS` / `0 GOALS • LIMIT 1` and `ONE TEAM BLANKED` / `CLEAN-SHEET PATH LIVE`. **The club-free strip is in register with everything above it, not the odd one out.** And the line has no club-shaped hole: *a goal in the churn* IS the subject, so nothing reads as missing.** **`B1` PASSES ON THE DOCK'S RE-DERIVATION, AND MY WORDING WAS THE THING THAT FAILED (§1.5). I wrote *\"the club the strip names is the club the leg backs\"* — **that holds only on UP-beats.** The tables interpolate `{picked}` when the "
+ },
+ {
+  "old_id": "T112-cl",
+  "title": "`T112` CLOSES — and the measurement it required has existed since the day it was ruled",
+  "surface": "tv",
+  "section": "TV — match theater",
+  "lifecycle": "Closed",
+  "linear_state": "Done",
+  "state_raw": "**CLOSED — DD 2026-08-19 batch 124.** `T112` ruled the `MARKET SUSPENDED` constant re-authored and said the candidate **\"must be MEASURED before it is authored\"",
+  "batch": "batch 124",
+  "body": "`T112` CLOSES — and the measurement it required has existed since the day it was ruled | **CLOSED — DD 2026-08-19 batch 124.** `T112` ruled the `MARKET SUSPENDED` constant re-authored and said the candidate **\"must be MEASURED before it is authored\"** — *\"dropping seven of sixteen characters will very probably clear 26.7px, and *very probably* is the word this studio has been wrong on twice this week.\"* **THE MEASUREMENT WAS TAKEN AND IT IS IN THE INSTRUMENT'S OWN SOURCE COMMENT: `TvExtentSweep.cs:484` — *\"Measured 2026-08-17 (SBR/TV/T84 candidate measure): 'SUSPENDED' 152.3px against the 241.0px box, 88.7px spare.\"*** **AND IT SHIPPED: `TvSweatScreen.cs:3431` reads `_tCashOut.text = \"SUSPENDED\";` with the comment *\"T112 (register batch 104): re-authored from 'MARKET SUSPENDED', which overran…\"*, and the sweep's `CashOut` pool carries `SUSPENDED` rather than the retired constant.** String authored, measured, shipped, pool updated. **`T112` needed nothing further and has been carried as owed for two days because the number lived in a code comment rather than in a row.** **THE REUSABLE HALF, and it is why this is a row and not a quiet tick: a measurement recorded only at its call site is a measurement the register cannot see. `C22`'s converse — the tables are the canon, so a number that never reaches them is owed forever no matter how carefully it was taken.** **`S93` is NOT closed by this and is explicitly untouched: the LAPTOP still prints `MARKET SUSPENDED` at `SportsbookApp"
+ },
+ {
+  "old_id": "S81",
+  "title": "The board's density — measured for Allen, not ruled",
+  "surface": "laptop",
+  "section": "SureThing — the laptop",
+  "lifecycle": "Approved",
+  "linear_state": "Todo",
+  "state_raw": "**RECORDED, NOT RULED** — DD 2026-08-15 batch 75. Batch 74 put the density question to Allen ahead of the composition checks; **it stays with him, and this row ",
+  "batch": "batch 75 **CLOSED — ALLEN RULED · batch 76 (relayed 2026-08-15): THE SCROLLING B",
+  "body": "The board's density — measured for Allen, not ruled | **RECORDED, NOT RULED** — DD 2026-08-15 batch 75. Batch 74 put the density question to Allen ahead of the composition checks; **it stays with him, and this row adds three measurements that were not available when it was asked.** **(a) WHAT THE FRAME SHOWS:** `BoardBody` runs y 166–670 (504px) at a 116px block pitch — **blocks 01–04 complete, block 05 `LONGHAULERS` showing 40px of 116 (its `AWAY +140` and nothing else), block 06 absent.** **(b) THE BOARD NEVER TRUNCATED A MATCHUP BEFORE THIS CHANGE AND NOW ALWAYS TRUNCATES TWO** — six blocks at 78 is 468 against 504, so the whole slate fitted with 36px to spare; **the scroll existed for staged receipts (S25-am), not because the matchups needed it.** So the change is not *the board scrolls a bit more*, it is **the board began scrolling.** **(c) THE HAZARD IS THE PARTIAL BLOCK, and it is new:** block 05 renders a matchup as **one of its three prices**, its draw and home below the fold — **a market presented as a single offer**, which is S24's refusal arriving through geometry rather than through a layout decision. **Before this change no block could be partial, because none was ever cut.** **(d) THERE IS NO GEOMETRIC ESCAPE, and this decides what KIND of question it is:** six blocks in 504px needs an 84px pitch, and **three price cells at 32px are 96px before any pad, gap, team line or rule** — **six-visible is unreachable at the board's own price-cell size, by arithmetic, un"
+ },
+ {
+  "old_id": "P7",
+  "title": "The phone's brightness ladder",
+  "surface": "phone",
+  "section": "Phone (P) — the fifth surface's register (opened batch 23; owning doc `phone-design.md`, **CANON — Allen-approved 2026-08-09**)",
+  "lifecycle": "Approved",
+  "linear_state": "Todo",
+  "state_raw": "**Deliberately NOT ruled** — one afternoon's set where the siblings had a fortnight; the doc quarantines it per its own §10",
+  "batch": "batch 23",
+  "body": "The phone's brightness ladder | **Deliberately NOT ruled** — one afternoon's set where the siblings had a fortnight; the doc quarantines it per its own §10 | batch 23"
+ },
+ {
+  "old_id": "K14",
+  "title": "The true-probability column STAYS — it is the vision's four-number model, not a dev readout",
+  "surface": "console",
+  "section": "Console (K) — the text-era shell (opened batch 121; **NO owning document, by `K15`** — it inherits",
+  "lifecycle": "Approved",
+  "linear_state": "Todo",
+  "state_raw": "**RATIFIED AS BUILT** · DD 2026-08-19 batch 121. `p 47%` beside every price is **`design/00-vision.md` §3 verbatim: *\"Every mechanic is mathematically legible. ",
+  "batch": "batch 121 · §6.2, §6.3",
+  "body": "The true-probability column STAYS — it is the vision's four-number model, not a dev readout | **RATIFIED AS BUILT** · DD 2026-08-19 batch 121. `p 47%` beside every price is **`design/00-vision.md` §3 verbatim: *\"Every mechanic is mathematically legible. The baseline bet is the four-number model — true probability, offered odds, stake, payout.\"*** **THE CONSOLE IS THE ONLY SURFACE IN THE STUDIO THAT PRINTS ALL FOUR.** **Recorded because the instinct is to read it as a leak** — a bookmaker's true probability on screen in a game about being lied to — **and the instinct is wrong: it is a canon clause made visible, and it is the clearest available answer to *what is this surface for* without inventing the in-fiction identity Reading B would have needed.** Two ratifications ride with it, both arrived at independently by this surface and both now pinned so they cannot drift: **`S91`/`S92` — one offer per row, name first, already true here; and `S97` — the price stays in toner, already true here, offer rows being `ConsoleColor.Gray` with no colour of their own.** `S97`'s named-not-ruled residual (amber's real claim is the SELECTED price) is not opened | batch 121 · §6.2, §6.3"
+ },
+ {
+  "old_id": "C48",
+  "title": "A control's copy is its input contract",
+  "surface": "cross-surface",
+  "section": "Cross-surface",
+  "lifecycle": "Parked",
+  "linear_state": "Backlog",
+  "state_raw": "**Law, cross-surface** · DD 2026-08-12 batch 50, promoted from T88 and extending T59 to the gesture axis. **Where a control's label names a GESTURE, that gestur",
+  "batch": "batch 50",
+  "body": "A control's copy is its input contract | **Law, cross-surface** · DD 2026-08-12 batch 50, promoted from T88 and extending T59 to the gesture axis. **Where a control's label names a GESTURE, that gesture is what the input implements — the label is not a description of the control, it is the contract the player acts on.** T59 ruled the availability axis (*display state and input state are the same state, read from one value*); **this is the same law where the input is not merely available or refused but SHAPED** — held, pressed, released. **A label naming a SAFETY PROPERTY the input does not provide is the most dangerous copy a control can carry**, because it is relied upon precisely when the player is being careless, and because the reliance is invisible until the moment it costs him. **Founding case:** the TV's intervention prompt printing `HOLD` over a `wasPressedThisFrame` input that **committed an irreversible spend on the first frame** — no preview, no abandon path, on a surface the player is watching rather than operating (T88). **Corollary, ruled with it: the weight of the gesture matches the weight of the act.** An irreversible spend is never one frame of input; an action that costs nothing and is already the default may be. **The repair direction is fixed and it is the non-obvious half:** where copy and input disagree on a money control, **the INPUT is corrected to match the copy, not the copy to match the input** — correcting the word ships an honest description of a"
+ },
+ {
+  "old_id": "C58-am2",
+  "title": "A ROUTED WIDTH IS MEANINGLESS WITHOUT THE BUILD STATE IT WAS TAKEN IN — `C58`'s shape, one level up: the hidde",
+  "surface": "cross-surface",
+  "section": "Cross-surface",
+  "lifecycle": "Parked",
+  "linear_state": "Backlog",
+  "state_raw": "**AMENDED — DD 2026-08-25 batch 187, and recorded because it nearly cost this seat a ruling.** **`C58` ruled that an offline width assumes THE FILE'S DEFAULT IN",
+  "batch": "batch 187",
+  "body": "A ROUTED WIDTH IS MEANINGLESS WITHOUT THE BUILD STATE IT WAS TAKEN IN — `C58`'s shape, one level up: the hidden assumption is not which asset rendered it but which RULINGS had landed | **AMENDED — DD 2026-08-25 batch 187, and recorded because it nearly cost this seat a ruling.** **`C58` ruled that an offline width assumes THE FILE'S DEFAULT INSTANCE IS THE SHIPPED ONE. The same defect has a second axis: a width also assumes **THE STRING THE BUILD COMPOSES TODAY.** `T168-am` moves the club token from the full name to `SweatFlavor.Short` AT THE RENDER — so the identical row measures one way before that lands and another way after, **and the number carries no mark saying which.*** **THE CONCRETE NEAR-MISS: the team-total fallback was routed to TV for measurement while `T168-am` sat ruled and unbuilt. Had the number come back taken AFTER the build, it would have described the SHORT form; taken before, the FULL one. **Same request, same lane, two different strings, and nothing in the reply would have distinguished them** — §2.6's confounded measurement, arriving through correct process.** **THE CLAUSE: a routed width states (a) the commit it was measured at, and (b) any RULED-BUT-UNBUILT change to the string it measures. Without both, it may not close an item. **The lane cannot be expected to know (b) — the seat that routes the ask owns naming it**, which is where this seat fell short: the ask went out naming the number and not the pending rebase.** **HELD DELIBERATELY NARROW: thi"
+ }
+]

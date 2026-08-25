@@ -1,6 +1,282 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 509 (heartbeat).** TV's
+**Keeper-era heartbeat stamp: 2026-08-25, cycle 541 - batch 200 landed
+(072fe7d): both arms refused. The stale kind-list is ALREADY FIXED at
+HEAD (c24b32c; PickedHomeForPresentation reads AnchorSide) - TV likely
+read a worktree lagging main; and orientation does NOT block (a single
+player leg cannot disagree with itself). DD's hypothesis for TV to
+measure: the ledger is per-telling (anchor-oriented) while the counter
+is per-leg. TV told: merge main, re-read at HEAD, measure, fix. WITH
+ALLEN: T140-am2 is NOT blocking after all; the rest unchanged.**
+
+*(prior stamp, cycle 540 - the counter's
+REMAINING defect is the orientation mismatch: ScorerFor indexes by
+_ledger.Picked (away-keyed here) into a list chosen by
+PickedHomeForPresentation (home for every kind but ML/AnytimeScorer).
+T140-am8's remedy is built and correct but was not this defect; TV
+stopped at T140-am2's line. Routed to the DD:
+route-counter-orientation-2026-08-25.md - the DD reads whether it is the
+orientation question (Allen's) or a stale kind-list (closable now).
+PlayMode flaky under machine load (three unrelated wall-clock failures
+in four runs); TV will not commit against an unexplained red. WITH
+ALLEN: T140-am2 orientation - now BLOCKING a counter fix if the DD reads
+it as (a); the rest unchanged.**
+
+*(prior stamp, cycle 539 heartbeat - TV
+still on the counter: its diagnostic shows one transition at frame 70
+revealing picked=5 opponent=0 against a 0-5 statline with the backed
+player AWAY - a side-orientation read inside the counter, under
+investigation (may touch T140-am2, which stays Allen's). DD holding.
+WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 538 heartbeat - TV's
+counter remedy: the counter is per-leg (an array) and the T169-am
+fixture's pin is being updated to read it; PlayMode re-running. DD
+holding. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 537 heartbeat - TV
+building the counter remedy (T140-am8) + the both-states seed; DD holding
+for the T94 verification frames. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 536 - batch 199 landed
+(7eb6b2c): the seam ACCEPTED; the gate accepted with one change owed
+(prefer a both-states seed over the split - only a ticket passing through
+both states catches a value that fails to update on the transition); the
+counter's remedy ruled (T140-am8: per-leg counters with per-leg reveal
+gates; _stageLeg answers match questions, never bet questions).
+AUTONOMOUS DECISION, veto window open: TV ordered to BUILD the counter
+fix + the seed change now - a DD-ruled defect surfaced by the shipped
+four-arm build, inside the lane's standing scope. WITH ALLEN: the
+orientation question (two legs backing opposite sides on one match,
+T140-am2) is deliberately left unsettled by the counter fix - it is
+yours; the rest unchanged.**
+
+*(prior stamp, cycle 535 - CI green on the seam
+merge (fc572b4). TV's handoff rotation section merged (b3b256f: lane
+state at 7b28fa8, the counter open, the gate's new shape, two bugs a
+search inherits). TV holding on T140-am6's remedy; DD reading the build.
+WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 534 - T94's SEAM CLOSED
+and MERGED (7b28fa8, with the counter fixture 2ff03a6): repaint at both
+sites, LegsOfFixtureAfter deleted; the C29 footer-word gate re-based as
+an invariant (per-seed pre-emption failsafe + end-of-run assertions on
+both states), warm-up dropped, pacing fix. TV corrected itself: a seed
+CAN still carry both states (STATS-MULTI-2: 11/50) - the two-seed shape
+is max-picking, not impossibility. The counter still reads 1 for 2
+(MULTI-0) - NOT in this commit; its remedy is the DD's with the read
+(T140-am6). DD reading 7b28fa8 now. CI pending. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 533 heartbeat - DD's
+early take on the gate re-base: expects ACCEPT (invariant, not widening;
+StakeWord is a pure function so two seeds certify it completely - not a
+precedent for splitting a gate that tests a real transition) and ENDORSE
+(the dropped blind warm-up); one citation it could not verify - I located
+it: ruling-t108-trigger-2026-08-17.md §5, cited in the gate's own
+comments. TV's seam commit still pending its run. WITH ALLEN:
+unchanged.**
+
+*(prior stamp, cycle 532 - T94's seam BUILT
+(uncommitted; TV's confirming run in flight) and it INVALIDATED a C29
+gate's premise: the footer-word gate's two state-2 frames were T94's
+artefact itself (leg 1 lit while the stage was on leg 0). TV re-based
+the gate as an invariant (state 2 counts only with the stage on leg 1's
+fixture), re-ran the seed search per the pin's own instruction, dropped
+30 blind warm-up frames. Routed to the DD early:
+route-c29-gate-rebase-2026-08-25.md. TV's own "commit it" draft not
+fired. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 531 - the counter
+defect is CONFIRMED on a run (TV 2ff03a6: T169-am's fixture reads 1 where
+the player scored 2; unmerged, merges with the seam). T94's seam built at
+both sites, PlayMode running. DD holding for the build. WITH ALLEN:
+unchanged.**
+
+*(prior stamp, cycle 530 - batch 198 landed:
+T94's seam RATIFIED as TV's repaint (UpdateTicketColumn(_liveLegsShown)
+at both sites; the DD says 197 read a predicate and called it a frame);
+the frame's reading (b) split into b1/b2. Bucket 1: NO gate owed (past
+the margin is the next rung, not an overrun). The multi-scorer counter is
+ITS OWN ITEM, arm A's N-live class - and it RETIRES the claim that the
+pending window was the last N-live site (it hid behind a field, not a
+call). TV building the seam; counter verification on a run first. CI
+green on 476a12d. WITH ALLEN: unchanged, plus that retired claim for
+the record.**
+
+*(prior stamp, cycle 529 - T156 re-take
+(5e5348e) and WinningMargin bucket 1 (ca4f410) MERGED; suites green. TV
+raised three questions, routed to the DD in
+route-t94-repaint-2026-08-25.md: (1) T94's seam - deletion alone leaves
+the ended fixture painted LIVE through the beat; TV proposes a one-line
+repaint to _liveLegsShown instead - SEAM HELD on the DD's call; (2)
+bucket 1's ladder ends a rung early by 6.1px - gate owed?; (3) the
+multi-scorer counter may count one leg only - TV verifying on a run. TV's
+staged "go with the repaint" draft is TV's own, not fired. WITH ALLEN:
+unchanged.**
+
+*(prior stamp, cycle 528 - T156 re-take
+committed at TV (5e5348e: the city-only survivor is gone, the control is
+safe again, the pair is not); TV still mid-turn on PlayMode, merge on its
+report. T94 correction consumed. DD holding, nothing open. Untracked
+docs/design/linear-import/ is the architect session's - not touched.
+WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 527 - T94 REVERSED
+(batch 197, b8d25af).** The DD found its own T140-am3 protected the very
+behaviour T94 is about: the pre-emption is not a feature to preserve
+around the defect - IT IS THE DEFECT. TV corrected before it reaches
+the seam (its chain: T156 re-take -> bucket 1 -> T94's seam, now built
+to 197). CI green on 86d433b. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 526.** THE NEED-COPY BUILD
+IS ACCEPTED (batch 196, 0ad725d - T169-am: four arms, zero coined copy;
+it corrected two of the DD's own numbers, one caught by the DD's own
+law). Rulings: WinningMargin bucket 1 AUTHORED (T151-am3 - queued to TV
+behind the T156 re-take); {n} in CLEAR BY {n} defined as goals-that-
+must-change, ratifying TV's build (T152-am2). CI green on the TV merge
+(a6a3a4c). Untouched: docs/design/linear-dryrun-template-pass.txt -
+the architect session's Linear dry-run, not mine to land (Allen: do not
+act on the Linear part yet). WITH ALLEN: the team-total scope call,
+the veto, the carve-out bookkeeping, the hold's structure, B9's
+sitting, Linear setup.
+
+*(prior stamp, cycle 525.** Allen re-activated
+TV for one item: the T156 team-total fallback RE-TAKE now that T168's
+club form is built (the earlier number was conditional on it; the ask
+doc binds). DD reading the NEED-copy build with the two routed
+questions. CI on the merge push still running. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 524 - TV's CHAIN IS DONE
+EXCEPT T94 (merged: 64b3f70 the NEED copy + T168's club form + T169's
+four arms + the pending window's name + Section 3; c9fd2c6 the seat
+wrap). Risk named in the handoff: _pickedScorerGoals unproven on a beat
+(no PlayMode fixture drives a multi-scorer leg through a goal). The
+DD's held read FIRED with two routed questions (WinningMargin bucket 1
+offered with no copy - renders '1 GOAL'; {n} in CLEAR BY {n} undefined,
+built as goals-to-flip). TV STOPPED per Allen (transition); T94's seam
+stays queued for the next seat. CI poll on this merge pending. WITH
+ALLEN: the team-total scope call, the veto, the carve-out bookkeeping,
+the hold's structure, B9's sitting, Linear setup.
+
+*(prior stamp, cycle 523 (heartbeat).** CI green
+held on the checklist commit too (dd6e9e9). TV finishing its wrap-up
+build (step A merged at b7fdaa3; the rest + handoff pending); DD
+holding for that merge. Nothing ahead, nothing to land. WITH ALLEN:
+unchanged.
+
+*(prior stamp, cycle 522 - CI IS GREEN.** Run
+on c70a2b6 concluded success: .NET build, engine tests, console tests
+(the stale anchor-shape gate rewritten at 9c6df0f). 'CI green' now sits
+in STUDIO.md's clean-merge checklist - every autonomous merge reads the
+Actions result on the merged main before it counts. TV finishing its
+wrap-up; the DD's held read fires on that merge. WITH ALLEN: the
+team-total scope call, the veto, the carve-out bookkeeping, the hold's
+structure, B9's sitting, Linear setup (the tracking brief waits on it).
+
+*(prior stamp, cycle 521 - CI FIX PUSHED.** The
+stale console gate rewritten (9c6df0f): it now asserts, over the whole
+priced pool, that the console's BackedSide agrees with the engine's
+MatchModel.AnchorSide on every kind except the ruled exception (player
+-scorer kinds answer NEITHER) - the two tables are intentionally
+parallel per 622abf3's own docstring, which corrected my briefing.
+Console 24/24, engine 329/330 (1 skipped). Re-polling Actions; 'CI
+green' joins the checklist on green. TV's step A merged (b7fdaa3); TV
+finishing its wrap-up. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 520 - WRAP-UP FOR THE
+TRANSITION (Allen).** (1) RESEARCH WORKTREE DROPPED on Allen's order:
+0 ahead, merged, clean, no seat; worktree + branch deleted; registry
+updated; items 8-9 lapse unless re-raised. (2) CI RED DIAGNOSED: one
+console gate (SweatAnchorGateTests: 'the two shapes still differ')
+asserted the pre-unification difference that AnchorSide's single
+source made false - a stale gate, not a product defect; a bounded fix
+agent is rewriting it to assert the single-source contract (markets'
+seat is empty - integration deviation, logged); I push and re-poll CI.
+(3) TV told to finish its current build, refresh its handoff and STOP
+(T94's seam stays queued for the next seat); the DD's held read fires
+on that merge. WITH ALLEN: the team-total scope call, the veto, the
+carve-out bookkeeping, the hold's structure, B9's sitting, Linear setup.
+
+*(prior stamp, cycle 519 (heartbeat) - CI IS
+RED.** Run 32813184040 on b1b9743: build green, engine tests green,
+CONSOLE TESTS FAIL (the earlier run on 59485da was cancelled by the
+follow-up push - concurrency, normal). Reproducing the console tests
+locally to separate a code failure from a runner-environment one; then
+the fix routes (the CI author or the console tests' owner). 'CI green'
+does NOT join the checklist until it is green. TV building; DD holding.
+WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 518 - CI STAGE 1 PUSHED.**
+The architect session's 59485da (.github/workflows/ci.yml: .NET build +
+engine/console tests on GitHub Actions, no Unity; the tracking brief
+docs/5-orchestration/tracking-brief-2026-08-25.md - its Linear part is
+BLOCKED on Allen's setup, not acted on) rode this push. Next: read the
+Actions result (gh is not installed - API/browser), report green/red
+to Allen plainly; on green, 'CI green' joins the clean-merge checklist.
+TV building; DD holding. WITH ALLEN: unchanged + Linear setup when he
+chooses.
+
+*(prior stamp, cycle 517 - AUTONOMOUS DECISION
+(veto window).** The fresh TV seat asked whether Section 3 (the >=2
+name composition) is in scope this seat or gate-only; I took its
+recommendation - BUILD IT TOO: fully authored (batches 189/193/195),
+same call site and deadNames list as T143-am9, and gate-only would
+leave a known-wrong string on screen. Within-direction. Unity lease
+granted (procs 0). Building: the NEED copy + Section 3 + am8's gate +
+am9's name; T94's seam last. The DD's held read fires on the merge.
+WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 516.** HELD: Allen's
+'take the NEED-copy build read' - the build does not exist yet (TV's
+branch empty; the fresh seat still planning). Fires on the real merge.
+DD holding. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 515.** THE PENDING-WINDOW
+BUILD IS ACCEPTED by the DD (batch 195, a42fe44 - T143-am8; the >=3
+escalation withdrawn in full by the pre-committed reading; a gate owed
+on a 3.4px margin) - and the read found the window's NAME wrong: the
+club alone MISNAMES the scorer markets and is AMBIGUOUS on a same-match
+ticket today (T143-am9). Both queued to the fresh TV seat with the
+NEED-copy build (shared source); T94's seam last. WITH ALLEN: the
+team-total scope call (its club-alone shape now also touches the
+window's name), the veto, the carve-out bookkeeping, the hold's
+structure, research 8-9, B9's sitting.
+
+*(prior stamp, cycle 514 (heartbeat).** Fresh
+TV seat loading its handoff toward the NEED-copy build; DD reading the
+pending-window build; nothing ahead, nothing to land. WITH ALLEN:
+unchanged.
+
+*(prior stamp, cycle 513 - THE PENDING WINDOW
+IS BUILT AND MERGED (d66710c): it names its dead leg, T143/S85 are
+consumed, batches 192/194 folded in, 631.6 vs 635.0 (reading A), the
+>=3 hole closed on batch 193's number - THE LAST N-LIVE SITE OF THE
+ONE-TELLING ENDING. TV rotated on its handoff (6ede668: phases 2-3
+done, the chain, five traps); fresh seat launching for the NEED-copy
+build then T94's seam. The DD's held read fired. WITH ALLEN: the
+team-total scope call (two fixes), the veto, the carve-out bookkeeping,
+the hold's structure, research 8-9, B9's sitting.
+
+*(prior stamp, cycle 512 - TV ROTATION ORDERED
+(97% context).** The seat finishes the pending-window number, commits
+the build if both suites are green, then writes its handoff (the chain:
+NEED-copy build, T94's seam; batches 192/194 folded in) and stands
+down; a fresh seat takes the lane. The DD's held read fires on the
+build's merge. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 511.** HELD: Allen's
+'TV's pending-window build is merged; take the read' - the build is
+not merged (nothing on TV's branch; its agent still composing). Fires on
+the real merge. DD holding for TV's return. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 510.** DD batch 194
+landed (1f8e011, T143-am7): two of batch 186's widths (699.5 and 870.4)
+measured retired placeholder copy - a placeholder's error is asymmetric;
+the height ruling's numbers are audited, two unsafe in one direction.
+TV given the heads-up mid-build: read the batch, check the diff against
+its rule before the suites. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 509 (heartbeat).** TV's
 pending-window build in flight with batch 192's amendment folded in
 ('chain intact'); suites follow. DD batch 193 landed (37c20ef): the
 three-or-more-dead-legs hole is probably not a hole - N is bounded at

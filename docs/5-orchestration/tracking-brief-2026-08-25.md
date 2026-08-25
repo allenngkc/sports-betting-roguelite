@@ -99,6 +99,47 @@ migration script uses a Linear API key instead of OAuth.
   manual drift. Revisit only if Allen wants to hand-draw (Figma has an MCP
   when that day comes).
 
+## Allen's refinements (2026-08-25, same day) — now part of the target
+
+### Unit of work = the ticket, not the worktree
+Today a worktree is seated with "do the whole slice." Retired as a pattern.
+The orchestrator decomposes an approved brief into Linear tickets BEFORE any
+seat opens (a Sonnet sub-agent drafts, the orchestrator reviews). Every
+ticket carries: goal, acceptance criteria, evidence required, files/ownership,
+and a size cap of one dispatch. Leads pull tickets from their lane's queue;
+each sub-agent dispatch is one ticket; a worktree is only the venue where
+tickets execute. Product tracking = the ticket graph, always current, and the
+DD/leads reason about one bounded ticket at a time — the other half of the
+hallucination fix.
+
+### CI/CD — staged, because Unity is the hard part
+- **Stage 1 (written today, `.github/workflows/ci.yml`):** GitHub Actions on
+  push to main and on PRs — build every .NET project (engine, engine.tests,
+  game-console, game-console.tests, sim) and run the engine + console test
+  suites on a Windows runner with .NET 10. No Unity, no LFS checkout, fast.
+- **Stage 2:** sim smoke on PRs (small seed count) + nightly full gate
+  campaign (parallelized per the speed brief) posting its table to the
+  Linear issue.
+- **Stage 3:** Unity EditMode/PlayMode in CI. Two routes, decide then:
+  GameCI with a Unity licence secret (heavy — URP, package restore, long
+  runs) or a self-hosted runner on Allen's machine (shares the editor with
+  the single-editor law — needs the lease scheduler). Until then Unity
+  validation stays local per the clean-merge checklist.
+- **CD:** a Windows player build artifact on every main merge (stage 3);
+  WebGL/itch stays deferred by Allen's earlier call.
+- **Merge flow:** the orchestrator moves from local merges to PRs
+  (`gh` CLI — not installed yet: `winget install GitHub.cli` + `gh auth
+  login`), branch protection on main requires CI green, and the clean-merge
+  checklist gains "CI green" as a hard line.
+
+### Design system rebuild = a human-readable quick reference
+Audience: Allen, 30-second lookups — not agents. The rebuilt Claude Design
+gallery gets an index that reads top-down: Surfaces (laptop, TV, room, phone,
+console) → each screen with an annotated capture and what it's for → the
+components used → tokens → the laws in plain language (amber = money, biro
+blue = your pick, oxide red = the house's mark, no pure black, facts ≥13px…).
+Every page is generated from repo canon; nothing is authored in the gallery.
+
 ## Not doing
 
 Vercel AI SDK or any custom agent runtime. Orca + Claude Code already IS the
@@ -113,6 +154,50 @@ posted to the issue on merge). Rebuilding the runtime buys nothing.
 2. OAuth the Linear MCP in the orchestrator seat when it prompts.
 3. Go on (a) the 10-row dry-run migration and (b) wiping + rebuilding the
    Claude Design project from repo canon.
+
+## Progress log
+
+- **2026-08-25 — Linear connected, dry run DONE.** Workspace: one team `SBR`,
+  default workflow. `tools/register-export.py` exports the register: 580
+  rows, 0 problems, 0 duplicate IDs; 51 rows classified as laws (stay in the
+  constitution, never become tickets); 16 need a human eye. Ten sampled rows
+  were imported by a headless session through the Linear MCP into the
+  isolated project **"Register migration — dry run (2026-08-25)"** as
+  SBR-5…SBR-14 (`docs/design/linear-dryrun-result.txt` holds the old-ID →
+  identifier map). Decisions embedded in the dry run:
+  - **State mapping onto Linear's default workflow** (no custom states yet):
+    Exploration/Candidate/Parked → Backlog · Approved → Todo · In Build →
+    In Progress · Implemented → In Review (awaiting DD verification) ·
+    Design-verified/Closed → Done · Struck → Canceled.
+  - **Lifecycle nuance rides as labels** (`design-verified`, `parked`,
+    `implemented`…) plus a surface label (`tv`, `laptop`, `room`,
+    `cross-surface`, `console`, `phone`). The 12 labels were auto-created.
+  - **Full import can run through the MCP in batches** by a headless session
+    — no Linear API key required unless it proves too slow.
+  - Awaiting Allen: review the dry-run project, then go/no-go on the full
+    580-row import (minus laws), and whether to add custom workflow states
+    (e.g. a real "Design-verified" column) in Linear settings or keep labels.
+
+- **2026-08-25 — template pass on the dry run.** `linear-templates.md` written
+  (project context packs; ticket ends in Expected behavior; no dispatch without
+  it). All 10 dry-run issues re-shaped to it by a headless Opus session; the
+  dry-run project now carries a SAMPLE TV-surface context pack drawn from
+  `tv-design.md`, `constitution.md` and the tv-theater handoff. Expected
+  behavior derived on 8/10; marked `TO DERIVE` on SBR-10 (S81 is "recorded,
+  not ruled") and SBR-11 (P7 is quarantined) — the rule fired exactly where it
+  should. **Two fixes for the full import:** (1) the sample generator truncated
+  bodies at 1,500 chars — the full import must carry spec text verbatim and
+  untruncated; (2) Linear's markdown normalizer re-flows nested emphasis
+  around inline code — cosmetic, but rulings should be checked for it.
+
+- **2026-08-25 — full import STAGED.** Six context packs generated from canon
+  (`docs/design/linear-import/context-packs/`, 6–9k chars each, `TO CONFIRM`
+  only where the docs are silent). Batches: TV 269 · Laptop 131 ·
+  Cross-surface 56 · Room 43 · Console 22 · Phone 8 = 529 issues, laws
+  excluded, dry-run issues moved not duplicated. Importer is mechanical and
+  idempotent (`tools/linear-import.py`, checkpointed). The switch is
+  pre-written (`linear-switch-2026-08-25.md`). **Blocked only on the Linear
+  API key at `~/.linear_api_key`.**
 
 ## Phases
 

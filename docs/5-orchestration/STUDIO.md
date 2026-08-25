@@ -63,7 +63,7 @@ reverted.
 | `markets-pregame` | `markets-pregame` | Claude (Opus 5) | Seat EMPTY (rotated out 2026-08-23 at 688k after the CONSOLE SURFACES build merged - handoff `docs/handoffs/markets-pregame.md`; worktree kept for the lane's next phase; re-seat fresh) |
 | `theater-engine` | `theater-engine` | Claude (Opus 5) | Retired 2026-08-25 - arm A phase 1 (per-fixture sweat, 9/9 campaign), the DoubleChance removal (9/9) and the AnchorSide single source all merged; no work pending; worktree + branch deleted on Allen's order; future engine work re-seats fresh |
 | `sgp` | `sgp` | Claude (Opus 5) | Retired 2026-08-16 — F_0.6.0 complete: engine, gates (parallel harness), conditional cash-out all shipped and validated; fully merged; worktree deleted on Allen's order |
-| `research` | `research` | Claude (Opus 5) | Active (seated 2026-08-12; Lane 3 — compulsion-loop reference research, docs-only. **GOVERNANCE EXCEPTION: Allen personally holds the DD role for this lane; findings route to Allen, not the DD seat; standing creative mandate to PROPOSE overriding any design doc — proposals, never edits**) |
+| `research` | `research` | Claude (Opus 5) | Retired 2026-08-25 on Allen's order ("drop the research worktree") - the 15-title mandate was discharged; its docs live in docs/7-research; Allen's deferred items 8-9 lapse with it unless he re-raises them; worktree + branch deleted |
 | `Documents/CodingProjects/sports-betting-roguelite` | `feat/soccer-markets` | — | Retired 2026-07-31 — fully merged into main (56 behind); superseded by `markets-2` |
 
 ## Ownership rules
@@ -114,10 +114,13 @@ only as Creative Director or for genuinely critical calls.
   and history rewrites stay banned outright — not escalatable.)
 
 **Clean-merge checklist** (autonomous merge only if all hold): tests at the
-lead's stated baseline; no integration-only file drift (ProjectSettings,
-packages) or drift already justified and reverted; handoff current; no open
-conflict-register item touching the branch; merge applies without conflicts.
-Any miss → Allen.
+lead's stated baseline; **CI green** — the stage-1 GitHub Actions run
+(`.github/workflows/ci.yml`: .NET build + engine/console tests) on the merged
+`main` must conclude `success` (the orchestrator reads it via the REST API or
+the browser; `gh` is not installed); no integration-only file drift
+(ProjectSettings, packages) or drift already justified and reverted; handoff
+current; no open conflict-register item touching the branch; merge applies
+without conflicts. Any miss → Allen.
 
 **Evidence-based gates:** a phase advances when the exit criteria in the lead's
 approved plan are met with evidence artifacts. The orchestrator verifies and
