@@ -1310,14 +1310,6 @@ namespace SBR.Tests.EditMode
             }
         }
 
-        /// <summary>`T91`'s two numbers, owed to the Design Director since 2026-08-13 and routed at
-        /// batch 153 (`T91-am3`). `T91` needs no ruling — its ruling was made at `T91-am2`, batch 63.
-        /// It needs these.
-        ///
-        /// <para>REPORT-ONLY, and the clock number deliberately reports its own BOUND rather than a
-        /// single width: the DD's cell asks for the longest RENDERABLE form and says explicitly that
-        /// the box is "the quantity in doubt", so answering with the box would answer the wrong
-        /// question.</para></summary>
         /// <summary>THE SHAPE `T165` WAS RULED FOR, WHICH NO TEST HAD EVER RENDERED.
         ///
         /// <para>`T165`/`T165-am` moved the counter's referent from the LEG to the FIXTURE, and its
@@ -1784,6 +1776,179 @@ namespace SBR.Tests.EditMode
             }
         }
 
+        /// <summary>THE TEAM-TOTAL NEED FALLBACK, MEASURED — <c>docs/design/measurement-ask-team-total-fallback-2026-08-25.md</c>.
+        ///
+        /// <para>Report-only. It rules nothing; §4 of the ask pre-committed what each result means
+        /// BEFORE the number existed, which is why this file authors no reading.</para>
+        ///
+        /// <para><b>Through the REAL fit path, not <c>GetPreferredValues</c>.</b> The chain the ask
+        /// names is <c>DescribeActiveLeg</c>'s <c>default:</c> → <c>LegStatement</c>'s
+        /// <c>default:</c> → <c>SheetName</c> → the sheet's own row name, then
+        /// <c>FitOrFallback(t, primary, "")</c> — whose empty fallback means it lands on
+        /// <c>FitToColumn</c>, which drops whole words FROM THE END. Both private members are
+        /// reached by reflection so the measurement walks the shipped code rather than a copy of
+        /// it.</para>
+        ///
+        /// <para><b>What is reported per case</b> (ask §2): the input string and its width, the
+        /// string <c>FitToColumn</c> returns and ITS width, and two explicit flags — whether the
+        /// DISTINCTIVE final word survived, and whether a single over-wide word came back whole
+        /// (<c>T46</c>'s containment backstop being reached by shipped copy).</para></summary>
+        [Test]
+        public void T156_measure_the_team_total_NEED_fallback_through_the_real_fit_path()
+        {
+            var go = new GameObject("TeamTotalFallback");
+            try
+            {
+                var screen = BuildScreen(go);
+                TMP_Text need = FindChild<TMP_Text>(screen, "LegRowNeed0");
+                Assert.IsNotNull(need, "LegRowNeed0 is not built — the NEED span is the ask's subject");
+                Assert.IsNotNull(need.font, "no font resolved — a measurement in the fallback face is void");
+                Assert.IsTrue(need.font.name.Contains("Encode"),
+                    $"measured in '{need.font.name}', not Encode Sans — the mistake T20 made once");
+
+                float box = need.rectTransform.rect.width;
+                Debug.Log($"[TT-FIT] NEED box {box:0.0}px · commit {CommitAtMeasurement()} · T168-am BUILT: false "
+                    + "(no reference to T168 anywhere under Assets/**; the club token is still the FULL name)");
+
+                MethodInfo legStatement = typeof(TvSweatScreen).GetMethod(
+                    "LegStatement", BindingFlags.NonPublic | BindingFlags.Instance);
+                MethodInfo fitToColumn = typeof(TvSweatScreen).GetMethod(
+                    "FitToColumn", BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.IsNotNull(legStatement, "TvSweatScreen.LegStatement not found — renamed? The "
+                    + "measurement must fail rather than silently measure a string the surface never emits.");
+                Assert.IsNotNull(fitToColumn, "TvSweatScreen.FitToColumn not found — renamed?");
+
+                // Find the clubs the ask asks for, off a real board rather than constructed.
+                // ⚠ KEYED ON THE TEAM, NOT THE MATCHUP. The first version bucketed the MATCHUP, so a
+                // matchup whose two teams had different name lengths landed in BOTH buckets and cases
+                // 1 and 3 measured the same club — three distinct rows reported as four. Caught by
+                // reading the output rather than by the run, which passed.
+                var run = new Run("TT-FALLBACK", new RunConfig());
+                (Matchup M, Side S) oneWord = (null, Side.Home), twoWord = (null, Side.Home);
+                foreach (Matchup m in run.CurrentSlate.Matchups)
+                    foreach (Side side in new[] { Side.Home, Side.Away })
+                    {
+                        Team t = side == Side.Home ? m.Home : m.Away;
+                        int words = t.Name.Split(' ').Length;
+                        if (words == 2 && oneWord.M == null) oneWord = (m, side);   // "City Noun"
+                        if (words > 2 && twoWord.M == null) twoWord = (m, side);    // "Two Word Noun"
+                    }
+                Assert.IsNotNull(oneWord.M, "no one-word-city club on this slate — cases 1/2 unreachable");
+
+                void Measure(string label, (Matchup M, Side S) pick, MarketKind kind,
+                    System.Func<MarketSelection, bool> want)
+                {
+                    Matchup m = pick.M;
+                    MarketSelection sel = default;
+                    bool found = false;
+                    // The team-total offers carry their team in a NAMED field; match on it so the row
+                    // measured is the CLUB this case is about rather than whichever side came first.
+                    foreach (MarketOffer o in m.Markets)
+                        if (o.Selection.Kind == kind && o.Selection.Team == pick.S && want(o.Selection))
+                        { sel = o.Selection; found = true; break; }
+                    if (!found) { Debug.Log($"[TT-FIT] {label,-34} NOT OFFERED on this matchup — case unreachable"); return; }
+
+                    var leg = new Leg(m, sel, 2.00);
+                    var input = (string)legStatement.Invoke(screen, new object[] { leg });
+                    var fitted = (string)fitToColumn.Invoke(null, new object[] { need, input });
+                    float wIn = need.GetPreferredValues(input, 100000f, 0f).x;
+                    float wOut = need.GetPreferredValues(fitted, 100000f, 0f).x;
+
+                    // THE TWO FLAGS THE ASK REQUIRES, both stated rather than left to the reader.
+                    string[] inWords = input.Split(' ');
+                    string distinctive = inWords[inWords.Length - 1];
+                    bool distinctiveSurvived = fitted.EndsWith(distinctive);
+                    bool singleWordWhole = !fitted.Contains(" ") && wOut > box;
+
+                    Debug.Log($"[TT-FIT] {label,-34} in '{input}' {wIn,7:0.0}px  ->  OUT '{fitted}' {wOut,7:0.0}px "
+                        + $"vs box {box:0.0}  · distinctive '{distinctive}' {(distinctiveSurvived ? "SURVIVES" : "** LOST **")}"
+                        + $"{(singleWordWhole ? "  · ** T46 BACKSTOP REACHED: one over-wide word returned whole **" : "")}");
+                }
+
+                Measure("1 TeamTotalGoals 1.5 (1-word city)", oneWord, MarketKind.TeamTotalGoals,
+                    s => System.Math.Abs(s.Line - 1.5) < 0.01);
+                Measure("2 TeamTotalCards 1.5 (SAME club)", oneWord, MarketKind.TeamTotalCards,
+                    s => System.Math.Abs(s.Line - 1.5) < 0.01);
+                if (twoWord.M != null)
+                    Measure("3 TeamTotalGoals 1.5 (2-word city)", twoWord, MarketKind.TeamTotalGoals,
+                        s => System.Math.Abs(s.Line - 1.5) < 0.01);
+                else
+                    Debug.Log("[TT-FIT] 3 TeamTotalGoals 1.5 (2-word city)  NO two-word-city club on this "
+                        + "slate — the rare case is unreachable here and is reported as such, not skipped silently");
+                Measure("4 TeamTotalCorners 4.5 (control)", oneWord, MarketKind.TeamTotalCorners,
+                    s => System.Math.Abs(s.Line - 4.5) < 0.01);
+
+                Debug.Log("[TT-FIT] report only — §4 of the ask pre-committed the reading; this file authors none.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        /// <summary>`C58-am2`: a routed width is meaningless without its build state, so the commit
+        /// travels with the number. Read from the repo rather than hard-coded, so it cannot go stale.</summary>
+        private static string CommitAtMeasurement()
+        {
+            try
+            {
+                string dir = System.IO.Path.GetDirectoryName(Application.dataPath);
+                for (int i = 0; i < 8 && !string.IsNullOrEmpty(dir); i++)
+                {
+                    string dotGit = System.IO.Path.Combine(dir, ".git");
+
+                    // ⚠ IN A WORKTREE `.git` IS A FILE, NOT A DIRECTORY — it holds `gitdir: <path>`.
+                    // The first version only ever looked for `<dir>/.git/HEAD`, so it found nothing
+                    // and reported the commit unreadable. This lane WORKS IN A WORKTREE, so the file
+                    // form is the normal case here, not the exotic one.
+                    string gitDir = null;
+                    if (System.IO.Directory.Exists(dotGit)) gitDir = dotGit;
+                    else if (System.IO.File.Exists(dotGit))
+                    {
+                        string line = System.IO.File.ReadAllText(dotGit).Trim();
+                        const string marker = "gitdir:";
+                        if (line.StartsWith(marker)) gitDir = line.Substring(marker.Length).Trim();
+                    }
+
+                    if (gitDir != null)
+                    {
+                        string head = System.IO.Path.Combine(gitDir, "HEAD");
+                        if (!System.IO.File.Exists(head)) return "(HEAD missing — state it by hand)";
+                        string h = System.IO.File.ReadAllText(head).Trim();
+                        if (!h.StartsWith("ref:")) return h.Length >= 7 ? h.Substring(0, 7) : h;
+
+                        string rel = h.Substring(4).Trim();
+                        string refPath = System.IO.Path.Combine(gitDir, rel);
+                        if (System.IO.File.Exists(refPath))
+                            return System.IO.File.ReadAllText(refPath).Trim().Substring(0, 7);
+
+                        // A packed ref, or a worktree whose HEAD points into the COMMON dir.
+                        string common = System.IO.Path.Combine(gitDir, "commondir");
+                        if (System.IO.File.Exists(common))
+                        {
+                            string cd = System.IO.File.ReadAllText(common).Trim();
+                            string root = System.IO.Path.GetFullPath(System.IO.Path.Combine(gitDir, cd));
+                            string p2 = System.IO.Path.Combine(root, rel);
+                            if (System.IO.File.Exists(p2))
+                                return System.IO.File.ReadAllText(p2).Trim().Substring(0, 7);
+                        }
+                        return "(ref unresolved — state it by hand)";
+                    }
+                    dir = System.IO.Path.GetDirectoryName(dir);
+                }
+            }
+            catch (System.Exception e) { return $"(commit unreadable: {e.GetType().Name} — state it by hand)"; }
+            return "(commit unreadable — state it by hand)";
+        }
+
+        /// <summary>`T91`'s two numbers, owed to the Design Director since 2026-08-13 and routed at
+        /// batch 153 (`T91-am3`). `T91` needs no ruling — its ruling was made at `T91-am2`, batch 63.
+        /// It needs these.
+        ///
+        /// <para>REPORT-ONLY, and the clock number deliberately reports its own BOUND rather than a
+        /// single width: the DD's cell asks for the longest RENDERABLE form and says explicitly that
+        /// the box is "the quantity in doubt", so answering with the box would answer the wrong
+        /// question.</para></summary>
         [Test]
         public void T91_the_two_numbers_owed_since_batch_63()
         {
