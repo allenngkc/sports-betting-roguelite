@@ -5,6 +5,102 @@
 
 ---
 
+## 0-ROT4. SEAT ROTATION 2026-08-25 (second) — READ THIS FIRST
+
+**Wrapped on Allen's order before a transition, not at a context limit.** Two commits:
+`1c0e400` (measure) and `64b3f70` (build). **EditMode 342/341/0/1 · PlayMode 152/125/0/27.** Editor
+closed, procs 0. Tree clean but `URP.png` (permanent phantom) and the untracked `artifacts/`.
+
+### WHAT IS DONE — the whole chain except `T94`
+
+**`T169`'s four kinds are BUILT in both slots** — `Handicap`, `PlayerMultiScorer`,
+`TotalGoalsOddEven`, `WinningMargin` — compact identity in `AuthoredStatement`, NEED + progress in
+`SweatActiveLegModel`. Zero new copy: every string is `T151`/`T152`/`G1-am11` §3 verbatim.
+**`T168-am` is built** (`ShortenSubject`). **`T143-am9` is built** (`PendingLegName` takes the
+authored arm). **`T143` §3 is built** with `S85-am3`'s `N GO ON`. **`T143-am8`'s gate is in.**
+
+### ⚠ NEXT: `T94`'s SEAM — NOT STARTED, AND IT IS ONE BUILD WITH ITEM `1.1`
+
+Confirmed by reading, not assumed. `T140-am3` names the defect as *"the interstitial fires per
+TICKET, not per fixture, so a fixture change inside `PlaySweat()` gets no boundary treatment at
+all"* — **that is item `1.1`'s site, word for word** (§6.7's interstitial at the fixture boundary,
+held since rotation 2). The predecessor flagged them as possibly one thing; they are.
+
+- **What must NOT change** (`T140-am3`): the pre-emption is RIGHT. Deleting it trades a brief wrong
+  subject for a dead column at every fixture boundary. **The missing BOUNDARY is the defect.**
+- **The seam is two identical lines**: `FinalSlam` and the theaterless path both run
+  `MarkPresentedResolved(evt.LegIndices)` then `UpdateTicketColumn(LegsOfFixtureAfter(evt.LegIndex))`.
+- **`1.1`'s own caveat still stands**: re-read the split doc against the contract before building —
+  its fork-independence argument lapsed when Allen ruled (A).
+
+### THINGS THIS SEAT MEASURED THAT CHANGE WHAT YOU CAN LEAN ON
+
+1. **BATCH 195's 3.4px MARGIN WAS A STAND-IN, AND THE REAL NUMBER IS 120.4px.** The withdrawal of
+   batch 189's ≥3 escalation rests on two names + separator at **631.6 vs 635.0**. That was
+   `SPREADSHEETS UNDER 3.5` twice — **a club plus a line, a form neither the old `PendingLegName`
+   nor `T143-am9` can emit.** Through the shipped methods the worst SAME-FIXTURE pair is
+   `UNDER 10.5 CORNERS · PAVEMENT ANYTIME` at **514.6 vs 635.0**. `T143-am7` says a `FITS`
+   conclusion survives a stand-in LONGER than the real copy — it was longer — **so the withdrawal
+   stands a fortiori.** The gate is pinned to 514.6, not 631.6.
+2. **`T143-am7`'s RULE HAS A MIRROR AND IT BREAKS THE OTHER WAY.** A `FITS` conclusion does NOT
+   survive a stand-in SHORTER than the real copy. Batch 195's could have been either; **which it was
+   is not readable off the string, only measurable.** Ask that question of every inherited width.
+3. **Every authored rung CLEARS and nothing truncates**, over saturated pools. `WinningMargin` rung
+   3 `2 APART AT FT` 181.7 / `3+ APART AT FT` 196.1 vs 261.0 (rungs 1 and 2 both miss, reproducing
+   `T161`'s 380.8/283.2 to the decimal). **`TotalGoalsOddEven`'s rung 1 NEVER RENDERS** — 314.9 and
+   326.5 vs 261.0 — which is what confirming rather than inheriting `T161` bought.
+   `Handicap` 20/20, `PlayerMultiScorer` 12/12, reproducing `T169`'s inherited 249.4 and 175.4.
+4. **BATCH 192's GUARD IS LOAD-BEARING AND NOW HAS A NUMBER**: through `LegStatement`'s `default:`,
+   **16 of 369** names overrun the 635.0 zone (worst 692.5). Through the authored arms, **0 of 125**.
+5. **`T156`'s four cases re-ran unchanged** at `1c0e400` — pre-`T168` baseline. **They are now OWED
+   a re-take**: `T168` is BUILT, the route doc's own last bullet says all four must be re-measured
+   because the shorter input may leave the distinctive word inside the box. **Not done this seat.**
+
+### OWED / ROUTED — none of it blocking `T94`
+
+- **`WinningMargin` BUCKET 1 IS OFFERED AND HAS NO AUTHORED COPY.** `MatchModel.BuildOffers` runs
+  `m = 1..TopMarginBucket` unfiltered; `MarketSelection` says margins 1 and 2 are EXACT. Verified
+  against a real board (12 seen in one run), not read off source. `T151`/`G1-am11` §3.2 stop at 2.
+  It falls through to `default:` → `1 GOAL` (89.2px, fits, renders silently) — **the exact
+  total-goals collision `T151` authored `MARGIN`/`APART` to prevent.** DD's.
+- **`{n}` IN `CLEAR BY {n}`/`TRAILING BY {n}` IS NOT RULED.** `T152` authored the forms and never
+  defined the number. Built as `ceil(|margin + line|)` — the goals that must change to flip the leg.
+  **One line to change.** DD's.
+- **`T156`'s re-take** (above), and the **§3 re-measure is NOT owed** — the gate covers it.
+- **The three team totals** stay held; `T169`'s escalation is unaffected by `T168`.
+
+### ⚠ TRAPS THIS SEAT PAID FOR — two are new, and both were MY OWN GATES
+
+1. **A DISCRIMINATOR THAT MERELY LOOKS DIFFERENT IS NOT A DISCRIMINATOR.** Two gates I wrote to
+   prove "the new arm was reached" were both false. (a) `id != SheetName(leg)` — **with `T168`
+   built the sheet name for a handicap is `MEATBALLS -1.5`, character-identical to `G1-am11` rung
+   3.** Two correct strings agreeing is not a fall-through. (b) `Identity != "MARKET PICK"` — that
+   IS the identity for every non-team market by design (`T96`). Replaced with things that can only
+   be true one way: **the DECK's exact string**, and **a non-empty progress line** (the `default:`
+   arm passes empty). *"Did my case occur"* needs a discriminator, not a difference.
+2. **A SOURCE-SCANNING TEST BREAKS WHEN YOU SPLIT A METHOD, AND ITS PREMISE MAY BE FINE.**
+   `TvSweatScreenPaletteTests`' `T69` scans `private string LegStatement(` to its next sibling; the
+   split moved `{club} ML` out of the window. **Re-pointed, not widened** — the premise never
+   changed, only the anchor. Its own comment says to do exactly that. *(Note: the file's OTHER scan
+   survived, because its end marker is `FitOrFallback` and the window still spans both methods.)*
+3. **`FitOrFallback` IS REACHED BY REFLECTION FROM FOUR GATES** with three boxed args. Widening it
+   to `params` compiles and breaks all four silently. `FitLadder` was added beside it and
+   `FitOrFallback` delegates — **check reflection callers before changing any private signature.**
+4. **A UNITY RUN DIRTIES MORE THAN `URP.png`.** This seat's runs also touched
+   `ProjectSettings.asset` (a scripting-define) and `LiberationSans SDF - Fallback.asset`.
+   **`git checkout --` them; stage by explicit path, every time.**
+
+### RISK CARRIED FORWARD — stated, not hidden
+
+**`_pickedScorerGoals` IS UNPROVEN ON A BEAT.** `PlayerMultiScorer`'s progress line needed a
+revealed per-player goal count that did not exist; it is now incremented in `OnGoalPlayed`'s
+named-scorer branch. **The model arm is gated in EditMode; the COUNTER is not** — no PlayMode
+fixture drives a multi-scorer leg through a goal. That is this lane's own trap #1 and it is named
+rather than left to be discovered. **A gate for it is the cheapest thing on this list.**
+
+---
+
+
 ## 0-ROT3. SEAT ROTATION 2026-08-25 — READ THIS FIRST
 
 Rotating at 97%. **Phases 2-3 are DONE and merged — all four steps, both `onFinalLeg` twins, the
