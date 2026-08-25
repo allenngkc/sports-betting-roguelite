@@ -1886,6 +1886,499 @@ namespace SBR.Tests.EditMode
             }
         }
 
+        /// <summary>§5.1/§5.2 of `spec-need-copy-and-club-naming-2026-08-24.md` — the two rungs the
+        /// spec says are OWED before the last two of the four kinds ship, plus a RE-TAKE of the two
+        /// the register already carries as measured.
+        ///
+        /// <para><b>REPORT-ONLY, and NONE of the four kinds is built.</b> Every string below is
+        /// composed as the DECK authors it (`T151`, `T152`, `G1-am11` §3), not read off the surface,
+        /// because the surface has no arm for any of them yet. `T143-am7` makes that worth stating
+        /// precisely: a stand-in LONGER than the real copy still supports a `FITS` conclusion and
+        /// does NOT support an `OVERRUNS` one. These are the authored strings themselves rather than
+        /// stand-ins, so both directions hold — but the distinction is named so a later seat does not
+        /// have to reconstruct which way this measurement can be leaned on.</para>
+        ///
+        /// <para><b>The re-take of the two "already measured" ladders is deliberate.</b> `T169`
+        /// carries `Handicap` at 20/20 · 249.4px and `PlayerMultiScorer` at 12/12 · 175.4px from
+        /// `ee16f06`. Both are inherited numbers on a tree that has moved since, and this lane's own
+        /// rotation records FOUR separate gates that ran green while their case never occurred. Two
+        /// ladders cost one pass.</para>
+        ///
+        /// <para><b>The pools are taken off real boards and CHECKED FOR SATURATION</b>, never
+        /// mirrored from the Editor sweep's private arrays. `T158` guards test↔pool agreement and
+        /// NOT pool↔code, which is how the fifth phantom survived: a pool copied into a test is only
+        /// as true as the day it was copied. If the last seeds still add nouns the pool is not
+        /// exhausted and an "N of N" below would be a count over an unknown denominator, so that
+        /// FAILS rather than reporting.</para>
+        ///
+        /// <para><b>`WinningMargin` bucket 1 is checked against the BOARD, not against the deck.</b>
+        /// `MatchModel.BuildOffers` runs `m = 1..TopMarginBucket` unfiltered and `MarketSelection`'s
+        /// own docstring says margins 1 and 2 are EXACT — so a margin-1 leg is offerable, and the
+        /// deck authors forms for 2 and 3+ only. The offer's EXISTENCE is asserted so the finding
+        /// cannot quietly evaporate if the board ever changes.</para></summary>
+        [Test]
+        public void T169_measure_the_four_kinds_authored_rungs()
+        {
+            var go = new GameObject("FourKindsRungs");
+            try
+            {
+                var screen = BuildScreen(go);
+                TMP_Text need = FindChild<TMP_Text>(screen, "LegRowNeed0");
+                TMP_Text line = FindChild<TMP_Text>(screen, "LegRowLine0");
+                Assert.IsNotNull(need, "LegRowNeed0 is not built — the NEED band is this measurement's subject");
+                Assert.IsNotNull(line, "LegRowLine0 is not built — the compact slot is the second box");
+                Assert.IsNotNull(need.font, "no font resolved — a measurement in the fallback face is void");
+                Assert.IsTrue(need.font.name.Contains("Encode"),
+                    $"measured in '{need.font.name}', not Encode Sans — the mistake T20 made once");
+
+                // The surface's OWN predicate, not a reimplementation of it. FitOrFallback takes two
+                // rungs; three of these ladders have three, so the WALK is done here — but the FIT
+                // TEST is the shipped one, which is the half that could drift.
+                MethodInfo fits = typeof(TvSweatScreen).GetMethod("Fits",
+                    BindingFlags.NonPublic | BindingFlags.Static);
+                MethodInfo fitToColumn = typeof(TvSweatScreen).GetMethod("FitToColumn",
+                    BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.IsNotNull(fits, "TvSweatScreen.Fits not found by reflection — renamed? A ladder walked "
+                    + "with a copy of the predicate measures the copy.");
+                Assert.IsNotNull(fitToColumn, "TvSweatScreen.FitToColumn not found by reflection — renamed?");
+
+                float needBox = need.rectTransform.rect.width;
+                float lineBox = line.rectTransform.rect.width;
+                Debug.Log($"[RUNGS] NEED box {needBox:0.0}px · compact box {lineBox:0.0}px · commit {CommitAtMeasurement()}"
+                    + " · NONE of the four kinds is built at this commit: every string below is composed as the"
+                    + " DECK authors it (T151/T152/G1-am11 §3) and measured through the surface's own Fits.");
+
+                bool Fit(TMP_Text t, string s) => (bool)fits.Invoke(null, new object[] { t, s });
+                float W(TMP_Text t, string s) => t.GetPreferredValues(s, 100000f, 0f).x;
+
+                // An N-rung ladder walked the way FitOrFallback walks two: top-down, first that fits.
+                // 0 means every rung missed and the floor (FitToColumn) would truncate.
+                int Rung(TMP_Text t, params string[] rungs)
+                {
+                    for (int i = 0; i < rungs.Length; i++) if (Fit(t, rungs[i])) return i + 1;
+                    return 0;
+                }
+
+                // ---------------------------------------------------------------- the pools, saturated
+                var clubs = new SortedSet<string>();
+                var surnames = new SortedSet<string>();
+                int clubsAddedLate = 0, surnamesAddedLate = 0;
+                const int Seeds = 24, TailFrom = 16;
+                for (int s = 0; s < Seeds; s++)
+                {
+                    int cBefore = clubs.Count, sBefore = surnames.Count;
+                    var r = new Run($"POOL-{s}", new RunConfig());
+                    foreach (Matchup m in r.CurrentSlate.Matchups)
+                        foreach (Team t in new[] { m.Home, m.Away })
+                        {
+                            clubs.Add(SweatFlavor.Short(t.Name).ToUpperInvariant());
+                            foreach (Player p in t.Players) surnames.Add(SweatActiveLegModel.Surname(p.Name));
+                        }
+                    if (s >= TailFrom)
+                    {
+                        clubsAddedLate += clubs.Count - cBefore;
+                        surnamesAddedLate += surnames.Count - sBefore;
+                    }
+                }
+                Assert.IsNotEmpty(clubs, "C29: no club collected — every club ladder below would be vacuous");
+                Assert.IsNotEmpty(surnames, "C29: no surname collected — the scorer ladder below would be vacuous");
+                Assert.AreEqual(0, clubsAddedLate,
+                    $"the CLUB pool is not saturated: the last {Seeds - TailFrom} seeds added {clubsAddedLate} new "
+                    + $"nouns, so '{clubs.Count} of {clubs.Count}' below would be a count over an unknown denominator.");
+                Assert.AreEqual(0, surnamesAddedLate,
+                    $"the SURNAME pool is not saturated: the last {Seeds - TailFrom} seeds added {surnamesAddedLate} "
+                    + "new surnames, so the scorer tally below would be a count over an unknown denominator.");
+                Debug.Log($"[RUNGS] pools saturated over {Seeds} seeds :: {clubs.Count} club nouns · "
+                    + $"{surnames.Count} surnames — no new member in the last {Seeds - TailFrom} seeds.");
+
+                // ---------------------------------------------------------------- §5.1 WinningMargin
+                // Rung 3 was NEVER MEASURED: spec §2 records that TV's ee16f06 reported two ladders
+                // ending — Handicap and PlayerMultiScorer — and WinningMargin was not among them.
+                // T161 measured rungs 1 and 2 both missing (380.8 and 283.2 against 261.0) with the
+                // floor landing on the dangling `... APART AT`. Rung 3 is what G1-am11 §3.2 added.
+                foreach ((string b, string r1, string r2, string r3) in new[]
+                {
+                    ("2",  "2 GOALS APART AT FULL TIME",  "2 GOALS APART AT FT",  "2 APART AT FT"),
+                    ("3+", "3+ GOALS APART AT FULL TIME", "3+ GOALS APART AT FT", "3+ APART AT FT"),
+                })
+                {
+                    int r = Rung(need, r1, r2, r3);
+                    string floor = (string)fitToColumn.Invoke(null, new object[] { need, r3 });
+                    string compact = "MARGIN " + b;
+                    float fired = W(need, r == 1 ? r1 : r == 2 ? r2 : r3);
+                    Debug.Log($"[RUNGS-MARGIN] bucket {b,-2} :: r1 {W(need, r1),6:0.0} · r2 {W(need, r2),6:0.0} · "
+                        + $"r3 '{r3}' {W(need, r3),6:0.0}  vs NEED {needBox:0.0}  ->  "
+                        + (r == 0 ? $"** EVERY RUNG MISSES ** floor would be '{floor}'"
+                                  : $"RUNG {r} FIRES ({needBox - fired:0.0}px spare)")
+                        + $"   |   compact '{compact}' {W(line, compact),6:0.0} vs {lineBox:0.0} "
+                        + (Fit(line, compact) ? "FITS" : "** OVERRUNS **"));
+                }
+
+                // ⚠ BUCKET 1 IS OFFERED AND HAS NO AUTHORED FORM IN EITHER SLOT. Asserted off a real
+                // board rather than read off MatchModel: a finding resting on a source read evaporates
+                // the day the source moves, and this one is going to the DD.
+                var marginRun = new Run("MARGIN-BUCKETS", new RunConfig());
+                var buckets = new SortedSet<int>();
+                foreach (Matchup m in marginRun.CurrentSlate.Matchups)
+                    foreach (MarketOffer o in m.Markets)
+                        if (o.Selection.Kind == MarketKind.WinningMargin) buckets.Add((int)o.Selection.Line);
+                Assert.IsNotEmpty(buckets,
+                    "C29: no WinningMargin offer on a real board — the two ladders above never met their market.");
+                Assert.IsTrue(buckets.Contains(1),
+                    "bucket 1 is NOT offered on this board. The gap reported below has closed and this assertion "
+                    + "is the record of when — re-read MatchModel.BuildOffers before deleting it.");
+                Debug.Log($"[RUNGS-MARGIN] buckets OFFERED on a real board: {string.Join(", ", buckets)} — the deck "
+                    + "(T151 + G1-am11 §3.2) authors 2 and 3+ ONLY. ** BUCKET 1 HAS NO AUTHORED FORM IN EITHER "
+                    + $"SLOT. ** Unauthored it reaches LegStatement's default: -> MatchModel.Fields '1 GOAL' at "
+                    + $"{W(need, "1 GOAL"):0.0}px ({(Fit(need, "1 GOAL") ? "fits" : "overruns")}) — the exact "
+                    + "total-goals-family collision T151 authored MARGIN/APART to prevent. ROUTED, not answered here.");
+
+                // ---------------------------------------------------------------- §5.2 TotalGoalsOddEven
+                // CONFIRMED rather than inherited: T161 read TV's per-form pass as sufficient and the
+                // spec asks for it in this sweep instead of carrying that reading forward.
+                foreach ((string cmp, string r1, string r2) in new[]
+                {
+                    ("TOTAL ODD",  "ODD TOTAL AT FULL TIME",  "ODD TOTAL AT FT"),
+                    ("TOTAL EVEN", "EVEN TOTAL AT FULL TIME", "EVEN TOTAL AT FT"),
+                })
+                {
+                    int r = Rung(need, r1, r2);
+                    Debug.Log($"[RUNGS-ODDEVEN] r1 '{r1}' {W(need, r1),6:0.0} · r2 '{r2}' {W(need, r2),6:0.0} "
+                        + $"vs NEED {needBox:0.0} -> " + (r == 0 ? "** BOTH RUNGS MISS **" : $"RUNG {r} FIRES")
+                        + $"   |   compact '{cmp}' {W(line, cmp),6:0.0} vs {lineBox:0.0} "
+                        + (Fit(line, cmp) ? "FITS" : "** OVERRUNS **"));
+                }
+
+                // ---------------------------------------------------------------- re-take: Handicap
+                // The line is read from config, never assumed: ±1.5 is the only line offered today
+                // (§12.3 — ±0.5 duplicates the moneyline price and ±2.5 crashes Offer()).
+                double hLine = 0;
+                foreach (double d in new RunConfig().HandicapLines) if (d > hLine) hLine = d;
+                Assert.Greater(hLine, 0, "C29: no handicap line in config — the ladder below has no market");
+                foreach ((string sign, string r1, string r2, string r3) in new[]
+                {
+                    ("-", "{0} TO WIN BY 2+",  "{0} BY 2+",    "{0} -" + hLine.ToString("0.0")),
+                    ("+", "{0} WITHIN 1 GOAL", "{0} WITHIN 1", "{0} +" + hLine.ToString("0.0")),
+                })
+                {
+                    var tally = new int[4];
+                    string widest3 = ""; float widest3W = 0f;
+                    foreach (string c in clubs)
+                    {
+                        tally[Rung(need, string.Format(r1, c), string.Format(r2, c), string.Format(r3, c))]++;
+                        float w = W(need, string.Format(r3, c));
+                        if (w > widest3W) { widest3W = w; widest3 = string.Format(r3, c); }
+                    }
+                    Debug.Log($"[RUNGS-HCAP] {sign}{hLine:0.0} over {clubs.Count} clubs :: rung1 {tally[1]} · "
+                        + $"rung2 {tally[2]} · rung3 {tally[3]} · ** TRUNCATED {tally[0]} ** — widest rung 3 "
+                        + $"'{widest3}' {widest3W:0.0}px vs NEED {needBox:0.0} ({needBox - widest3W:0.0}px spare)");
+                }
+
+                // ---------------------------------------------------------------- re-take: PlayerMultiScorer
+                // The goal count is read off the board, not assumed to be 2: BuildOffers calls
+                // PlayerMultiScorer(i) on its default, and if that ever changes `{SURNAME} 2+` is a
+                // string the surface cannot emit — C57-am's fabricated-pool defect.
+                var goalCounts = new SortedSet<int>();
+                foreach (Matchup m in marginRun.CurrentSlate.Matchups)
+                    foreach (MarketOffer o in m.Markets)
+                        if (o.Selection.Kind == MarketKind.PlayerMultiScorer) goalCounts.Add((int)o.Selection.Line);
+                Assert.IsNotEmpty(goalCounts,
+                    "C29: no PlayerMultiScorer offer on a real board — the ladder below never met its market.");
+                Debug.Log($"[RUNGS-SCORER] goal counts OFFERED: {string.Join(", ", goalCounts)} "
+                    + "(the deck authors the form parametrically, so more than one is not a defect)");
+                foreach (int g in goalCounts)
+                {
+                    var tally = new int[3];
+                    string widest2 = ""; float widest2W = 0f;
+                    foreach (string n in surnames)
+                    {
+                        tally[Rung(need, $"{n} TO SCORE {g}+", $"{n} {g}+")]++;
+                        float w = W(need, $"{n} {g}+");
+                        if (w > widest2W) { widest2W = w; widest2 = $"{n} {g}+"; }
+                    }
+                    Debug.Log($"[RUNGS-SCORER] {g}+ over {surnames.Count} surnames :: rung1 {tally[1]} · "
+                        + $"rung2 {tally[2]} · ** TRUNCATED {tally[0]} ** — widest rung 2 '{widest2}' "
+                        + $"{widest2W:0.0}px vs NEED {needBox:0.0} ({needBox - widest2W:0.0}px spare)");
+                }
+
+                Debug.Log("[RUNGS] report only — the rungs are the DD's (T151/T152/G1-am11); this file authors none.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        /// <summary>`T143-am9` (DD batch 195) priced BEFORE it is built — <b>the pending window names
+        /// the leg by the same identity the ticket column prints.</b>
+        ///
+        /// <para><b>Why this is measured before §3 is composed, and it is the whole point of the
+        /// test.</b> Batch 195 withdrew batch 189's ≥3 escalation IN FULL on one number: two names
+        /// plus the separator at <b>631.6 against 635.0 — 3.4px of spare</b>. That number was taken
+        /// on <c>SPREADSHEETS UNDER 3.5</c> twice — <b>a club plus a line, which is a form neither
+        /// the shipped `PendingLegName` nor `T143-am9`'s rule can emit</b>: the shipped method gives
+        /// the club ALONE (or <c>{CLUB} ±1.5</c>), and `am9` gives `LegStatement`'s authored arm.
+        /// The margin the withdrawal rests on was therefore priced on a stand-in.</para>
+        ///
+        /// <para>`T143-am7` rules a stand-in's error ASYMMETRIC: a <c>FITS</c> conclusion survives a
+        /// stand-in LONGER than the real copy. <b>631.6 is a `FITS` conclusion, so it survives if
+        /// the stand-in was too long and does NOT if it was too short</b> — and which it was cannot
+        /// be read off the string, only measured. That is what this does. <b>The reading is the
+        /// DD's; this file states the number.</b></para>
+        ///
+        /// <para><b>`Am9Name` below replicates what `PendingLegName` BECOMES</b>, not what it is:
+        /// the authored arm where `LegStatement` has one, and the club-alone path otherwise, because
+        /// batch 192 forbids the window reaching `LegStatement`'s <c>default:</c> and `T143-am9`
+        /// restates that. Both halves are exercised, and the <c>default:</c> strings are priced
+        /// SEPARATELY so the hazard that guard exists to prevent has a number too.</para>
+        ///
+        /// <para><b>The pair is measured twice, and the second one is the honest constraint.</b> A
+        /// pending window opens at ONE whistle, and one whistle is one FIXTURE — so two legs dying
+        /// together are two legs of the SAME matchup, never an arbitrary pair from the pool. The
+        /// global worst pair is reported as a conservative upper bound and the worst SAME-MATCHUP
+        /// pair as what can actually render.</para>
+        ///
+        /// <para><b>Every <c>MarketKind</c> must be classified or this FAILS.</b> Pricing the kinds
+        /// someone remembered is this lane's own trap — a gate that ran while its case did not.</para>
+        ///
+        /// <para>REPORT-ONLY. It rules nothing and authors nothing.</para></summary>
+        [Test]
+        public void T143_am9_price_the_column_identities_in_the_pending_window_zone()
+        {
+            var go = new GameObject("PendingWindowIdentities");
+            try
+            {
+                var screen = BuildScreen(go);
+                TMP_Text prompt = FindChild<TMP_Text>(screen, "InterventionPrompt");
+                Assert.IsNotNull(prompt, "InterventionPrompt is not built — the pending window is this test's zone");
+                Assert.IsNotNull(prompt.font, "no font resolved — a measurement in the fallback face is void");
+                Assert.IsTrue(prompt.font.name.Contains("Encode"),
+                    $"measured in '{prompt.font.name}', not Encode Sans — the mistake T20 made once");
+
+                MethodInfo legStatement = typeof(TvSweatScreen).GetMethod(
+                    "LegStatement", BindingFlags.NonPublic | BindingFlags.Instance);
+                Assert.IsNotNull(legStatement, "TvSweatScreen.LegStatement not found by reflection — renamed? "
+                    + "T143-am9's whole ruling is that the window takes THIS method's authored arms.");
+
+                float zoneW = prompt.rectTransform.sizeDelta.x;
+                float zoneH = prompt.rectTransform.sizeDelta.y;
+                Debug.Log($"[AM9] zone {zoneW:0.0} x {zoneH:0.0} · commit {CommitAtMeasurement()} · T143-am9 BUILT: "
+                    + "false (PendingLegName still returns the AnchorSide club) · T168-am BUILT: false");
+
+                float W(string s) => prompt.GetPreferredValues(s, 100000f, 0f).x;
+                // The separator the surface already prints (PreviewOf): three spaces, U+00B7, three.
+                // Reused verbatim rather than re-typed — a different spacing here is a phantom.
+                const string Sep = "   ·   ";
+
+                // ---------------------------------------------------------------- the authored split
+                // LegStatement's switch carries SEVEN authored arms today; every other kind reaches
+                // its `default:` -> SheetName -> MarketSheet, which batch 192 forbids the window from
+                // taking. Listed rather than derived because a switch's arms are not reflectable —
+                // and asserted EXHAUSTIVE against the enum so a new kind cannot land unclassified.
+                var authoredToday = new HashSet<MarketKind>
+                {
+                    MarketKind.Moneyline, MarketKind.TotalGoals, MarketKind.BothTeamsToScore,
+                    MarketKind.TotalCorners, MarketKind.TotalCards, MarketKind.CorrectScore,
+                    MarketKind.AnytimeScorer,
+                };
+                // T169's build order adds these four. TeamTotal{Goals,Corners,Cards} stay unauthored
+                // (held by Allen, T152-am) and DoubleChance has left the offered set.
+                var authoredAfter = new HashSet<MarketKind>(authoredToday)
+                {
+                    MarketKind.Handicap, MarketKind.PlayerMultiScorer,
+                    MarketKind.TotalGoalsOddEven, MarketKind.WinningMargin,
+                };
+                var heldUnauthored = new HashSet<MarketKind>
+                {
+                    MarketKind.DoubleChance, MarketKind.TeamTotalGoals,
+                    MarketKind.TeamTotalCorners, MarketKind.TeamTotalCards,
+                };
+                var unclassified = new List<string>();
+                foreach (MarketKind k in System.Enum.GetValues(typeof(MarketKind)))
+                    if (!authoredAfter.Contains(k) && !heldUnauthored.Contains(k)) unclassified.Add(k.ToString());
+                Assert.IsEmpty(unclassified,
+                    "these MarketKinds are in neither the authored set nor the known-held set: "
+                    + string.Join(", ", unclassified) + ". A kind nobody classified is a kind this window "
+                    + "would price by accident — classify it, or the numbers below cover less than they claim.");
+
+                // ---------------------------------------------------------------- walk a real board
+                // WHAT `PendingLegName` BECOMES under T143-am9, applied per offer. `WinningMargin`
+                // bucket 1 has no authored form (see T169_measure_the_four_kinds_authored_rungs), so
+                // it is treated as unauthored here rather than given copy this file has no right to
+                // invent — which is also what makes it visible in the [default:] tally below.
+                string Am9Name(Matchup m, MarketSelection sel, string legStatementOut)
+                {
+                    bool armed = authoredToday.Contains(sel.Kind);
+                    if (armed) return legStatementOut;
+                    string club = SweatFlavor.Short(
+                        sel.Choice == MarketChoice.Away ? m.Away.Name : m.Home.Name).ToUpperInvariant();
+                    switch (sel.Kind)
+                    {
+                        case MarketKind.Handicap:            // G1-am11 §3.3 rung 3 == the compact
+                            return $"{club} {sel.Line.ToString("+0.0;-0.0", System.Globalization.CultureInfo.InvariantCulture)}";
+                        case MarketKind.PlayerMultiScorer:   // G1-am11 §3.1 rung 2 == the compact
+                            return $"{SweatActiveLegModel.Surname(m.PlayerAt(sel.PlayerIndex).Name)} {(int)sel.Line}+";
+                        case MarketKind.TotalGoalsOddEven:   // T151's compact
+                            return sel.Choice == MarketChoice.Odd ? "TOTAL ODD" : "TOTAL EVEN";
+                        case MarketKind.WinningMargin:       // T151's compact, buckets 2 and 3+ ONLY
+                            return (int)sel.Line >= 2 ? $"MARGIN {((int)sel.Line >= 3 ? "3+" : "2")}" : null;
+                        default:
+                            return null;                     // held / unauthored: the club-alone path
+                    }
+                }
+
+                var named = new SortedDictionary<string, string>();          // am9 name -> kind
+                var clubAlone = new SortedDictionary<string, string>();      // the unauthored fallback
+                var defaultNames = new SortedDictionary<string, string>();   // batch 192's hazard, priced
+                var shortenedDefaults = new SortedDictionary<string, string>();
+                var perMatchup = new List<List<string>>();                   // ONE whistle = ONE fixture
+                int offersSeen = 0, unauthoredSeen = 0;
+                foreach (string seed in new[] { "AM9-A", "AM9-B", "AM9-C", "AM9-D" })
+                {
+                    var run = new Run(seed, new RunConfig());
+                    foreach (Matchup m in run.CurrentSlate.Matchups)
+                    {
+                        var thisFixture = new List<string>();
+                        foreach (MarketOffer o in m.Markets)
+                        {
+                            offersSeen++;
+                            MarketSelection sel = o.Selection;
+                            var leg = new Leg(m, sel, 2.00);
+                            string ls = (string)legStatement.Invoke(screen, new object[] { leg });
+                            if (string.IsNullOrEmpty(ls)) continue;
+
+                            string name = Am9Name(m, sel, ls);
+                            if (name == null)
+                            {
+                                // No authored arm: the shipped club-alone path, which T143-am9
+                                // explicitly LEAVES IN PLACE for the kinds Allen still holds.
+                                unauthoredSeen++;
+                                Side? anchor = MatchModel.AnchorSide(leg);
+                                name = anchor == null ? ls : SweatFlavor.Short(
+                                    anchor == Side.Home ? m.Home.Name : m.Away.Name).ToUpperInvariant();
+                                clubAlone[name] = sel.Kind.ToString();
+
+                                // THE HAZARD THE GUARD EXISTS FOR, priced rather than asserted: what
+                                // the window WOULD print if it fell through to LegStatement's default:.
+                                defaultNames[ls] = sel.Kind.ToString();
+                                // And the T168 mechanism PROBE — not a build. The club token inside a
+                                // composed sheet name is located through MatchModel.Fields' own
+                                // Subject, never guessed: SweatFlavor.Short(ls) returns the LAST WORD
+                                // of the composed line ('+1.5'), which is why the fix cannot be that.
+                                MatchModel.MarketFields f = MatchModel.Fields(m, sel);
+                                if (!string.IsNullOrEmpty(f.Subject))
+                                {
+                                    string full = f.Subject.ToUpperInvariant();
+                                    if (ls.Contains(full))
+                                        shortenedDefaults[ls.Replace(full, SweatFlavor.Short(f.Subject).ToUpperInvariant())]
+                                            = $"{sel.Kind} (was '{ls}')";
+                                }
+                            }
+                            else named[name] = sel.Kind.ToString();
+                            thisFixture.Add(name);
+                        }
+                        if (thisFixture.Count >= 2) perMatchup.Add(thisFixture);
+                    }
+                }
+                Assert.Greater(offersSeen, 0, "C29: no offer was walked — every number below would be vacuous");
+                Assert.IsNotEmpty(named, "C29: no authored identity was composed, so am9's rule was never priced");
+                Assert.Greater(unauthoredSeen, 0,
+                    "C29: no UNAUTHORED kind was reached, so the club-alone half of am9's rule and batch 192's "
+                    + "default: hazard were both unmeasured — the run covered less than this test claims.");
+                Assert.IsNotEmpty(perMatchup, "C29: no matchup offered two markets, so the same-fixture pair "
+                    + "— the only pair a single whistle can produce — was never formed.");
+                Debug.Log($"[AM9] walked {offersSeen} offers over 4 seeds :: {named.Count} distinct AUTHORED identities "
+                    + $"· {clubAlone.Count} club-alone names for the {unauthoredSeen} unauthored offers "
+                    + $"· {defaultNames.Count} default: names priced as the batch-192 hazard "
+                    + $"· {perMatchup.Count} fixtures with two or more legs");
+
+                // ---------------------------------------------------------------- §2's one-leg row
+                void WidestRow(string label, SortedDictionary<string, string> set)
+                {
+                    if (set.Count == 0) { Debug.Log($"[AM9-ONE] {label,-26} empty — case unreachable"); return; }
+                    string widest = ""; float widestW = 0f; int over = 0;
+                    foreach (string id in set.Keys)
+                    {
+                        float w = W($"N LET {id} DIE");
+                        if (w > zoneW) over++;
+                        if (w > widestW) { widestW = w; widest = id; }
+                    }
+                    Debug.Log($"[AM9-ONE] {label,-26} widest 'N LET {widest} DIE' {widestW:0.0}px vs zone {zoneW:0.0} "
+                        + $"({zoneW - widestW:0.0}px spare) · {over} of {set.Count} OVERRUN · kind '{set[widest]}'");
+                }
+                WidestRow("am9 AUTHORED arms", named);
+                WidestRow("am9 club-alone (held)", clubAlone);
+                WidestRow("HAZARD: default: (192)", defaultNames);
+                WidestRow("T168 probe on default:", shortenedDefaults);
+
+                // ---------------------------------------------------------------- §3's SHARED row
+                // The number batch 195's withdrawal rests on, re-taken on what am9 makes the window
+                // print. Batch 195's own stand-in is measured beside it so the delta is explicit.
+                var all = new List<string>(named.Keys);
+                all.AddRange(clubAlone.Keys);
+                string PairOf(IReadOnlyList<string> names)
+                {
+                    var top = new List<string>(names);
+                    top.Sort((a, b) => W(b).CompareTo(W(a)));
+                    return top.Count >= 2 ? top[0] + Sep + top[1] : null;
+                }
+                void PriceRow(string label, string row)
+                {
+                    if (row == null) { Debug.Log($"[AM9-PAIR] {label,-30} fewer than two names — unreachable"); return; }
+                    float w = W(row);
+                    Debug.Log($"[AM9-PAIR] {label,-30} '{row}' {w:0.0}px vs zone {zoneW:0.0} -> "
+                        + (w <= zoneW ? $"** FITS ** {zoneW - w:0.0}px spare" : $"** OVERRUNS by {w - zoneW:0.0}px **"));
+                }
+                PriceRow("batch 195's stand-in", "SPREADSHEETS UNDER 3.5" + Sep + "SPREADSHEETS UNDER 3.5");
+                PriceRow("am9, ANY pair (upper bnd)", PairOf(all));
+
+                // THE HONEST CONSTRAINT: one whistle is one fixture, so the two names are two legs of
+                // the SAME matchup. Reported as the worst such pair actually formable on a real board.
+                string worstFixtureRow = null; float worstFixtureW = 0f;
+                foreach (List<string> fixtureNames in perMatchup)
+                {
+                    string row = PairOf(fixtureNames);
+                    if (row == null) continue;
+                    float w = W(row);
+                    if (w > worstFixtureW) { worstFixtureW = w; worstFixtureRow = row; }
+                }
+                PriceRow("am9, SAME-FIXTURE (real)", worstFixtureRow);
+
+                // The shared refusal row is FIXED copy — batch 189 §3 as corrected by `S85-am3`
+                // (batch 193), which replaced `N LET THEM DIE` with `N GO ON`. Priced once.
+                const string Refusal = "NO ONE CALL SAVES THIS" + "   ·   " + "N GO ON";
+                PriceRow("shared refusal (S85-am3)", Refusal);
+
+                // ---------------------------------------------------------------- §3's HEIGHT
+                // The ruled shapes at each reachable N — `RunConfig.MaxLegs` bounds it at four, which
+                // is what batch 193 established. Measured on the worst SAME-FIXTURE pair, since that
+                // is the widest row a real window can hold.
+                int maxLegs = new RunConfig().MaxLegs;
+                var single = new List<string>(all);
+                single.Sort((a, b) => W(b).CompareTo(W(a)));
+                string pairRow = worstFixtureRow ?? single[0];
+                foreach ((int n, string[] rows) in new[]
+                {
+                    (2, new[] { single[0], Refusal }),
+                    (3, new[] { pairRow, single.Count > 2 ? single[2] : single[0], Refusal }),
+                    (4, new[] { pairRow, pairRow, Refusal }),
+                })
+                {
+                    if (n > maxLegs) { Debug.Log($"[AM9-H] N={n} exceeds MaxLegs {maxLegs} — unreachable, not measured"); continue; }
+                    float h = prompt.GetPreferredValues(string.Join("\n", rows), zoneW, 0f).y;
+                    Debug.Log($"[AM9-H] N={n} ({rows.Length} rows) h {h:0.0} vs zone {zoneH:0.0} -> "
+                        + (h <= zoneH ? $"FITS, {zoneH - h:0.0}px spare" : $"** OVERRUNS by {h - zoneH:0.0}px **"));
+                }
+
+                Debug.Log("[AM9] report only — T143-am8/am9 are the DD's rulings; this file prices them and reads nothing.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+
         /// <summary>`C58-am2`: a routed width is meaningless without its build state, so the commit
         /// travels with the number. Read from the repo rather than hard-coded, so it cannot go stale.</summary>
         private static string CommitAtMeasurement()
