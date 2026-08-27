@@ -194,10 +194,16 @@ namespace SBR.Game
             /// <paramref name="revealedAway"/> are the REVEALED scoreline, home then away — the same
             /// pair <see cref="Moneyline"/> takes, and for this kind they are genuinely home/away
             /// rather than backed-anchored, because a scoreline market backs no side.
-            /// <c>SweatFlavor.PickedHomeForPresentation</c> returns true unconditionally for every
-            /// kind that is not Moneyline or AnytimeScorer (T152-am), so the caller's
-            /// picked/opponent pair IS home/away here. Stated because it is a dependency, not a
-            /// coincidence.</summary>
+            /// <c>MatchModel.AnchorSide</c> answers NULL for CorrectScore (`T163` branch (3) — no side
+            /// is named), and <c>SweatFlavor.PickedHomeForPresentation</c> collapses that null to HOME,
+            /// so the caller's picked/opponent pair IS home/away here. Stated because it is a
+            /// dependency, not a coincidence.
+            ///
+            /// <para><b>`C62`:</b> this sentence used to read *"returns true unconditionally for every
+            /// kind that is not Moneyline or AnytimeScorer (`T152-am`)"*. `c24b32c` deleted that kind
+            /// table. **Same conclusion, living reason** — and the collapse it now rests on is
+            /// `T163-am5`'s subject, safe HERE because this orients two counters and names no
+            /// club.</para></summary>
             public static ActiveLegInput CorrectScore(int targetHome, int targetAway,
                 int revealedHome, int revealedAway)
                 => new ActiveLegInput(MarketKind.CorrectScore, MarketChoice.Yes, 0.0, null, null,
@@ -213,9 +219,12 @@ namespace SBR.Game
             ///
             /// <para><b><paramref name="revealedFor"/>/<paramref name="revealedAgainst"/> must be
             /// anchored to the BACKED side, and that is not what the caller's ledger holds.</b>
-            /// `SweatFlavor.PickedHomeForPresentation` returns true UNCONDITIONALLY for every kind
-            /// that is not Moneyline or AnytimeScorer (`T152-am`), so `ScoreLedger.Picked` is HOME
-            /// for a handicap whichever side was backed. `T152-am` is the row that found this: *"a
+            /// `SweatFlavor.PickedHomeForPresentation` is `(AnchorSide(leg) ?? Side.Home) == Side.Home`,
+            /// and `AnchorSide` reads a HANDICAP's backed side off its own choice — so `ScoreLedger`
+            /// is oriented to the BACKED side, not to home. **`C62`: this used to claim the helper
+            /// "returns true UNCONDITIONALLY for every kind that is not Moneyline or AnytimeScorer",
+            /// which `c24b32c` deleted — and unlike its sibling above, that stale sentence made the
+            /// swap below look necessary for the WRONG reason.** `T152-am` is the row that found this: *"a
             /// team total on the AWAY side anchors HOME"*. The caller therefore swaps the pair when
             /// the away side is backed, and this factory's parameter NAMES the requirement so a
             /// later caller cannot pass the ledger straight through.</para>

@@ -2743,6 +2743,153 @@ namespace SBR.Tests.EditMode
             }
         }
 
+        /// <summary>THE HANDICAP PROGRESS LINE'S SIGN, PINNED AGAINST THE BACKED SIDE — this lane's
+        /// own flag, raised at the `T163-am5` sweep and blocker-class by `self-raised-flags`.
+        ///
+        /// <para><b>The defect this exists for shipped, passed 342 EditMode and 153 PlayMode tests,
+        /// and survived two commits.</b> `DescribeActiveLeg`'s handicap arm swapped
+        /// <c>_ledger.Picked</c>/<c>Opponent</c> for an away-backed leg, on the authority of a comment
+        /// asserting <c>PickedHomeForPresentation</c> *"returns true UNCONDITIONALLY for every kind
+        /// that is not Moneyline or AnytimeScorer"*. `c24b32c` had deleted that kind table:
+        /// <c>AnchorSide</c> reads a handicap's backed side off its own choice and
+        /// <c>ConfigureEndpoint</c> orients the ledger through it, so <c>Picked</c> was ALREADY the
+        /// backed side. **The swap inverted it — `CLEAR BY n` where the row should read
+        /// `TRAILING BY n`.**</para>
+        ///
+        /// <para><b>WHY NO EXISTING GATE CAUGHT IT, which is the shape worth carrying:</b> the string
+        /// was WELL-FORMED. It matched its authored template, it appeared in the right span, it never
+        /// blanked a row and never overran a box — every property the suite actually asks about. What
+        /// was wrong was its MEANING against a fact no test related it to. **A correct-looking string
+        /// with an inverted sense is invisible to every gate that checks form.**</para>
+        ///
+        /// <para><b>SO THIS PIN RELATES THE WORD TO THE LEDGER, not to a template.</b> It drives the
+        /// revealed score so the BACKED side is ahead by a margin that clears its own line, then
+        /// asserts the row says `CLEAR`. Re-introduce the swap and the arm reads the opponent's
+        /// margin, the sense inverts, and this goes RED — which is the mutation this gate was tested
+        /// against before it was trusted (`K17`'s discipline: a gate nobody has watched fail is a
+        /// gate nobody has tested).</para>
+        ///
+        /// <para><b>AWAY-BACKED IS THE CASE, and it is asserted rather than hoped for.</b> A
+        /// home-backed handicap is symmetric under the bug — <c>Picked</c> and the swap agree — so a
+        /// pin that only met home legs would pass under the defect. The search FAILS if the board
+        /// never offers an away-backed handicap.</para></summary>
+        [Test]
+        public void T152_the_handicap_progress_sign_follows_the_BACKED_side_not_home()
+        {
+            MethodInfo describe = typeof(TvSweatScreen).GetMethod(
+                "DescribeActiveLeg", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(describe, "TvSweatScreen.DescribeActiveLeg not found by reflection — "
+                + "renamed? ⚠ REFLECTED SEAM: the compiler does not check this name.");
+            FieldInfo ledgerField = typeof(TvSweatScreen).GetField(
+                "_ledger", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(ledgerField, "TvSweatScreen._ledger not found — renamed?");
+
+            var go = new GameObject("HandicapSign");
+            try
+            {
+                var screen = BuildScreen(go);
+                int awayLegsChecked = 0, homeLegsChecked = 0;
+
+                foreach (string seed in new[] { "HCAP-A", "HCAP-B", "HCAP-C" })
+                {
+                    var run = new Run(seed, new RunConfig());
+                    // LOCKED FIRST. `ScoreLedger.ConfigureEndpoint(Leg)` reads
+                    // `leg.Matchup.StatLine`, and that is NULL until `LockRound` samples it — an
+                    // unlocked run threw `ArgumentNullException: statLine` here. The endpoint is the
+                    // whole point: this pin drives the REVEALED score toward a locked scoreline, so
+                    // there has to be one to drive toward.
+                    run.PlaceTicket(new List<Pick> { new Pick(0, Side.Home) }, 10);
+                    run.LockRound();
+                    foreach (Matchup m in run.CurrentSlate.Matchups)
+                        foreach (MarketOffer o in m.Markets)
+                        {
+                            if (o.Selection.Kind != MarketKind.Handicap) continue;
+                            if (m.StatLine == null) continue;
+                            var leg = new Leg(m, o.Selection, 2.00);
+
+                            // THE BACKED SIDE, from the ENGINE's own table — never from the choice
+                            // re-decoded here, which is the duplication that produced the defect.
+                            Side? backed = MatchModel.AnchorSide(leg);
+                            Assert.IsNotNull(backed, "a handicap must name a side (AnchorSide)");
+
+                            // ⚠ THE LEDGER WILL NOT OUTRUN THE LOCKED RESULT, and the first version
+                            // of this pin assumed it would. `CompleteGoal` clamps every commit to
+                            // `SpendableTargetPicked - Picked`, so asking for a forced 3-0 delivered
+                            // whatever the real match actually gave — and the pin then asserted CLEAR
+                            // against a leg that was genuinely TRAILING. **The code was right and the
+                            // expectation was invented.**
+                            //
+                            // So the sense is derived FROM THE LOCKED SCORELINE instead: reveal the
+                            // real result in full, work out the adjusted margin the same way the
+                            // market does, and require the row to agree. That relates the word to a
+                            // fact rather than to a state this test wished for.
+                            int backedGoals = backed == Side.Home ? m.StatLine.HomeGoals : m.StatLine.AwayGoals;
+                            int oppGoals = backed == Side.Home ? m.StatLine.AwayGoals : m.StatLine.HomeGoals;
+                            double adjusted = (backedGoals - oppGoals) + o.Selection.Line;
+                            // ±1.5 lines never produce a zero adjusted margin (`T152` struck
+                            // `ON THE LINE` as unconstructible for exactly that reason), so the sense
+                            // is always one or the other and there is no third expectation to write.
+                            Assert.AreNotEqual(0.0, adjusted,
+                                "a half-goal line cannot produce a zero adjusted margin — T152 struck "
+                                + "ON THE LINE as unconstructible, so this pin has no third branch");
+
+                            var ledger = (ScoreLedger)ledgerField.GetValue(screen);
+                            ledger.ConfigureEndpoint(leg);
+                            if (backedGoals > 0)
+                                ledger.CompleteGoal(new ScoreLedger.StagedGoal(
+                                    forPicked: true, scoredByPicked: true, commits: true, amount: backedGoals));
+                            if (oppGoals > 0)
+                                ledger.CompleteGoal(new ScoreLedger.StagedGoal(
+                                    forPicked: false, scoredByPicked: false, commits: true, amount: oppGoals));
+
+                            // THE REVEAL MUST HAVE LANDED, or the row below is read off a half-played
+                            // match and the sense is about a state that never occurred.
+                            Assert.AreEqual(backedGoals, ledger.Picked,
+                                $"the ledger did not reveal the backed side's {backedGoals} goal(s) — "
+                                + "ConfigureEndpoint orients Picked to the BACKED side, so a mismatch "
+                                + "here means the orientation this pin exists to check is already wrong");
+
+                            var copy = (SweatActiveLegModel.ActiveLegCopy)describe.Invoke(
+                                screen, new object[] { leg, 0 });
+
+                            // THE ASSERTION IS ABOUT SENSE, NOT SHAPE — a well-formed string with an
+                            // inverted meaning is what shipped, and what every form-checking gate missed.
+                            string expect = adjusted > 0 ? "CLEAR BY" : "TRAILING BY";
+                            StringAssert.StartsWith(expect, copy.Live,
+                                $"seed '{seed}', {backed} handicap {o.Selection.Line:+0.0;-0.0}: the backed "
+                                + $"side finished {backedGoals}-{oppGoals}, so the adjusted margin is "
+                                + $"{adjusted:+0.0;-0.0} and the row must read {expect} — it reads "
+                                + $"'{copy.Live}'. A Picked/Opponent swap in DescribeActiveLeg's handicap "
+                                + "arm inverts exactly this, and it shipped for two commits because the "
+                                + "string was well-formed.");
+
+                            // AND THE CLUB IS THE BACKED ONE — the other half of the same orientation.
+                            string expectClub = SweatFlavor.Short(
+                                backed == Side.Away ? m.Away.Name : m.Home.Name).ToUpperInvariant();
+                            StringAssert.Contains(expectClub, copy.Need,
+                                $"the NEED names the wrong club for a {backed}-backed handicap");
+
+                            if (backed == Side.Away) awayLegsChecked++; else homeLegsChecked++;
+                        }
+                }
+
+                Debug.Log($"[HCAP-SIGN] away-backed legs {awayLegsChecked} · home-backed {homeLegsChecked}");
+
+                // C29 WITH TEETH: the AWAY case is the only one the defect could break. A home-backed
+                // handicap is symmetric under the swap, so a run that met only home legs would pass
+                // under the bug and prove nothing.
+                Assert.Greater(awayLegsChecked, 0,
+                    "C29: no AWAY-BACKED handicap was offered on any seed, so this gate never met the "
+                    + "case it exists for. A home-backed leg passes under the defect — the swap and "
+                    + "the ledger agree there — so this run would have been a green that proves "
+                    + "nothing. RE-SEED rather than widen.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
         /// <summary>`C58-am2`: a routed width is meaningless without its build state, so the commit
         /// travels with the number. Read from the repo rather than hard-coded, so it cannot go stale.</summary>
         private static string CommitAtMeasurement()
