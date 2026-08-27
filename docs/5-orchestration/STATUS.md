@@ -1,6 +1,20 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 554 heartbeat - the
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 555 - the NEITHER SWEEP
+MERGED (b19f5c9): 5 orienting sites untouched, 2 already guarded, 2 dots
+corrected to AnchorSide's null (a draw wears no dot), the Handicap
+double-swap fixed, and the sign gate proven green -> red -> green
+(red: 'Away handicap +1.5: backed side 3-1, adjusted +3.5, must read
+CLEAR BY - reads TRAILING BY 1'). The double-swap had survived 342+153
+tests for two commits because every gate checked FORM. 21:20:13 verdict:
+terminated outside its own control flow, no self-logged reason (caveat:
+a driver/OOM kill at the 2560x1440 burst would look identical).
+Operational: a stray editor survives a runner timeout and stalls later
+runs at Compiling Scripts - check for strays AFTER a timeout. CI
+pending. DD ruling on the sweep at the SHA; RevealedLeg.TeamName with
+the DD. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 554 heartbeat - the
 handicap sign gate is built and MUTATION-TESTED: with the double-swap
 re-introduced it goes red on an away leg (+3.5 adjusted, reads TRAILING
 BY 1), naming the backed side; the away-legs-checked assertion is what
