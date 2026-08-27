@@ -1,6 +1,18 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 545 - the DD's pre-read
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 546 - THE COUNTER IS
+FIXED AND MERGED (83bd2f1: "a staged goal is not a goal - one unit error
+in four places"; the pin reads 2; EditMode 342/341/0/1, PlayMode
+153/126/0/27). Four consumers now ask BatchGoalsBy: the scorer count,
+the stoppage clock, the per-leg reveal gate (TV's two-line scope
+extension, approved by me, DD may separate it), the gold tier. One seed
+carries both footer states again (STATS-MULTI-2 11/50, per T140-am7).
+Left for the DD's ruling at the SHA: the strip's naming (still the
+batch's first scorer), the reveal-gate row, the chalk-off tick
+(Max(1, batchAmount) preserves it deliberately). CI pending. WITH
+ALLEN: unchanged.**
+
+*(prior stamp, cycle 545 - the DD's pre-read
 found a SIBLING defect that rides the same commit: the stoppage-time
 clock (90'+N) also counts events, not goals - 90'+1 on a four-goal
 burst. Rule coming as a row: quantities take the GOAL as unit, dramatic
