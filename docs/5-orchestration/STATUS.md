@@ -1,6 +1,21 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-28, cycle 565 (00:12) - TV's
+**Keeper-era heartbeat stamp: 2026-08-28, cycle 566 (00:14) - batch 208
+landed: ITEM 1.1 RULED. The previous match's result sits over the whole
+of the new match (four sim-minutes on D2's evidence; the strip carries
+the last statement written and nothing speaks at a kick-off). Treatment
+is a LINE, not a beat: the strip speaks at kick-off - authored
+KICK-OFF, nothing more (the scorebug names the clubs, the counter says
+which match). T87-am2 makes it safe (LEG n - WON's hold has long
+elapsed; the result lives in the W chip). New law C65 bounds T94: a
+result is a claim about what already happened and does not become false
+when the camera moves - the remedy is to write something better, not
+blank it. The temporal question is dissolved; a pause wants a NUMBER
+(sim-seconds between f's last beat and f+1's first), not frames. TV
+building KICK-OFF; two report-only asks with it. WITH ALLEN:
+unchanged.**
+
+*(prior stamp, cycle 565 (00:12) - TV's
 handoff at batch 207 MERGED (9cc6011: T94 closed, two items discharged,
 chain empty; nothing in flight, nothing part-built). TV holding at HEAD.
 DD designing item 1.1. WITH ALLEN: unchanged.**
