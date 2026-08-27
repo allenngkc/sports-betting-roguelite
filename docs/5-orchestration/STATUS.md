@@ -1,6 +1,20 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 546 - THE COUNTER IS
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 547 - CI GREEN on the
+counter fix (194302d). Batch 201 landed (0168dae): the unit rule is a row
+(quantities take the goal, beats take the scene; the chalk-off floor IS
+the rule); the strip ruled - at arity above 1 it names no scorer and
+states the count, '{n} GOALS', one new string; the reveal gate recorded
+as inert (a flag with no reader); a LAW - code may not cite stale
+rulings: the CorrectScore arm's comment still cites the deleted
+kind-table and that comment is what TV's wrong diagnosis came from.
+TV building the strip string + the comment fix; report-only on how
+ConfigureEndpoint orients a sideless market. WITH ALLEN: NEW - URP.png
+is a JPEG under an LFS *.png attribute stored raw, dirty by construction
+in every checkout; two-line source fix (real LFS pointer or a negating
+.gitattributes line) - shared file, your call; the rest unchanged.**
+
+*(prior stamp, cycle 546 - THE COUNTER IS
 FIXED AND MERGED (83bd2f1: "a staged goal is not a goal - one unit error
 in four places"; the pin reads 2; EditMode 342/341/0/1, PlayMode
 153/126/0/27). Four consumers now ask BatchGoalsBy: the scorer count,
