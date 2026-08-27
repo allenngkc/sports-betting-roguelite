@@ -1,6 +1,21 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-25, cycle 542 heartbeat - TV
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 543 - RESTART RECOVERY.
+Both lead seats died 2026-08-26 00:51 (Orca restart; TV's last turns
+were 403 auth errors Tuesday 20:51 before Allen's /login). Re-seated
+2026-08-27 18:00 by explicit session ID in bypass mode, identified by
+content; watcher v61 armed on the new handles. TV: HEAD f6d3fb0 (WIP
+per-leg counter 9c511b5 NOT merged - wip by name), its own orientation
+diagnosis RETRACTED (PickedHomeForPresentation was anchor-based in its
+tree all along; it cited a remembered read) - the counter's 1-of-2 is
+OPEN AGAIN and the DD's ledger hypothesis does not reach a one-leg
+ticket; TV's instrument now polls the ledger on the counter's frame and
+a PlayMode run is in flight. DD: nothing open, holding. Repo: main ==
+origin/main at 2712205; tree clean. WITH ALLEN: unchanged - plus Linear
+MCP tools are now visible in this harness (tracking brief's Linear part
+stays blocked until Allen says go).**
+
+*(prior stamp, 2026-08-25 cycle 542 heartbeat - TV
 merged main into tv-theater (f6d3fb0; nothing in Runtime/ or Tests/
 changed - its tree already had the anchor-based version, so its kind-test
 read was its own error, being corrected) and parked the per-leg counter
