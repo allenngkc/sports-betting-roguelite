@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-28, cycle 564 (00:08) - CI green on
+**Keeper-era heartbeat stamp: 2026-08-28, cycle 565 (00:12) - TV's
+handoff at batch 207 MERGED (9cc6011: T94 closed, two items discharged,
+chain empty; nothing in flight, nothing part-built). TV holding at HEAD.
+DD designing item 1.1. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 564 (00:08) - CI green on
 69208d2. Batch 207 landed (03150e7): T94 CLOSED (batch 62 -> 204, moved
 three times, closed by a two-line substitution); T158 discharged (the
 seam reconciled both orderings as a side effect); T169-am2 discharged
