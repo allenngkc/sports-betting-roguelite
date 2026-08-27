@@ -137,9 +137,12 @@ public class AnchorSideTests
     /// <b>WHAT CHANGES ON SCREEN, MEASURED RATHER THAN ASSUMED.</b> <c>T163</c> branch (1) claims
     /// "this subsumes today's single-leg case exactly, so nothing on screen changes before arm A
     /// lands." <b>That claim does not hold, and the TV lane measured why:</b>
-    /// <c>SweatFlavor.PickedHomeForPresentation</c> returns HOME unconditionally for every kind
-    /// except Moneyline and AnytimeScorer, so it already names the home club on legs that back no
-    /// side at all.
+    /// <c>SweatFlavor.PickedHomeForPresentation</c> AS IT STOOD BEFORE <c>c24b32c</c> returned HOME
+    /// unconditionally for every kind except Moneyline and AnytimeScorer, so it named the home club
+    /// on legs that back no side at all. <b>That table is gone:</b> since <c>c24b32c</c> the TV
+    /// function reads <c>MatchModel.AnchorSide</c> (DD batch 200/201 — a comment asserting what a
+    /// function does is a citation and goes stale like any other). The transcription below is the
+    /// HISTORICAL table, kept so the intended disagreement list stays pinned.
     ///
     /// <para>This test transcribes that function and pins BOTH halves: the kinds where the two agree
     /// (so the migration is safe there), and the exact set where they disagree (so the change to
@@ -151,8 +154,9 @@ public class AnchorSideTests
     {
         Matchup m = MakeMatchup();
 
-        // Transcribed verbatim from unity/SBR/Assets/SBR/Runtime/SweatFlavor.cs:403 — the function
-        // this table supersedes. Kept as a local so this file does not depend on unity/.
+        // Transcribed verbatim from the PRE-c24b32c unity/SBR/Assets/SBR/Runtime/SweatFlavor.cs:403 —
+        // the function this table superseded. It no longer exists in that form (the live one reads
+        // AnchorSide); this is the historical baseline. Kept as a local so this file does not depend on unity/.
         static bool PickedHomeForPresentation(Leg leg)
             => leg.Selection.Kind == MarketKind.AnytimeScorer
                 ? leg.Matchup.PlayerSide(leg.Selection.PlayerIndex) == Side.Home
