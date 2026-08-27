@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 544 - THE COUNTER'S CAUSE
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 545 - the DD's pre-read
+found a SIBLING defect that rides the same commit: the stoppage-time
+clock (90'+N) also counts events, not goals - 90'+1 on a four-goal
+burst. Rule coming as a row: quantities take the GOAL as unit, dramatic
+beats take the SCENE. TV building it now. INCIDENT: my 1KB relay to TV
+arrived as its last line only; re-sent as a committed pointer
+(route-counter-batch-arity-2026-08-27.md, DD pre-read section). Both
+seats live, effort max. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 544 - THE COUNTER'S CAUSE
 FOUND, a third distinct one: BATCH ARITY. The engine reveals several
 baked goals in one stoppage-time playback (StagedGoal.Amount; the ledger
 jumps 1->5 in one call) and OnGoalPlayed fires once for the batch; the
