@@ -2890,6 +2890,94 @@ namespace SBR.Tests.EditMode
             }
         }
 
+        /// <summary>`T163-am6` (DD batch 205): <b>a DRAW leg must not be BORN as the home club.</b>
+        ///
+        /// <para><c>CopyTicket</c> composes <c>RevealedLeg.TeamName</c>, and it asked
+        /// <c>Kind == Moneyline</c> then named a club through <c>PickedHomeForPresentation</c> —
+        /// whose <c>?? Side.Home</c> collapse made a draw come out as the HOME side's name, on a
+        /// ticket that backed nobody. `T96` verbatim, at the site where the value is MADE.</para>
+        ///
+        /// <para><b>Pinned even though it is INERT TODAY</b>, and that is the reason rather than the
+        /// objection: the only consumer (`SportsbookApp:2905`) prefers <c>MarketLabel</c>, which is
+        /// never empty, so nothing reads this field right now. **A wrong value nothing happens to
+        /// read is a trap for the reader who later prefers the other field** — batch 201 said exactly
+        /// that about `_scorerRevealed`, one field away.</para>
+        ///
+        /// <para>Reached by REFLECTION: <c>CopyTicket</c> is private and static on
+        /// <c>TvSweatScreen</c>. ⚠ REFLECTED SEAM — the compiler does not check this name.</para></summary>
+        [Test]
+        public void T163_a_draw_leg_is_not_born_as_the_home_club()
+        {
+            // ON `RevealedView`, NOT on `TvSweatScreen`. `CopyTicket` is private-static on the
+            // TV-owned causal mirror, which is a NAMESPACE SIBLING of the screen (declared above it
+            // in the same file, which is what made the wrong guess easy). Targeting `TvSweatScreen`
+            // found nothing, and this assertion said so rather than letting the pin check air.
+            MethodInfo copyTicket = typeof(RevealedView).GetMethod(
+                "CopyTicket", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.IsNotNull(copyTicket, "RevealedView.CopyTicket not found by reflection — renamed? "
+                + "This pin fails rather than silently checking nothing.");
+
+            var run = new Run("DRAWNAME", new RunConfig());
+            Matchup m = run.CurrentSlate.Matchups[0];
+            string homeShort = SweatFlavor.Short(m.Home.Name).ToUpperInvariant();
+            string awayShort = SweatFlavor.Short(m.Away.Name).ToUpperInvariant();
+
+            // A DRAW leg beside a HOME leg: the draw is the subject, and the home leg is the control
+            // that proves the guard did not simply blank every moneyline.
+            run.PlaceTicket(new List<Pick> { new Pick(m.Index, MarketSelection.MoneylineDraw()) }, 10.0);
+            run.PlaceTicket(new List<Pick> { new Pick(m.Index, Side.Home) }, 10.0);
+            run.LockRound();
+
+            object drawTicket = copyTicket.Invoke(null, new object[] { run.Tickets[0], 0 });
+            object homeTicket = copyTicket.Invoke(null, new object[] { run.Tickets[1], 1 });
+
+            string NameOfFirstLeg(object revealedTicket)
+            {
+                var legsProp = revealedTicket.GetType().GetProperty("Legs")
+                            ?? throw new AssertionException("RevealedTicket.Legs not found — renamed?");
+                var legs = (System.Collections.IEnumerable)legsProp.GetValue(revealedTicket);
+                foreach (object leg in legs)
+                    return (string)leg.GetType().GetProperty("TeamName").GetValue(leg);
+                throw new AssertionException("the copied ticket has no legs");
+            }
+
+            string drawName = NameOfFirstLeg(drawTicket);
+            string homeName = NameOfFirstLeg(homeTicket);
+            Debug.Log($"[DRAWNAME] draw leg TeamName='{drawName}' · home leg TeamName='{homeName}' "
+                + $"· fixture {awayShort} @ {homeShort}");
+
+            // ⚠ THE ASSERTION IS ABOUT THE VALUE, NOT ABOUT A SUBSTRING — `C63` applied to this pin.
+            //
+            // The first version asserted `DoesNotContain(homeShort, drawName)`. It PASSED, and for the
+            // wrong reason: the draw now takes `DisplayLabel`, which names the FIXTURE — both clubs,
+            // full names, MIXED CASE — so `LOOPHOLES` did not match `Loopholes`. **Change the casing
+            // anywhere upstream and that gate flips red on a CORRECT value**, which is a gate keyed on
+            // form where the fact is *"is this the backed-club name the old code produced"*.
+            //
+            // Naming the fixture is not naming a BACKED side: it is the same value every sideless leg
+            // has always carried, and it asserts nothing about who the ticket backed. What must never
+            // happen is the draw coming out AS a club — which is exactly what `?? Side.Home` did.
+            Assert.AreNotEqual(homeShort, drawName,
+                $"a DRAW leg was born AS the HOME club '{homeShort}' — the ticket backed nobody. That "
+                + "is T96 at the composition site, and the ?? Side.Home collapse in "
+                + "PickedHomeForPresentation is what produces it.");
+            Assert.AreNotEqual(awayShort, drawName,
+                $"a DRAW leg was born AS the AWAY club '{awayShort}'");
+            // And it takes the branch every sideless leg takes — stated so a future seat can see the
+            // intended value rather than infer it from two negatives.
+            Assert.AreEqual(run.Tickets[0].Legs[0].DisplayLabel, drawName,
+                "a draw's TeamName should be the same DisplayLabel every leg with no backed club "
+                + "carries — the fix was to correct the PREDICATE (does this leg name a side), not to "
+                + "invent a new value for draws.");
+
+            // THE CONTROL: a real moneyline still names its backed club, or the guard has not fixed
+            // the draw — it has emptied the field for everyone, and this pin would pass on a build
+            // that lost the feature entirely.
+            StringAssert.Contains(homeShort, homeName,
+                $"a HOME moneyline no longer names its club ('{homeName}') — the guard over-reached "
+                + "from 'a draw names no club' to 'no moneyline names one'.");
+        }
+
         /// <summary>`C58-am2`: a routed width is meaningless without its build state, so the commit
         /// travels with the number. Read from the repo rather than hard-coded, so it cannot go stale.</summary>
         private static string CommitAtMeasurement()
