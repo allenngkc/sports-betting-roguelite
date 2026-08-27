@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 562 (23:52) - the
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 563 (00:00) - MERGED
+5c96435: T140-am8's per-leg structure has its fixture (mutation-proven
+green -> red -> green; three C29 assertions close the vacuity routes)
+and RevealedLeg.TeamColor is DELETED with its dead inputs
+(TheaterPalette.TeamColors and the pickedHome local cascaded out - the
+last PickedHomeForPresentation call in the composer is gone). CI
+pending. TV's owed list is down to: the arity>1 strip frame (wait for a
+sweat), T94's closing ruling, and item 1.1 (the interstitial at the
+fixture boundary, D2's own question) - both routed to the DD with the
+SHA. TV holding. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 562 (23:52) - the
 multi-leg counter fixture is built and MUTATION-PROVEN: green 155/127,
 then with the per-leg walk reverted, red on the assertion a single-leg
 pin could not make ('leg 1 backs Deke Gasket, who scored 1, counter
