@@ -20,7 +20,15 @@ namespace SBR.Game
         public string TeamName { get; internal set; }
         public string MarketLabel { get; internal set; }
         public string AmericanOdds { get; internal set; }
-        public uint TeamColor { get; internal set; }
+        // `TeamColor` LIVED HERE AND IS DELETED — `T163-am7` (DD batch 206).
+        //
+        // It was `pickedHome ? home : away`, so a DRAW was born with the HOME club's hue — the same
+        // `?? Side.Home` collapse `T163-am6` fixed one field over. **This lane reported it as a
+        // TREATMENT question** (a colour has no *neither* value, so picking one looked like the
+        // laptop's call). **The ruling is that there should be no field**: it had NO READER anywhere
+        // in the tree, and `T42`'s precedent — recorded twice in this very file — is that a
+        // ready-made value for a thing nothing asks for is how the thing comes back. No guard, no
+        // treatment, no field.
         public RevealedLegState State { get; internal set; }
     }
 
@@ -172,7 +180,6 @@ namespace SBR.Game
             var legs = new List<RevealedLeg>(source.Legs.Count);
             foreach (Leg leg in source.Legs)
             {
-                (uint home, uint away) = TheaterPalette.TeamColors(leg.Matchup.Home.Name, leg.Matchup.Away.Name);
                 // ═══ THE PREDICATE IS THE ANCHOR, NOT THE KIND — `T163-am6` (DD batch 205).
                 //
                 // This asked `Kind == Moneyline` and then named a club through
@@ -195,8 +202,11 @@ namespace SBR.Game
                 // always non-empty, so the consumer never reaches `TeamName`. That is batch 201's
                 // `_scorerRevealed` shape — harmless now, a trap for the reader who later prefers the
                 // other field.
+                // AND WITH IT THE LAST `PickedHomeForPresentation` CALL IN THIS COMPOSER. Its only
+                // remaining reader here was the deleted colour; `TeamName` asks the PROPERTY now
+                // (batch 206: ask `AnchorSide`, never the kind). The `TheaterPalette.TeamColors`
+                // lookup went the same way — nothing else in this loop wanted it.
                 Side? backedSide = MatchModel.AnchorSide(leg);
-                bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
                 legs.Add(new RevealedLeg
                 {
                     Index = legs.Count,
@@ -205,7 +215,6 @@ namespace SBR.Game
                         : leg.DisplayLabel,
                     MarketLabel = leg.DisplayLabel,
                     AmericanOdds = OddsFormat.American(leg.OfferedOdds),
-                    TeamColor = pickedHome ? home : away,
                     State = RevealedLegState.Pending
                 });
             }
