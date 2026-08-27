@@ -620,6 +620,37 @@ namespace SBR.Game
         public string DebugLegState(int i)
             => _legRow == null || i < 0 || i >= _legRow.Length || _legRow[i].State == null
                 ? string.Empty : _legRow[i].State.text;
+
+        /// <summary>Whether row <paramref name="i"/> is rendering in the LIVE state.
+        ///
+        /// <para><b>The chip cannot answer this, which is why the accessor exists.</b>
+        /// <see cref="DebugLegState"/> returns the STATE CHIP, and a LIVE row and a `NEXT` row both
+        /// carry a BLANK one — only the tier differs (L3 pulsed against L1 structureGrey). `T94`'s
+        /// pre-commitment (DD batch 197, split b1/b2 at 198) turns entirely on telling those two
+        /// apart at the fixture boundary — *no leg in the LIVE state, f+1's legs at `NEXT`* — so a
+        /// gate keyed on the chip would read the two expected outcomes identically.</para>
+        ///
+        /// <para>Reads the same cached flag <c>AnimateLegPulse</c> drives from, so it reports what
+        /// the FRAME shows rather than what a predicate would recompute.</para></summary>
+        public bool DebugLegIsLive(int i)
+            => _legRow != null && i >= 0 && i < _legRow.Length && _legRow[i].IsLive;
+
+        /// <summary>The scorebug's matchup line — WHICH FIXTURE the surface is currently showing.
+        /// `T94`'s criterion is a relation between two zones ("the live NEED's fixture must be the
+        /// fixture on the scorebug"), so the evidence needs both halves readable at one instant.</summary>
+        public string DebugMatchupText => _tMatchup != null ? _tMatchup.text : string.Empty;
+
+        /// <summary>Row <paramref name="i"/>'s COMPACT STATEMENT — the identity line.
+        ///
+        /// <para><b>This is what separates a `NEXT` row from a BLANK one</b>, and nothing else does:
+        /// `NEXT` prints its statement at L1 while a blank row prints nothing, and BOTH have an empty
+        /// chip and an empty NEED (the NEED span belongs to a LIVE row alone). `T94`'s pre-commitment
+        /// hangs reading (c) — *the column reads BLANK rather than resolved-plus-`NEXT`* — on exactly
+        /// that difference, so a docket that logged only the chip and the NEED could not tell (a)
+        /// from (c) even though the FRAME shows it plainly.</para></summary>
+        public string DebugLegLine(int i)
+            => _legRow == null || i < 0 || i >= _legRow.Length || _legRow[i].Line == null
+                ? string.Empty : _legRow[i].Line.text;
         /// <summary>Test/debug hook: displace the SHOWN cash-out figure so that the next natural
         /// offer read must take the tween branch of SetCashOutOffer.
         ///
@@ -3239,9 +3270,21 @@ namespace SBR.Game
             string home = SweatFlavor.Short(leg.Matchup.Home.Name).ToUpperInvariant();
             // The pick dot marks YOUR TEAM — a market leg has none, so it wears no dot
             // (the ticket column's leg row carries the pick for market legs).
+            //
+            // ⚠ ASKED OF `AnchorSide` DIRECTLY, NOT THROUGH `PickedHomeForPresentation` — `T163-am5`
+            // (DD batch 202). That helper ends `?? Side.Home`, and **a DRAW moneyline is `isMl` with
+            // NO backed side**: the collapse handed back HOME and this dot marked the home club on a
+            // ticket that backed NEITHER. That is `T96` verbatim — the row that ruled a draw ticket
+            // must not borrow a team's treatment, reaching a zone its own fix never did.
+            //
+            // `T163` branch (3) is the answer and it already exists: null means NEITHER, and NEITHER
+            // wears no dot, exactly as a market leg does. **A default that erases a ruled state is
+            // worse than a missing default** — the collapse made that branch unreachable here, so no
+            // reader could take it however correctly `T163` was authored.
             bool isMl = leg.Selection.Kind == MarketKind.Moneyline;
-            string awayMark = isMl && !pickedHome ? "● " : "";
-            string homeMark = isMl && pickedHome ? " ●" : "";
+            Side? backedSide = MatchModel.AnchorSide(leg);
+            string awayMark = isMl && backedSide == Side.Away ? "● " : "";
+            string homeMark = isMl && backedSide == Side.Home ? " ●" : "";
             // T32.1 / T25.2: the scoreline carries NO team hue. §4 is explicit — facts are cold
             // white, identity is carried by the words in the ticket column, and the two muted team
             // hues are confined to the pitch dots. The names were injected here as
@@ -3334,19 +3377,28 @@ namespace SBR.Game
                 // only the three team totals Allen HOLDS and `WinningMargin`'s unauthored bucket 1.
                 case MarketKind.Handicap:
                 {
-                    // ⚠ THE LEDGER IS NOT BACKED-ANCHORED FOR THIS KIND, AND THE SWAP IS THE FIX.
-                    // `PickedHomeForPresentation` returns true UNCONDITIONALLY for every kind that is
-                    // not Moneyline or AnytimeScorer (`T152-am`), so `_ledger.Picked` is HOME whether
-                    // the ticket backed home or away. A handicap on the AWAY side must compare the
-                    // AWAY margin, so the pair is swapped here — at the site that knows the
-                    // selection, which is the same reason `T96`'s draw routing lives here.
-                    bool backedHome = leg.Selection.Choice != MarketChoice.Away;
-                    int forGoals = backedHome ? _ledger.Picked : _ledger.Opponent;
-                    int againstGoals = backedHome ? _ledger.Opponent : _ledger.Picked;
+                    // ⚠ THE SWAP THAT STOOD HERE WAS A DOUBLE SWAP, AND A STALE COMMENT PUT IT THERE.
+                    //
+                    // It read: *"`PickedHomeForPresentation` returns true UNCONDITIONALLY for every
+                    // kind that is not Moneyline or AnytimeScorer, so `_ledger.Picked` is HOME whether
+                    // the ticket backed home or away"* — and on that basis it swapped the pair for an
+                    // away handicap. **`c24b32c` deleted that kind table.** `AnchorSide` reads a
+                    // HANDICAP's backed side straight off its own choice, `ConfigureEndpoint(Leg)`
+                    // orients the ledger through that same helper, and so **`_ledger.Picked` is ALREADY
+                    // the backed side's goals.** Swapping again handed the arm the OPPONENT's margin
+                    // on every away-backed handicap — `CLEAR BY n` where the row should read
+                    // `TRAILING BY n`, and the inverse.
+                    //
+                    // **This is `C62`'s cost, paid twice in one session by the same dead sentence:**
+                    // once as the retracted orientation diagnosis, and once here as a real defect I
+                    // WROTE from it. The comment was four hundred lines from the code and read as
+                    // authoritative. Corrected by asking what the function does now, not what a
+                    // comment said it used to do.
+                    Side? backed = MatchModel.AnchorSide(leg);
                     string club = SweatFlavor.Short(
-                        backedHome ? leg.Matchup.Home.Name : leg.Matchup.Away.Name).ToUpperInvariant();
+                        backed == Side.Away ? leg.Matchup.Away.Name : leg.Matchup.Home.Name).ToUpperInvariant();
                     return SweatActiveLegModel.Describe(SweatActiveLegModel.ActiveLegInput.Handicap(
-                        club, leg.Selection.Line, forGoals, againstGoals));
+                        club, leg.Selection.Line, _ledger.Picked, _ledger.Opponent));
                 }
                 case MarketKind.WinningMargin:
                 {
@@ -5094,10 +5146,14 @@ namespace SBR.Game
             string home = SweatFlavor.Short(leg.Matchup.Home.Name);
             // Mark the picked side with a dot so the player knows which team is theirs.
             // Market legs have no team — no dot (their pick reads from the ticket column).
+            //
+            // Same correction as the scorebug's dot, and the same reason (`T163-am5`, batch 202): a
+            // DRAW moneyline is `isMl` and backs NEITHER side, so asking the collapsing helper put
+            // the dot on HOME. `AnchorSide`'s null IS the answer — no dot.
             bool isMl = leg.Selection.Kind == MarketKind.Moneyline;
-            bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
-            string awayMark = isMl && !pickedHome ? "● " : "";
-            string homeMark = isMl && pickedHome ? " ●" : "";
+            Side? backedSide = MatchModel.AnchorSide(leg);
+            string awayMark = isMl && backedSide == Side.Away ? "● " : "";
+            string homeMark = isMl && backedSide == Side.Home ? " ●" : "";
             return $"{awayMark}{away.ToUpperInvariant()}  @  {home.ToUpperInvariant()}{homeMark}";
         }
 

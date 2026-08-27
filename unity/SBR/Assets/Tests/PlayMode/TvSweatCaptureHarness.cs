@@ -3049,6 +3049,242 @@ namespace SBR.Tests.PlayMode
         // Waits are wall-clock, not frame-count: batch mode runs unthrottled (thousands of fps),
         // so a frame-count budget starves anything driven by real time (TvSweatScreenTests' own
         // documented lesson from M3).
+        /// <summary>`D2`'s OWED FRAMES — `T94`'s fixture boundary, shot against the pre-commitment in
+        /// DD batch 197 as amended by `T140-am5` (batch 198, reading (b) split b1/b2).
+        ///
+        /// <para><b>Two moments on a MULTI-FIXTURE ticket</b>, and the pre-commitment states what each
+        /// outcome rules BEFORE the frames exist:</para>
+        /// <list type="number">
+        /// <item><b>After fixture f's whistle, during the result beat</b> — expect f's legs RESOLVED,
+        /// <b>no leg in the LIVE state</b>, f+1's legs at <c>NEXT</c>, scorebug still on f.</item>
+        /// <item><b>Fixture f+1's first beat</b> — expect scorebug on f+1 <b>and</b> f+1's legs live,
+        /// in the same frame.</item>
+        /// </list>
+        ///
+        /// <para><b>THE BURSTS FIRE ON THE MOMENT, NEVER ON THE EXPECTED ANSWER.</b> Moment 1 triggers
+        /// when fixture f's row first paints a resolved chip — a fact about TIMING — and the STATE is
+        /// recorded afterwards, whatever it is. A burst gated on "no leg is live" would only exist if
+        /// the fix worked, and a frame that cannot show (b1), (b2) or (c) proves nothing about
+        /// them.</para>
+        ///
+        /// <para><b>THE CHIP CANNOT TELL LIVE FROM NEXT</b> — both carry a blank one, and only the
+        /// tier differs. That is the whole distinction reading 1 turns on, so the reads below use
+        /// <c>DebugLegIsLive</c>, which reports the same cached flag <c>AnimateLegPulse</c> drives
+        /// from. A gate keyed on the chip would read (a) and (c) identically.</para>
+        ///
+        /// <para><b>NO EXISTING SET COULD SETTLE THIS, checked before shooting</b> (52 sets, 2376
+        /// files): only <c>anchor-window-2026-08-24</c> is a TV set on more than one leg, its two
+        /// bursts are both ANCHOR moments at <c>clock=1'</c>, and it predates the seam by three days.
+        /// Reading 1 is precisely the behaviour `83bd2f1` changed, so no pre-fix frame can carry
+        /// it.</para>
+        ///
+        /// <para>OPT-IN (<c>[Explicit]</c>): this is evidence, not verification, and it runs at ship
+        /// pacing.</para></summary>
+        /// <para><b><c>[Timeout]</c> IS NOT DECORATION HERE.</b> Every capture in this file carries its
+        /// own — 480s to 1500s — because NUnit's default is <b>180s</b> and a ship-paced sweat blows
+        /// it. This one shot moment 1 (40 frames on disk) and then died mid-wait for moment 2 with
+        /// *"Timeout value of 180000 ms was exceeded"*. **And the FIRST version passed only because
+        /// its moment-2 trigger was wrong**: `DebugMatchupText != bugAtM1` fired instantly on the
+        /// blank scorebug between tellings, so the test finished in 110s having photographed a
+        /// teardown frame. Correcting the trigger to wait for f+1's actual club is what exposed the
+        /// timeout — a green run got slower by becoming honest.</para>
+        [UnityTest, Explicit, Timeout(1200000)]
+        public IEnumerator Capture_D2_FixtureBoundary_MultiFixtureTicket()
+        {
+            // ═══ FIXTURE f MUST WIN, OR THERE IS NO SECOND TELLING TO PHOTOGRAPH.
+            //
+            // The first version picked HOME on both legs and shot a seed where leg 0 LOST. A parlay
+            // dies the moment a leg dies, so the sweat ENDED on fixture f and moment 2 never existed:
+            // *"the scorebug never NAMED fixture f+1 ('AUDITORS')"*. **The boundary this window is FOR
+            // only occurs on a ticket that is still alive when the first whistle blows.**
+            //
+            // Searched, never assumed — the same technique the multi-scorer pin uses, and for the same
+            // reason: nothing lets a test choose a result, so a throwaway Run is locked per seed and
+            // its sampled stat line read. Locking samples every matchup from `Rng.Outcomes`, a stream
+            // the betting path never draws from, so the grade read here is the grade the room run gets.
+            string foundSeed = null;
+            for (int i = 0; i < 40 && foundSeed == null; i++)
+            {
+                string trial = $"D2-BOUNDARY-{i}";
+                var probe = new Run(trial);
+                if (probe.CurrentSlate.Matchups.Count < 2) continue;
+                probe.PlaceTicket(new List<Pick> { new Pick(0, Side.Home) }, 10);
+                probe.LockRound();
+                Matchup p0 = probe.CurrentSlate.Matchups[0];
+                if (p0.StatLine == null) continue;
+                // Leg 0 must WIN so the ticket survives its first whistle. Asked through the ENGINE's
+                // own grader, never by comparing goals here — a duplicated rule is how two ideas of
+                // "won" drift apart.
+                if (p0.Grades(MarketSelection.Moneyline(Side.Home))) foundSeed = trial;
+            }
+            Assert.IsNotNull(foundSeed,
+                "no seed in 40 gave a WINNING home leg on matchup 0 with a second matchup available — "
+                + "without one the ticket dies at the first whistle and the fixture BOUNDARY never "
+                + "occurs. This is the moment not existing, not the window failing to catch it.");
+
+            _seed = foundSeed;
+            s_sceneIndex = 0;
+            Directory.CreateDirectory(OutputDir);
+            TheaterStage.PresentationSeedOverride = StableSeed(_seed);
+            Time.captureDeltaTime = 1f / 50f;
+
+            yield return LoadRoom();
+            var director = Object.FindAnyObjectByType<RunDirector>();
+            var screen = Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = Object.FindAnyObjectByType<SitSpot>();
+            Camera cam = Camera.main;
+            Assert.IsNotNull(director, "RunDirector missing");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+            Assert.IsNotNull(cam, "no main camera — the room band would be lost");
+
+            screen.TimeScaleOverride = 1f;
+            couch.transitionDuration = 0.01f;
+            yield return WaitUntilOrFail(() => director.Run != null,
+                Time.realtimeSinceStartup + 10f, "director never started a run");
+
+            director.StartNewRun(_seed);
+            Run run = director.Run;
+            Assert.Greater(run.CurrentSlate.Matchups.Count, 1,
+                "this slate has fewer than two matchups, so a MULTI-FIXTURE ticket cannot be built — "
+                + "a RE-SEED, never a substitution onto one matchup, which is the very shape this "
+                + "window exists to distinguish from");
+
+            // TWO LEGS ON TWO DIFFERENT MATCHUPS. Moneyline both: the simplest kind that reaches a
+            // definite whistle and paints a W/L chip, so the moment-1 trigger is unambiguous.
+            Matchup fixtureF = run.CurrentSlate.Matchups[0];
+            Matchup fixtureNext = run.CurrentSlate.Matchups[1];
+            run.PlaceTicket(new List<Pick>
+            {
+                new Pick(fixtureF.Index, Side.Home),
+                new Pick(fixtureNext.Index, Side.Home),
+            }, 25.0);
+            director.LockRound();
+            Assert.AreEqual(Phase.Sweat, run.Phase);
+
+            // CONDITION: the two legs really are on two fixtures. Asserted off the TICKET, by matchup
+            // REFERENCE, the same rule TicketFixtures groups by — never by index equality, which a
+            // re-seeded slate could satisfy while handing back one matchup twice.
+            Ticket ticket = director.CurrentTicket;
+            Assert.AreEqual(2, ticket.Legs.Count, "the ticket did not take both legs");
+            Assert.IsFalse(ReferenceEquals(ticket.Legs[0].Matchup, ticket.Legs[1].Matchup),
+                "both legs landed on ONE matchup — this is a same-match ticket and there is no fixture "
+                + "BOUNDARY in it to shoot. RE-SEED.");
+
+            string clubsF = $"{SweatFlavor.Short(fixtureF.Away.Name)}/{SweatFlavor.Short(fixtureF.Home.Name)}";
+            string clubsNext = $"{SweatFlavor.Short(fixtureNext.Away.Name)}/{SweatFlavor.Short(fixtureNext.Home.Name)}";
+            Debug.Log($"[D2] seed={_seed} · fixture f = {clubsF} · fixture f+1 = {clubsNext} · "
+                + "two legs, two matchups, verified by matchup reference");
+
+            couch.OnInteract(null);
+            yield return WaitUntilOrFail(() => SitSpot.Active != null,
+                Time.realtimeSinceStartup + 15f, "player never sat down");
+            yield return WaitUntilOrFail(() => screen.DebugSeatedDeltaTime > 0f,
+                Time.realtimeSinceStartup + 20f, "the screen never became seated-and-running");
+
+            // ---- MOMENT 1: fixture f has resolved and its row has PAINTED that. Timing only.
+            yield return WaitWatchingForMultiGoalStrip(screen, cam,
+                () => screen.DebugLegState(0).Length > 0,
+                Time.realtimeSinceStartup + 240f,
+                "fixture f never painted a resolved chip inside the deadline — the boundary moment "
+                + "never arrived and this window shot nothing");
+
+            string m1Chip0 = screen.DebugLegState(0), m1Chip1 = screen.DebugLegState(1);
+            bool m1Live0 = screen.DebugLegIsLive(0), m1Live1 = screen.DebugLegIsLive(1);
+            string m1Bug = screen.DebugMatchupText;
+            string m1Line1 = screen.DebugLegLine(1);
+            Debug.Log($"[D2-M1] RESULT BEAT :: chip0='{m1Chip0}' chip1='{m1Chip1}' · "
+                + $"live0={m1Live0} live1={m1Live1} · scorebug='{m1Bug}' · "
+                + $"need0='{screen.DebugLegNeed(0)}' need1='{screen.DebugLegNeed(1)}' · "
+                + $"line0='{screen.DebugLegLine(0)}' line1='{screen.DebugLegLine(1)}'");
+
+            // C55, BEFORE the shutter: a green burst proves nothing if the subject scrolled off.
+            // THE REAL ELEMENT NAMES. There is no `LegRow{i}` object — the row is built as separate
+            // `LegRowNeed{i}` / `LegRowState{i}` / `LegRowLine{i}` texts, and C55 judges a NAMED
+            // subject. A wrong name here fails the assert and costs the whole shoot.
+            foreach (string subject in new[]
+                     { "LegRowState0", "LegRowState1", "LegRowNeed0", "LegRowNeed1", "Matchup" })
+                AssertSubjectInFrame(screen, subject, "d2-m1-result-beat");
+            yield return CaptureBurst(screen, cam, "d2-m1-result-beat", 40, 0f);
+
+            // ---- MOMENT 2: the scorebug NAMES FIXTURE f+1. Timing only, again.
+            //
+            // ⚠ NOT `DebugMatchupText != bugAtM1`, WHICH IS WHAT THE FIRST SHOOT USED AND IT MISSED.
+            // The scorebug is CLEARED between tellings, so "differs from what it was" fires on the
+            // blank instead of on the re-point: that run captured `scorebug='' chip0='' chip1=''`,
+            // a teardown frame, and called it f+1's first beat. **A trigger keyed on CHANGE is not
+            // a trigger keyed on the SUBJECT.** This waits for f+1's own club to be named, so the
+            // moment cannot be satisfied by an intermediate state.
+            string nextClub = SweatFlavor.Short(fixtureNext.Home.Name).ToUpperInvariant();
+            yield return WaitWatchingForMultiGoalStrip(screen, cam,
+                () => screen.DebugMatchupText.ToUpperInvariant().Contains(nextClub),
+                Time.realtimeSinceStartup + 240f,
+                $"the scorebug never NAMED fixture f+1 ('{nextClub}') — either the sweat ended on one "
+                + "fixture or the second telling never began; either way moment 2 did not occur");
+
+            string m2Chip0 = screen.DebugLegState(0), m2Chip1 = screen.DebugLegState(1);
+            bool m2Live0 = screen.DebugLegIsLive(0), m2Live1 = screen.DebugLegIsLive(1);
+            Debug.Log($"[D2-M2] f+1 FIRST BEAT :: chip0='{m2Chip0}' chip1='{m2Chip1}' · "
+                + $"live0={m2Live0} live1={m2Live1} · scorebug='{screen.DebugMatchupText}' · "
+                + $"need0='{screen.DebugLegNeed(0)}' need1='{screen.DebugLegNeed(1)}'");
+
+            // THE REAL ELEMENT NAMES. There is no `LegRow{i}` object — the row is built as separate
+            // `LegRowNeed{i}` / `LegRowState{i}` / `LegRowLine{i}` texts, and C55 judges a NAMED
+            // subject. A wrong name here fails the assert and costs the whole shoot.
+            foreach (string subject in new[]
+                     { "LegRowState0", "LegRowState1", "LegRowNeed0", "LegRowNeed1", "Matchup" })
+                AssertSubjectInFrame(screen, subject, "d2-m2-next-fixture-first-beat");
+            yield return CaptureBurst(screen, cam, "d2-m2-next-fixture-first-beat", 40, 0f);
+
+            // ---- THE READS, PRINTED AGAINST THE PRE-COMMITMENT. This file takes NONE of them: batch
+            // 197 §"Pre-committed readings" is the DD's and was written before these numbers existed.
+            Debug.Log("[D2-READ] against batch 197 as amended by T140-am5 (b split b1/b2):\n"
+                + $"  (a)  both hold          -> M1: nothing live + f+1 at NEXT + bug on f · M2: bug on f+1 AND its legs live\n"
+                + $"  (b1) f+1 LIVE at M1     -> observed live1 at M1 = {m1Live1}\n"
+                + $"  (b2) f's OWN legs LIVE  -> observed live0 at M1 = {m1Live0}\n"
+                + $"  (c)  column BLANK       -> observed chip0='{m1Chip0}' need1='{screen.DebugLegNeed(1)}' "
+                + "(a resolved chip plus a NEXT row is NOT blank)\n"
+                + "  REPORT ONLY — the reading is the DD's.");
+            Debug.Log($"[D2-STRIP] arity>1 strip frame captured this run: {s_stripArityCaptured} "
+                + "(DD batch 203 — kept if it OCCURRED, never forced and never seed-hunted; its "
+                + "absence is a fact about this sweat, not a failure of this window)");
+        }
+
+        /// <summary>`T152-am3`'s frame, taken OPPORTUNISTICALLY — DD batch 203.
+        ///
+        /// <para>The strip prints <c>{n} GOALS</c> only when a stoppage batch commits two or more
+        /// goals, which is a rare blowout tail. **Batch 203 is explicit that it must not be forced or
+        /// seed-hunted**, so this watches the primary waits rather than steering the sweat: if the
+        /// string appears, one burst is kept and the README names it; if it does not, that is a fact
+        /// about this sweat and nothing is owed.</para>
+        ///
+        /// <para>Matched on the RENDERED string's own shape — the arity-1 forms both end in
+        /// <c>SCORER</c> or <c>NET</c> and cannot collide with it — so the trigger is the surface's
+        /// output, never a re-derivation of the condition that produced it.</para></summary>
+        private static IEnumerator WaitWatchingForMultiGoalStrip(TvSweatScreen screen, Camera cam,
+            Func<bool> cond, float deadlineRealtime, string failMessage)
+        {
+            while (!cond())
+            {
+                if (!s_stripArityCaptured
+                    && System.Text.RegularExpressions.Regex.IsMatch(
+                        screen.DebugFlavorText ?? string.Empty, @"^\d+ GOALS$"))
+                {
+                    s_stripArityCaptured = true;
+                    Debug.Log($"[D2-STRIP] arity>1 strip OBSERVED: '{screen.DebugFlavorText}' — "
+                        + "capturing T152-am3's evidence frame");
+                    AssertSubjectInFrame(screen, "Flavor", "d2-strip-arity-above-one");
+                    yield return CaptureBurst(screen, cam, "d2-strip-arity-above-one", 12, 0f);
+                }
+                if (Time.realtimeSinceStartup > deadlineRealtime) Assert.Fail(failMessage);
+                yield return null;
+            }
+        }
+
+        /// <summary>One per run: the arity&gt;1 strip is a rare tail and one frame of it is the
+        /// evidence; a burst per occurrence would bury the two moments this window is FOR.</summary>
+        private static bool s_stripArityCaptured;
+
         private static IEnumerator WaitUntilOrFail(Func<bool> cond, float deadlineRealtime, string failMessage)
         {
             while (!cond())
