@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 543 - RESTART RECOVERY.
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 544 - THE COUNTER'S CAUSE
+FOUND, a third distinct one: BATCH ARITY. The engine reveals several
+baked goals in one stoppage-time playback (StagedGoal.Amount; the ledger
+jumps 1->5 in one call) and OnGoalPlayed fires once for the batch; the
+counter counted staged events, not revealed goals, and two of the four
+were the backed player. Fix built at TV (BatchScorers/BatchGoalsBy; the
+count moved out of the strip branch, which only ever saw the batch's
+first scorer); suites running; SHA pending. Routed early:
+route-counter-batch-arity-2026-08-27.md. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 543 - RESTART RECOVERY.
 Both lead seats died 2026-08-26 00:51 (Orca restart; TV's last turns
 were 403 auth errors Tuesday 20:51 before Allen's /login). Re-seated
 2026-08-27 18:00 by explicit session ID in bypass mode, identified by
