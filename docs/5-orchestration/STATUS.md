@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 559 heartbeat (23:31) -
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 560 (23:36) - TV's hung
+process was interrupted and had exited; TV RE-SEATED by session ID in
+bypass, effort max, resuming the rotation section then the multi-leg
+fixture; watcher v63 on the new handle. Batch 206 LANDED: the ab6a882
+read (ask the PROPERTY - AnchorSide - never the KIND; every kind-list
+re-derivation drifts when a kind is added) and RevealedLeg.TeamColor
+placed as NO FIELD AT ALL (reader-less = a T42 violation; guarding it
+would preserve the violation with a correct side, and the laptop has
+its own palette) - deletion queued at TV behind the fixture. WITH
+ALLEN: unchanged.**
+
+*(prior stamp, cycle 559 heartbeat (23:31) -
 NETWORK CUT ~22:45-23:00: the DD lost its connection mid-batch 206
 twice (an HTTP 403 at a network edge, 3 minutes), TV's turn stalled at
 the same time. CI green on 625b32c. Batch 206 (the ab6a882 read + the
