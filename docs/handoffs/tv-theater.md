@@ -5,6 +5,120 @@
 
 ---
 
+## 0-ROT6. LANE STATE 2026-08-27 — READ THIS FIRST
+
+**Written on the orchestrator's order, not at a handover — the seat has not rotated.** State is
+`ab6a882`, merged, CI green. **EditMode 344/343/0/1 · PlayMode 154/126/0/28.** Editor closed, procs 0.
+Tree clean but `URP.png` (irreducible — see below) and the untracked `artifacts/`.
+
+### WHAT LANDED SINCE `0-ROT5`
+
+`83bd2f1` the batch-arity fix · `d08672a` the strip at arity>1 + `C62`'s comment · `b19f5c9` the
+NEITHER sweep + the handicap double-swap + the sign gate · `ab6a882` the `TeamName` guard.
+Frames docked in main-2 at `a433e48`. Rulings folded: batches **196–205**.
+
+### ⚠ OWED ON THE TV SURFACE — the whole list, in one place
+
+1. **`T152-am3`'s arity>1 STRIP FRAME** — the strip is BUILT, not verified. It needs a sweat that
+   naturally throws a **stoppage batch of two or more goals**, and batch 203 forbids forcing or
+   seed-hunting it. It did NOT occur in the D2 shoot. **The watcher is already in the capture
+   harness** (`WaitWatchingForMultiGoalStrip`, matching the rendered `^\d+ GOALS$`), so any future
+   capture run picks it up for free — **do not build a new window for it; wait for one.**
+2. **`RevealedLeg.TeamColor` — DELETE IT, field and write** (DD batch 206). It carried the SAME
+   `?? Side.Home` collapse one field from the one `ab6a882` fixed, so a draw was born with the HOME
+   club's colour — and **it has NO READER anywhere in the tree.** This lane reported it as a
+   treatment question (a colour has no *neither* value, so picking one is the laptop's call); **the
+   DD's answer is that there should be no field at all.** `T42`'s precedent, which this very file
+   already records twice: a ready-made value for a thing nothing asks for is how the thing comes
+   back. **No guard, no treatment, no field.** Queued behind the multi-leg fixture.
+3. **`T94`'s SEAM** — the code is closed (`83bd2f1`) and the evidence is docked (`a433e48`, both
+   moments hold against batch 197's pre-commitment as amended by `T140-am5`). **Awaiting the closing
+   ruling.** Nothing owed from this lane.
+4. **Item `1.1`** — §6.7's interstitial at the fixture boundary. `T140-am4` UNCOUPLED it from `T94`,
+   so it is `D2`'s own question and still open. Its site is the fixture change inside `PlaySweat()`.
+5. **The multi-scorer counter's PER-LEG structure has no fixture.** `T140-am8` ruled counters are
+   per leg with their own reveal gates; the pin that exists drives a **single-leg** ticket, where
+   that structure is a no-op by construction. **Raised by this lane and therefore this lane's to
+   settle** — the fixture is next on the chain: two live legs on ONE telling, two different players,
+   each count pinned to its own man, mutation-tested.
+
+### THE THREE LAWS THIS STRETCH PRODUCED, AND WHAT EACH COST
+
+**`C62` — CODE CITES RULINGS, AND CITATIONS GO STALE.** `c24b32c` deleted
+`PickedHomeForPresentation`'s fifteen-kind table; **three comments quoting it survived.** The first
+two misled a reader — including this seat, whose orientation diagnosis was retracted as *a
+remembered read*. **The third JUSTIFIED WRONG CODE.** Batch 205's sharpest clause is about
+propagation: **when a claim is deleted from code, its copies do not go with it** — one sentence was
+pasted into three sites and each reasoned from it independently. The grep runs AT THE MOMENT the
+function changes, not periodically.
+
+**BATCH 206's LAW — ASK THE PROPERTY (`AnchorSide`), NEVER THE KIND.** Every defect in the sweep was
+one predicate standing in for another: `Kind == Moneyline` for *does this leg name a side*, `isMl`
+for *is there a backed club to mark*. **A kind check is a proxy, and a proxy is wrong for exactly the
+case nobody pictured** — here, the one moneyline choice that backs nobody.
+
+**`C63` — A GATE THAT CHECKS FORM CANNOT SEE AN INVERTED SENSE.** The handicap double-swap printed
+`CLEAR BY n` where `TRAILING BY n` belonged, on a live bet, **and passed 342 EditMode + 153 PlayMode
+tests across two commits** — because the string was WELL-FORMED. Right template, right span, no
+blank row, no overrun: every property the suite asks about. **Where a string asserts a FACT about the
+player's position, the gate must relate the word to the fact, not to the template.**
+
+**AND ITS COROLLARY, which this lane hit: A MUTATION TEST PROVES NOTHING UNLESS THE RUN CONTAINED THE
+CASE THE MUTATION BREAKS.** The sign gate went green → RED → green, `K17`'s standard. But the red
+landed only on an **away** leg: a home-backed leg is SYMMETRIC under the swap and passes UNDER the
+bug. **`Assert.Greater(awayLegsChecked, 0)` is load-bearing** — without it a seed run meeting only
+home legs produces a GREEN mutation test, certifying a gate with a run that could not have failed.
+
+### ⚠ TRAPS THIS SEAT PAID FOR — ordered by what they cost
+
+1. **A GATE CAN BE GREEN FOR THE WRONG REASON, AND I SHIPPED THREE THAT WERE.** `T169`'s two
+   discriminators (`id != SheetName` — false once `T168` made them agree; `Identity != "MARKET PICK"`
+   — false because that IS every non-team market's identity), and the draw-name pin, which passed
+   only on CASING because `DisplayLabel` says `Loopholes` where the assert looked for `LOOPHOLES`.
+   **The habit that catches it: when a gate passes, READ ITS LOG and ask what would have to change
+   for it to fail.** Print the value, do not merely assert it.
+2. **`TvSweatScreen.cs` HAS MORE TEST SURFACE REACHED BY REFLECTION THAN BY THE COMPILER.** Four
+   run-time-only failures this stretch: two callers when `DescribeActiveLeg` gained a leg index,
+   `CopyTicket`'s TYPE (it is on `RevealedView`), and its SCOPE (`RevealedView` is a NAMESPACE
+   SIBLING declared above the screen in the same file, not a nested type). Each compiled green.
+   **Every reflective lookup here carries an `Assert.IsNotNull` saying it fails rather than silently
+   checking nothing — that is the only reason they were cheap.**
+3. **THREE SOURCE-SCANNING GATES FIRE WHEN CODE MOVES, NOT WHEN IT BREAKS** — `T69`'s anchor, `G1`'s
+   window, and `T62`'s TWICE on one commit: first my counter block sat between `CompleteGoal` and
+   `RepaintRevealedScore`, then my COMMENT about not putting things in that gap sat in it. **Both
+   times the fix was to move code, never to widen the scan.**
+4. **A CAPTURE WINDOW CAN BE PERFECTLY BUILT AND PHOTOGRAPH NOTHING.** D2 took four attempts: a
+   trigger keyed on CHANGE rather than the SUBJECT (fired on the scorebug being CLEARED between
+   tellings, shot a teardown frame, passed green in 110s); a missing `[Timeout]` against NUnit's
+   180s default, which only bit once the trigger became honest and therefore slower; and **the
+   moment not existing at all** — both legs backed HOME on an unsearched seed, fixture f LOST, and a
+   parlay dies at its first dead leg.
+5. **THE LEDGER WILL NOT OUTRUN THE LOCKED RESULT.** `CompleteGoal` clamps every commit to the
+   endpoint, so a test cannot force a scoreline. The sign gate's first premise did exactly that and
+   asserted CLEAR against a leg that was genuinely TRAILING — **the code was right and the
+   expectation was invented.** Derive the expected sense FROM the locked scoreline instead.
+
+### OPERATIONAL — a Unity run's failure has FOUR signatures, and one poisons the well
+
+| what you see | cause |
+|---|---|
+| `TIMED OUT after 900s` in the runner's stdout | `run-unity-tests.ps1`'s own `-TimeoutSeconds`; **it announces itself** |
+| `Timeout value of 180000 ms was exceeded` | NUnit's per-test default — add `[Timeout(ms)]` |
+| editor log truncates mid-stream, **no marker at all** | terminated outside its own control flow |
+| stalls at *Compiling Scripts*, `More than one copy of bee_backend` | **a stray editor from an earlier timeout** |
+
+**A STRAY EDITOR SURVIVES THE RUNNER'S OWN TIMEOUT.** It then holds `bee_backend` and every later run
+stalls. The habit is to check procs BEFORE a run; the failure mode is a corpse left AFTER one.
+**Check for a stray `Unity.exe` after any timeout.**
+
+**AND `URP.png` CANNOT BE RESTORED AT ALL** — it is a JPEG under an LFS `*.png` attribute whose index
+entry is a raw blob, so the clean/smudge round-trip can never match and `git checkout --` REFUSES.
+Dirty by construction. `ProjectSettings.asset`, the TMP fallback and the three TV SDF atlases DO
+restore and must be, after every suite.
+
+---
+
+
 ## 0-ROT5. LANE STATE 2026-08-25 (third) — READ THIS FIRST
 
 **Written while HOLDING, not at a handover — the seat has not rotated.** State is `7b28fa8`, merged.
