@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 553 heartbeat - batch
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 554 heartbeat - the
+handicap sign gate is built and MUTATION-TESTED: with the double-swap
+re-introduced it goes red on an away leg (+3.5 adjusted, reads TRAILING
+BY 1), naming the backed side; the away-legs-checked assertion is what
+keeps it from a vacuous green. Full suite after the revert running; TV
+commits sweep + gate on it. One genuine runner TIMED OUT tonight (a
+stray editor stalling compilation) - which sharpens the 21:20:13
+verdict: this runner announces its kills, that log announced nothing.
+DD holding for the SHA. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 553 heartbeat - batch
 204 landed (d073c8e): D2 read, both moments hold, (c) refuted, T94's
 seam verified on frames; the bare-TO-WIN safeguard (G1-am7 rung 2) does
 NOT retire - a second reason exists under two live legs naming opposite
