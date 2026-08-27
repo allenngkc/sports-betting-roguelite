@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 550 - CI GREEN on
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 551 - D2's FRAMES DOCKED
+(fourth attempt; the second hit NUnit's 180s default after the trigger
+became honest, the third drew a seed where leg 0 lost so no boundary
+existed - TV now searches a fixture-f win through the engine's own
+grader). Observations: reading (a) holds in every clause at both
+moments, (b1)/(b2) false, (c) refuted, C55 clean; no arity>1 stoppage
+batch, strip frame still owed. DD reading. TV: the one unexplained
+editor kill (21:20:13) log check, then the NEITHER sweep. I dated the
+stale citation in engine.tests/AnchorSideTests.cs myself (23409a8,
+comment-only, CI green). WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 550 - CI GREEN on
 64afccf (strip build + batch 203). D2's FIRST SHOOT: moment 1 real and
 READS (1) - fixture f resolved (L), nothing live on either row, scorebug
 still on f, C55 clean on five subjects: the seam holds. Moment 2 was a
