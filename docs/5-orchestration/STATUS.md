@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 556 - CI GREEN on the
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 557 heartbeat - TV's
+RevealedLeg.TeamName guard built (the predicate Kind == Moneyline was
+the bug; a draw joins the sideless DisplayLabel path; the gate has a
+control leg), PlayMode running, commit + rotation section next. TV
+flagged RevealedLeg.TeamColor (same collapse, reader-less, the laptop's
+treatment) - relayed to the DD; and that the per-leg counter has no
+multi-leg fixture - queued as its next build (blocker-class). DD holds
+a prepared law for the SHA: ask the PROPERTY (AnchorSide), never the
+KIND. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 556 - CI GREEN on the
 sweep (03651b3). Batch 205 landed (98ff644), four rows: the sweep
 ACCEPTED and NEITHER wears no dot; the Handicap double-swap recorded as
 a shipped state lie (third surviving copy of one deleted claim - C62
