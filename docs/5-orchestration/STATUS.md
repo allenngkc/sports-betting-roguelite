@@ -1,6 +1,18 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 563 (00:00) - MERGED
+**Keeper-era heartbeat stamp: 2026-08-28, cycle 564 (00:08) - CI green on
+69208d2. Batch 207 landed (03150e7): T94 CLOSED (batch 62 -> 204, moved
+three times, closed by a two-line substitution); T158 discharged (the
+seam reconciled both orderings as a side effect); T169-am2 discharged
+(the single-leg fixture could never have closed it); T140-am10 - item
+1.1, the interstitial at the fixture boundary, is the DD's: three pieces
+owed (treatment or none; the strip reading LEG 1 - WON at 2' into f+1
+is unruled; shape and copy), and the decisive property is TEMPORAL - a
+frame set cannot settle a cut - so NO capture window until the DD says
+what evidence answers it. DD on 1.1 now; TV's chain is EMPTY, holding
+at HEAD. WITH ALLEN: unchanged.**
+
+*(prior stamp, 2026-08-27 cycle 563 (00:00) - MERGED
 5c96435: T140-am8's per-leg structure has its fixture (mutation-proven
 green -> red -> green; three C29 assertions close the vacuity routes)
 and RevealedLeg.TeamColor is DELETED with its dead inputs
