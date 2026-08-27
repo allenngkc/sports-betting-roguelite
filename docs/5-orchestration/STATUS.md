@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 557 heartbeat - TV's
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 558 - RESTART at ~22:38:
+the orchestrator process restarted (monitors orphaned), the DD seat
+died, TV SURVIVED mid-turn. Re-armed heartbeat, re-seating the DD by
+session ID in bypass, watcher next. MERGED TV's TeamName guard
+(ab6a882: a draw leg is no longer born as the home club; EditMode
+344/343/0/1, PlayMode 154/126/0/28). CI pending. TV writing its rotation
+section, then the multi-leg counter fixture. DD owes the read of
+ab6a882 (with its prepared 'ask the property, not the kind' law) and
+the TeamColor placement. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 557 heartbeat - TV's
 RevealedLeg.TeamName guard built (the predicate Kind == Moneyline was
 the bug; a draw joins the sideless DisplayLabel path; the gate has a
 control leg), PlayMode running, commit + rotation section next. TV
