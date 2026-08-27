@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-28, cycle 566 (00:14) - batch 208
+**Keeper-era heartbeat stamp: 2026-08-28, cycle 567 heartbeat (00:21) -
+TV's KICK-OFF line built with a three-assertion gate (boundary writes
+it; the first fixture does not; same-fixture re-entry does not
+re-announce) and its honest scope named ('the write is correct at a
+boundary', not 'the boundary writes' - D2's M2 frames show the
+re-entry); pause numbers reported as configured values. EditMode green,
+PlayMode running, commit next. DD holding. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 566 (00:14) - batch 208
 landed: ITEM 1.1 RULED. The previous match's result sits over the whole
 of the new match (four sim-minutes on D2's evidence; the strip carries
 the last statement written and nothing speaks at a kick-off). Treatment
