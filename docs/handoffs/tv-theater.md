@@ -5,17 +5,31 @@
 
 ---
 
-## 0-ROT6. LANE STATE 2026-08-27 — READ THIS FIRST
+## 0-ROT6. LANE STATE 2026-08-28 — READ THIS FIRST
 
 **Written on the orchestrator's order, not at a handover — the seat has not rotated.** State is
-`ab6a882`, merged, CI green. **EditMode 344/343/0/1 · PlayMode 154/126/0/28.** Editor closed, procs 0.
-Tree clean but `URP.png` (irreducible — see below) and the untracked `artifacts/`.
+`03150e7` (lane work through `5c96435`), merged, CI green. **EditMode 344/343/0/1 · PlayMode
+155/127/0/28.** Editor closed, procs 0. Tree clean but `URP.png` (irreducible — see below) and the
+untracked `artifacts/`.
+
+### ⚠ THE CHAIN IS EMPTY — `T94` IS CLOSED AND NOTHING IS BUILDABLE
+
+**`T94-cl` (DD batch 207): every condition met.** The code closed at `83bd2f1`, the frames docked at
+main-2 `a433e48` — both moments holding against batch 197's pre-commitment as amended by
+`T140-am5` — and the ruling landed on them. **Nothing is owed from this lane on it.**
+
+**TWO ITEMS DISCHARGED AS SIDE EFFECTS, neither aimed at**, and both are worth reading before the
+next seat plans anything against them: **`T158` fell out of the seam itself**, and **`T169-am2` fell
+to the multi-leg fixture** built to close this lane's own flag. That is the good direction of the
+pattern this stretch kept producing in reverse — a fix reaching further than intended, for once
+usefully rather than as a double-swap or a collapse in four places.
 
 ### WHAT LANDED SINCE `0-ROT5`
 
 `83bd2f1` the batch-arity fix · `d08672a` the strip at arity>1 + `C62`'s comment · `b19f5c9` the
-NEITHER sweep + the handicap double-swap + the sign gate · `ab6a882` the `TeamName` guard.
-Frames docked in main-2 at `a433e48`. Rulings folded: batches **196–205**.
+NEITHER sweep + the handicap double-swap + the sign gate · `ab6a882` the `TeamName` guard ·
+`5c96435` the multi-leg counter fixture + `TeamColor`'s deletion. Frames docked in main-2 at
+`a433e48`. Rulings folded: batches **196–207**.
 
 ### ⚠ OWED ON THE TV SURFACE — the whole list, in one place
 
@@ -24,23 +38,28 @@ Frames docked in main-2 at `a433e48`. Rulings folded: batches **196–205**.
    seed-hunting it. It did NOT occur in the D2 shoot. **The watcher is already in the capture
    harness** (`WaitWatchingForMultiGoalStrip`, matching the rendered `^\d+ GOALS$`), so any future
    capture run picks it up for free — **do not build a new window for it; wait for one.**
-2. **`RevealedLeg.TeamColor` — DELETE IT, field and write** (DD batch 206). It carried the SAME
-   `?? Side.Home` collapse one field from the one `ab6a882` fixed, so a draw was born with the HOME
-   club's colour — and **it has NO READER anywhere in the tree.** This lane reported it as a
-   treatment question (a colour has no *neither* value, so picking one is the laptop's call); **the
-   DD's answer is that there should be no field at all.** `T42`'s precedent, which this very file
-   already records twice: a ready-made value for a thing nothing asks for is how the thing comes
-   back. **No guard, no treatment, no field.** Queued behind the multi-leg fixture.
-3. **`T94`'s SEAM** — the code is closed (`83bd2f1`) and the evidence is docked (`a433e48`, both
-   moments hold against batch 197's pre-commitment as amended by `T140-am5`). **Awaiting the closing
-   ruling.** Nothing owed from this lane.
-4. **Item `1.1`** — §6.7's interstitial at the fixture boundary. `T140-am4` UNCOUPLED it from `T94`,
-   so it is `D2`'s own question and still open. Its site is the fixture change inside `PlaySweat()`.
-5. **The multi-scorer counter's PER-LEG structure has no fixture.** `T140-am8` ruled counters are
-   per leg with their own reveal gates; the pin that exists drives a **single-leg** ticket, where
-   that structure is a no-op by construction. **Raised by this lane and therefore this lane's to
-   settle** — the fixture is next on the chain: two live legs on ONE telling, two different players,
-   each count pinned to its own man, mutation-tested.
+2. ~~**`RevealedLeg.TeamColor`**~~ — **DONE, `5c96435`.** Deleted: field, write, and its now-dead
+   inputs. This lane reported it as a TREATMENT question (a colour has no *neither* value, so picking
+   one looked like the laptop's call) and **that was wrong — the reasoning assumed the field should
+   EXIST.** It had no reader anywhere, so `T42` applied. **The deletion CASCADED, which is the
+   evidence "no reader" was true rather than merely greppable:** `TheaterPalette.TeamColors` and the
+   `pickedHome` local fed nothing else and went with it, **removing the last
+   `PickedHomeForPresentation` call in that composer.**
+3. ~~**`T94`'s SEAM**~~ — **CLOSED, `T94-cl`, DD batch 207.** See the top of this section.
+4. **Item `1.1` — WITH THE DD, AND IT IS A DESIGN JOB BEFORE IT IS A BUILD.** §6.7's interstitial
+   at the fixture boundary, uncoupled from `T94` by `T140-am4`. Batch 207: **the DD designs it first
+   — three pieces, TEMPORAL evidence, and NO CAPTURE WINDOW YET.** Its site is the fixture change
+   inside `PlaySweat()`. **Do not build against it until the spec lands**, and note that temporal
+   evidence is not what the D2 harness shoots: those bursts freeze a moment, and this needs duration.
+5. ~~**The multi-scorer counter's PER-LEG structure**~~ — **DONE, `5c96435`, and it discharged
+   `T169-am2` on the way.** Two live legs on one telling, two players on OPPOSITE sides, each count
+   pinned to its own man; mutation-proven green → RED (*"leg 1 backs 'Deke Gasket', who scored 1, and
+   its counter peaked at 0"*) → green. **The assertion is per leg against its own man, never "both
+   counters moved"** — two legs counting the SAME player would satisfy that while BEING the defect.
+
+**SO THE ONLY LIVE ITEM IS 1, AND IT HAS NO ACTION EVEN IN PRINCIPLE:** the strip frame arrives free
+with whatever capture run happens next, and building a window for it is the seed-hunting batch 203
+rules out. **A seat picking this lane up has nothing to build until the DD's `1.1` spec lands.**
 
 ### THE THREE LAWS THIS STRETCH PRODUCED, AND WHAT EACH COST
 
