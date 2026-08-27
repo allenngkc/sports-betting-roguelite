@@ -173,12 +173,35 @@ namespace SBR.Game
             foreach (Leg leg in source.Legs)
             {
                 (uint home, uint away) = TheaterPalette.TeamColors(leg.Matchup.Home.Name, leg.Matchup.Away.Name);
+                // ═══ THE PREDICATE IS THE ANCHOR, NOT THE KIND — `T163-am6` (DD batch 205).
+                //
+                // This asked `Kind == Moneyline` and then named a club through
+                // `PickedHomeForPresentation`, whose `?? Side.Home` collapse means **a DRAW moneyline
+                // was BORN as the home club** — a ticket that backed nobody carrying the home side's
+                // name out of this composer. `T96` ruled that in 2026-08-05 and it applies where the
+                // string is MADE, not where it is read.
+                //
+                // The fix is not a new branch: **a draw simply joins the branch that already exists
+                // for every leg with no backed club.** The question was always "does this leg name a
+                // side", and `Kind == Moneyline` was a proxy that answered wrong for exactly one
+                // choice. `AnchorSide` answers it directly — `T163` branch (3), NEITHER — so the
+                // draw takes the same `DisplayLabel` path a totals leg has always taken.
+                //
+                // **THE GUARD IS THIS LANE'S; THE TREATMENT IS THE LAPTOP'S.** What `SportsbookApp`
+                // shows when no club is named is its call when that lane seats (it reads this at
+                // `:2905`, preferring `MarketLabel`). This row only refuses to BIRTH a wrong value.
+                //
+                // Its inertness today is INCIDENTAL and is why it did not wait: `MarketLabel` is
+                // always non-empty, so the consumer never reaches `TeamName`. That is batch 201's
+                // `_scorerRevealed` shape — harmless now, a trap for the reader who later prefers the
+                // other field.
+                Side? backedSide = MatchModel.AnchorSide(leg);
                 bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
                 legs.Add(new RevealedLeg
                 {
                     Index = legs.Count,
-                    TeamName = leg.Selection.Kind == MarketKind.Moneyline
-                        ? SweatFlavor.Short(pickedHome ? leg.Matchup.Home.Name : leg.Matchup.Away.Name).ToUpperInvariant()
+                    TeamName = leg.Selection.Kind == MarketKind.Moneyline && backedSide != null
+                        ? SweatFlavor.Short(backedSide == Side.Home ? leg.Matchup.Home.Name : leg.Matchup.Away.Name).ToUpperInvariant()
                         : leg.DisplayLabel,
                     MarketLabel = leg.DisplayLabel,
                     AmericanOdds = OddsFormat.American(leg.OfferedOdds),
