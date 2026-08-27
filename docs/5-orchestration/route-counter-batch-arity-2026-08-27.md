@@ -50,3 +50,37 @@ Whether the batch-arity read is complete (does any other consumer of
 `OnGoalPlayed` assume one goal per event?), whether extracting the
 orientation rule into `BatchScorers` really leaves T140-am2 undecided, and
 whether the multi-goal reveal owes its own register row.
+
+---
+
+## DD pre-read (2026-08-27 18:16) — one thing MUST ride the same commit
+
+**`_stoppageGoalCount` has the identical defect, six lines above the one
+being fixed.** `OnGoalPlayed` does `_stoppageGoalCount++` once per call and
+renders `90'+{count}`. On the very batch TV measured (ledger 1→5, four goals
+in one call) the clock advances by one while the score jumps by four — it
+reads `90'+1` on a four-goal burst. Player-visible; a counter counting
+events rather than goals, exactly like the scorer count. Fix it with the
+same unit, in the same commit, so it does not become a fourth cause later.
+
+**The rule (a register row follows with the SHA):** QUANTITIES take the
+GOAL as their unit; dramatic BEATS take the SCENE as theirs. So `GoalHit`
+and `PlayScorePunch` stay one per batch — correct, and the engine's batching
+docstring says why. The stoppage count and the scorer count are quantities.
+
+**Note for the commit message, not for fixing now:** the event strip names
+`scorer`, the batch's FIRST scorer, so on a batch of [other, backed] it names
+the other player and the gold tier never fires though the backed man scored.
+The DD reads that as a fact about which player scored, not a beat. State
+whether `BatchScorers` already covers it.
+
+**Prepared answers to §"For the DD" (not rulings until the SHA):** Q1 the
+read is not complete without the rule above; Q2 T140-am2 stays undecided
+(`PickedHomeForPresentation` is per-leg, `AnchorForTelling` per-telling;
+batch 200 already ruled a single leg cannot disagree with itself); one
+separate pre-existing caveat, not this fix's: the `?? Side.Home` collapse
+when `AnchorSide` returns null (draw moneyline and friends) in `ScorerFor`.
+Q3 yes, a row is owed, carrying the unit rule — the third unit error on one
+counter (which leg, which side, what one increment means). The DD's
+batch-200 suspect is retracted by measurement; its scope ruling (the counter
+does not wait for Allen) stands.
