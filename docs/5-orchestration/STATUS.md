@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 547 - CI GREEN on the
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 548 - batch 202 landed
+(024b02a): TV's sideless-market read placed - it is T163's NEITHER (ruled
+batch 167), built in AnchorForTelling, NOT built in
+PickedHomeForPresentation whose ?? Side.Home collapse erases the ruled
+state; sweep rule: readers that ORIENT are safe (ConfigureEndpoint
+untouched), readers that NAME a club are not (SweatFlavor.For, GoalLine
+first). TV's chain: commit the strip string + comment fix (suites
+running) -> D2's frames (DD holding) -> the NEITHER sweep. Not T140-am2
+(that is opposite-side legs; still Allen's). WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 547 - CI GREEN on the
 counter fix (194302d). Batch 201 landed (0168dae): the unit rule is a row
 (quantities take the goal, beats take the scene; the chalk-off floor IS
 the rule); the strip ruled - at arity above 1 it names no scorer and
