@@ -3279,8 +3279,16 @@ namespace SBR.Tests.PlayMode
             // read by index rather than by casting the field, which is what this pin did while the
             // counter was a scalar.
             const int MultiLegIndex = 0;
-            int maxCount = 0, framesWatched = 0, lastCount = 0;
+            int maxCount = 0, framesWatched = 0, lastCount = 0, lastPicked = 0, lastOpponent = 0;
             var transitions = new List<string>();
+            FieldInfo ledgerField = typeof(TvSweatScreen).GetField(
+                "_ledger", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(ledgerField, "TvSweatScreen._ledger not found — renamed?");
+            var ledger0 = ledgerField.GetValue(screen);
+            System.Reflection.PropertyInfo ledgerPickedProp = ledger0.GetType().GetProperty("Picked");
+            System.Reflection.PropertyInfo ledgerOpponentProp = ledger0.GetType().GetProperty("Opponent");
+            Assert.IsNotNull(ledgerPickedProp, "ScoreLedger.Picked not found — renamed?");
+            Assert.IsNotNull(ledgerOpponentProp, "ScoreLedger.Opponent not found — renamed?");
             var stageLegsSeen = new SortedSet<int>();
             couch.OnInteract(null);
             yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
@@ -3293,10 +3301,19 @@ namespace SBR.Tests.PlayMode
                 // EVERY TRANSITION, not just the peak. A peak says WHAT the counter reached; the
                 // transitions say WHEN, and whether it ever went backwards — which is the difference
                 // between "the goal never reached this site" and "the count was reset between goals".
-                if (c != lastCount)
+                // THE LEDGER MOVES WITH IT, or the two facts cannot be compared. `ScorerFor` indexes
+                // the scorer list by the revealed count BEFORE each goal, so the ledger's own
+                // progression is the only way to tell "five goals reached this site and one
+                // incremented" apart from "one goal reached it at all". Both are polled on the same
+                // frame so the pairing is real rather than reconstructed.
+                var lg = ledgerField.GetValue(screen);
+                int lp = (int)ledgerPickedProp.GetValue(lg);
+                int lo = (int)ledgerOpponentProp.GetValue(lg);
+                if (c != lastCount || lp != lastPicked || lo != lastOpponent)
                 {
-                    transitions.Add($"f{framesWatched}:{lastCount}->{c}@stage{(int)stageLegField.GetValue(screen)}");
-                    lastCount = c;
+                    transitions.Add($"f{framesWatched}:count {lastCount}->{c} ledger {lastPicked}-{lastOpponent}"
+                        + $"->{lp}-{lo} @stage{(int)stageLegField.GetValue(screen)}");
+                    lastCount = c; lastPicked = lp; lastOpponent = lo;
                 }
                 if (c > maxCount) maxCount = c;
                 stageLegsSeen.Add((int)stageLegField.GetValue(screen));
@@ -3308,12 +3325,9 @@ namespace SBR.Tests.PlayMode
             // The REVEALED endpoint, so a count that never moved can be told apart from goals that
             // were never revealed. The ledger is the surface's own revealed truth; the stat line is
             // the locked one they must converge to.
-            FieldInfo ledgerField = typeof(TvSweatScreen).GetField(
-                "_ledger", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.IsNotNull(ledgerField, "TvSweatScreen._ledger not found — renamed?");
             var ledger = ledgerField.GetValue(screen);
-            int ledgerPicked = (int)ledger.GetType().GetProperty("Picked").GetValue(ledger);
-            int ledgerOpponent = (int)ledger.GetType().GetProperty("Opponent").GetValue(ledger);
+            int ledgerPicked = (int)ledgerPickedProp.GetValue(ledger);
+            int ledgerOpponent = (int)ledgerOpponentProp.GetValue(ledger);
             bool backedIsHome = played.PlayerSide(foundPlayerIndex) == Side.Home;
             // THE SCORER LISTS THEMSELVES. `ScorerFor` indexes these by the revealed count BEFORE
             // each goal, so a list SHORTER than the goal count silently returns null for the tail —

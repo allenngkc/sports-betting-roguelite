@@ -2264,17 +2264,89 @@ namespace SBR.Game
         private void OnGoalPlayed(ScoreLedger.StagedGoal goal)
         {
             _audio?.GoalHit(goal.Commits);
-            Player scorer = ScorerFor(goal, _ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count
-                ? _ticket.Legs[_stageLeg] : null);
+            Leg anchorLeg = _ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count
+                ? _ticket.Legs[_stageLeg] : null;
+            Player scorer = ScorerFor(goal, anchorLeg);
+
+            // ═══ THE BATCH'S SCORER WINDOW, CAPTURED BEFORE THE LEDGER MOVES.
+            //
+            // ⚠ ONE `StagedGoal` CAN COMMIT SEVERAL GOALS. `StagedGoal.Amount` says so in terms —
+            // *"endpoint reconciliation may reveal several baked goals in one stoppage-time playback
+            // so the 60–90s sweat law does not turn a rare blowout into an unbounded scene
+            // sequence"* — and `CompleteGoal` applies that amount, not one.
+            //
+            // **THAT IS WHY THE MULTI-SCORER COUNTER READ 1 WHERE THE PLAYER SCORED 2.** Measured on
+            // `MULTI-0`: the ledger stepped `1-0 -> 5-0` in a SINGLE call, a batch of four, whose
+            // window covered away scorers 1..4 — and away scorers 1 AND 2 were both the backed
+            // player. `ScorerFor` names ONE scorer for the batch, so a counter that advanced per
+            // CALL counted one of the two. **The counter was counting STAGED EVENTS, not REVEALED
+            // GOALS.**
+            //
+            // The window is `[start, start + Amount)` into the same list `ScorerFor` indexes, and
+            // `start` is the pre-batch revealed count — so it MUST be read before `CompleteGoal`.
+            IReadOnlyList<Player> batchScorers = BatchScorers(goal, anchorLeg);
+            int batchStart = goal.ScoredByPicked ? _ledger.Picked : _ledger.Opponent;
+            int batchAmount = goal.Commits ? Mathf.Max(0, goal.Amount) : 0;
+
+            // ═══ PER-LEG COUNTERS ADVANCE HERE, NOT INSIDE THE EVENT STRIP'S BRANCH.
+            //
+            // `T140-am8`: a per-leg quantity is computed per leg, and `_stageLeg` selects the MATCH
+            // rather than the set of bets. It is ALSO computed independently of the strip: that
+            // branch is gated on `scorer != null`, and `scorer` is only the FIRST scorer of the
+            // batch. On a batch of `[Wobble, Ledger]` the strip names Wobble and a `LEDGER 2+` leg
+            // would never be looked at — **the strip's subject is the goal, the counter's subject is
+            // the bet, and gating one on the other is the same unit error one level down.**
+            if (_ticket != null && batchAmount > 0)
+            {
+                foreach (int li in LegsOfFixtureContaining(_stageLeg))
+                {
+                    if (li < 0 || li >= _ticket.Legs.Count || li >= _pickedScorerGoals.Length) continue;
+                    Leg countLeg = _ticket.Legs[li];
+                    if (countLeg.Selection.Kind != MarketKind.PlayerMultiScorer) continue;
+                    Player backed = countLeg.Matchup.PlayerAt(countLeg.Selection.PlayerIndex);
+                    _pickedScorerGoals[li] += BatchGoalsBy(batchScorers, batchStart, batchAmount, backed);
+                }
+            }
+
+            // THE ADVANCE AND ITS REPAINT STAY ADJACENT — `T62`, and its gate scans for
+            // exactly that: one ledger advance, every mirror repainted in the same short
+            // block. The counter above runs BEFORE the advance rather than between the two,
+            // which it can because it reads the window captured before `CompleteGoal` and
+            // never the ledger's post-state. Nothing may sit in the gap.
             _ledger.CompleteGoal(goal);
+            // `T62`: THE REPAINT IS THE NEXT STATEMENT. One ledger advance, every mirror of it
+            // repainted in the same breath — and its gate scans a 12-line window precisely
+            // because the original defect was this repaint living a beat away in another method.
+            // **Nothing goes between these two lines.** The stoppage clock below was briefly
+            // written into that gap while fixing its own arity, and the gate caught it.
+            if (_ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count)
+                RepaintRevealedScore(_ticket.Legs[_stageLeg]);
+
             if (_finalSequenceActive)
             {
-                _stoppageGoalCount++;
+                // ⚠ THE SAME UNIT ERROR, SIX LINES ABOVE THE ONE THIS COMMIT CAME TO FIX. This read
+                // `_stoppageGoalCount++` — ONE PER CALL — while a stoppage batch commits
+                // `goal.Amount` goals. On the very batch that exposed the scorer count (ledger
+                // `1-0 -> 5-0`, four goals in one call) the clock advanced by ONE: the scoreline
+                // jumped four and the clock read `90'+1`. **Player-visible, and a counter counting
+                // EVENTS rather than GOALS — the scorer count's defect wearing a different name.**
+                //
+                // THE RULE THAT SEPARATES THIS FROM ITS NEIGHBOURS: **QUANTITIES take the GOAL as
+                // their unit; dramatic BEATS take the SCENE as theirs.** The stoppage count and the
+                // scorer count are quantities and advance by `batchAmount`. `GoalHit` above and
+                // `PlayScorePunch` below are beats and stay ONE PER BATCH — which is correct and is
+                // what the engine's own batching docstring exists to buy: a rare blowout must not
+                // become an unbounded scene sequence.
+                //
+                // `Max(1, …)` RATHER THAN `+= batchAmount`, and the 1 is not a fudge: `batchAmount`
+                // is 0 for a CHALK-OFF, and the shipped clock has always ticked on a chalk-off
+                // because a disallowed goal is still a stoppage event the player watched. Preserving
+                // that is deliberate — this row fixes an arity, and silently making VAR stop
+                // advancing the clock would be a second, unruled behaviour change riding along.
+                _stoppageGoalCount += Mathf.Max(1, batchAmount);
                 _tClock.text = $"90'+{_stoppageGoalCount}";
                 RevealedView.SetClock(_tClock.text);
             }
-            if (_ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count)
-                RepaintRevealedScore(_ticket.Legs[_stageLeg]);
 
             // C3 (Design Director ruling): every staged goal attempt reaches its payoff HERE,
             // whether or not it commits. A commit means the score itself is the story — DESIGN.md
@@ -2318,27 +2390,45 @@ namespace SBR.Game
                     // this is the one site that knows a revealed goal has a named scorer. The
                     // predicate covers both player kinds, because both back a player and both ask the
                     // same question of this frame.
-                    bool backsThisPlayer =
-                        (liveLeg.Selection.Kind == MarketKind.AnytimeScorer
-                         || liveLeg.Selection.Kind == MarketKind.PlayerMultiScorer)
-                        && object.ReferenceEquals(scorer, liveLeg.Matchup.PlayerAt(liveLeg.Selection.PlayerIndex));
-                    if (!backsThisPlayer) continue;
-                    // The COUNT, not a flag — `T152` refused AnytimeScorer's binary here in terms: at
-                    // one goal on a `2+` leg the player HAS scored and the leg is NOT won, so
-                    // `SCORED` would read as a win. Incremented on the revealed goal, never read off
-                    // `MatchStatLine`.
-                    if (liveLeg.Selection.Kind == MarketKind.PlayerMultiScorer && li < _pickedScorerGoals.Length)
-                        _pickedScorerGoals[li]++;
+                    // ⚠ "DID THE BACKED MAN SCORE IN THIS PLAYBACK" IS A QUESTION ABOUT THE WHOLE
+                    // BATCH, not about its first goal. This read `ReferenceEquals(scorer, …)`, and
+                    // `scorer` is `list[start]` — the FIRST scorer of the batch. On a batch of
+                    // `[other, backed]` a won AnytimeScorer leg would answer NO: its reveal gate
+                    // would never open and its row would read `NOT YET` on a leg its man had won.
+                    // **The same unit error as the count, worn as a boolean** — so it takes the same
+                    // instrument, and `BatchGoalsBy` already answers it exactly.
+                    if (liveLeg.Selection.Kind != MarketKind.AnytimeScorer) continue;
+                    Player backedMan = liveLeg.Matchup.PlayerAt(liveLeg.Selection.PlayerIndex);
+                    if (BatchGoalsBy(batchScorers, batchStart, batchAmount, backedMan) == 0) continue;
                     // EACH LEG'S OWN REVEAL GATE. A shared flag would reveal one leg's scorer on
                     // another leg's causal payoff — `T140-am8` calls that the worse half of a half
                     // fix, and it is why the flag moved with the counter rather than after it.
-                    if (liveLeg.Selection.Kind == MarketKind.AnytimeScorer && li < _scorerRevealed.Length)
-                        _scorerRevealed[li] = true;
+                    //
+                    // ONLY the gate lives here. The multi-scorer COUNT moved to the batch-window
+                    // block above; this one is AnytimeScorer's binary, which `T152` keeps distinct
+                    // from the count for its own stated reason.
+                    if (li < _scorerRevealed.Length) _scorerRevealed[li] = true;
                 }
 
+                // ═══ THE GOLD TIER IS A BOOLEAN OVER THE BATCH — did the backed man score in THIS
+                // playback — and it was gated on `scorer`, the batch's FIRST goal.
+                //
+                // So a WON AnytimeScorer leg showed NO GOLD whenever his goal was not the first of a
+                // stoppage batch: `[other, backed]` named the other man and left the strip cold on
+                // the very playback that won the leg. `BatchGoalsBy` answers the real question, and
+                // it is the same instrument the count and the reveal gate now use — one question,
+                // one answer, three readers.
+                //
+                // **`PlayerMultiScorer` IS DELIBERATELY NOT GOLDED** (`T152`): its progress is a
+                // COUNT, not a binary, precisely because at one goal on a `2+` leg the man HAS
+                // scored and the leg is NOT won. Gold there would announce a win the ticket has not
+                // got. The anchor leg alone is asked, because the strip is one element and speaks
+                // for the telling rather than per-leg — which is the strip's own scope, not a unit
+                // error, and it is why this stays on `_stageLeg`.
                 Leg leg = _ticket.Legs[_stageLeg];
                 bool pickedScorer = leg.Selection.Kind == MarketKind.AnytimeScorer
-                    && object.ReferenceEquals(scorer, leg.Matchup.PlayerAt(leg.Selection.PlayerIndex));
+                    && BatchGoalsBy(batchScorers, batchStart, batchAmount,
+                                    leg.Matchup.PlayerAt(leg.Selection.PlayerIndex)) > 0;
                 // §4: money/won is gold, not the retired saturated green — LaptopOs.MoneyGood is
                 // the laptop OS's own retired-green token and has no role on this surface.
                 // FLAGGED, tier applied but hue untouched: TV-05 as quoted in ResolveBeat below says
@@ -3351,11 +3441,52 @@ namespace SBR.Game
                 return goal.ScorerRosterIndex >= 0 && goal.ScorerRosterIndex < bound.Count
                     ? bound[goal.ScorerRosterIndex] : null;
             }
+            IReadOnlyList<Player> list = BatchScorers(goal, leg);
+            int index = goal.ScoredByPicked ? _ledger.Picked : _ledger.Opponent;
+            return list != null && index >= 0 && index < list.Count ? list[index] : null;
+        }
+
+        /// <summary>WHICH SCORER LIST this staged goal's committed goals come from — the single
+        /// owner of that orientation rule, so <see cref="ScorerFor"/> and the batch counter can never
+        /// disagree about which side a goal belongs to.
+        ///
+        /// <para>Extracted rather than duplicated when the multi-scorer counter needed the same
+        /// answer: two copies of an orientation rule is how the two halves of one fact drift, and
+        /// this file already says so about the surname convention.</para>
+        ///
+        /// <para><b>Orientation is READ here, never decided.</b>
+        /// <c>SweatFlavor.PickedHomeForPresentation</c> is the authority — since <c>c24b32c</c> it is
+        /// <c>(MatchModel.AnchorSide(leg) ?? Side.Home) == Side.Home</c>, so an away-backed player
+        /// market answers AWAY and the ledger keyed to it agrees. Whether a TELLING whose legs back
+        /// opposite sides can have one such answer is `T140-am2`'s question and is not touched.</para>
+        /// </summary>
+        private static IReadOnlyList<Player> BatchScorers(ScoreLedger.StagedGoal goal, Leg leg)
+        {
+            if (leg == null || leg.Matchup?.StatLine == null) return null;
             bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
             bool scorerHome = goal.ScoredByPicked ? pickedHome : !pickedHome;
-            int index = goal.ScoredByPicked ? _ledger.Picked : _ledger.Opponent;
-            var scorers = scorerHome ? leg.Matchup.StatLine.HomeScorers : leg.Matchup.StatLine.AwayScorers;
-            return index >= 0 && index < scorers.Count ? scorers[index] : null;
+            return scorerHome ? leg.Matchup.StatLine.HomeScorers : leg.Matchup.StatLine.AwayScorers;
+        }
+
+        /// <summary>How many of ONE staged goal's committed goals were scored by
+        /// <paramref name="player"/>.
+        ///
+        /// <para>A staged goal is not a goal. <c>StagedGoal.Amount</c> may be several — stoppage-time
+        /// reconciliation reveals a blowout's tail in one playback rather than as N scenes — so the
+        /// batch covers scorer list entries <c>[start, start + amount)</c>. Counting per CALL instead
+        /// of per GOAL is what made the multi-scorer row read <c>1 GOALS • NEED 1</c> on a leg its
+        /// player had already won.</para>
+        ///
+        /// <para>Bounds-clamped rather than trusted: the scorer list can be shorter than the goal
+        /// count (an unattributed goal has no entry), and a window running past its end must count
+        /// what is there rather than throw on a live surface.</para></summary>
+        private static int BatchGoalsBy(IReadOnlyList<Player> scorers, int start, int amount, Player player)
+        {
+            if (scorers == null || player == null || amount <= 0) return 0;
+            int n = 0;
+            for (int i = Mathf.Max(0, start); i < start + amount && i < scorers.Count; i++)
+                if (ReferenceEquals(scorers[i], player)) n++;
+            return n;
         }
 
         private static string Surname(string name)
