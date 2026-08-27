@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 549 - the strip build
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 550 - CI GREEN on
+64afccf (strip build + batch 203). D2's FIRST SHOOT: moment 1 real and
+READS (1) - fixture f resolved (L), nothing live on either row, scorebug
+still on f, C55 clean on five subjects: the seam holds. Moment 2 was a
+FAKE - the trigger keyed on change fired on the blank scorebug between
+tellings (a teardown frame labelled f+1's first beat); TV fixed the
+trigger to wait for f+1's own club and added DebugLegLine so (a) and (c)
+are distinguishable in the log; RE-SHOOTING now. No arity>1 stoppage
+batch occurred (the strip's frame stays owed, not chased). Batch 203
+landed (64afccf). Heartbeat monitor re-armed. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 549 - the strip build
 MERGED (d08672a: '{n} GOALS' at arity above one; the stale C62 comment
 replaced with the living reason; ConfigureEndpoint's answer in the
 commit message; EditMode 342/341/0/1, PlayMode 153/126/0/27). CI
