@@ -1,6 +1,21 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 555 - the NEITHER SWEEP
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 556 - CI GREEN on the
+sweep (03651b3). Batch 205 landed (98ff644), four rows: the sweep
+ACCEPTED and NEITHER wears no dot; the Handicap double-swap recorded as
+a shipped state lie (third surviving copy of one deleted claim - C62
+sharpened: when a claim is deleted from code, grep its copies at that
+moment); NEW LAW C63 - a gate that checks form cannot see an inverted
+sense, and a mutation test needs its own away-leg assertion or it can
+pass vacuously; RevealedLeg.TeamName placed - the guard is TV's (value
+born at composition), the treatment the laptop's; the batch-204 marker
+question re-read - two TO WIN rows cannot coexist on one fixture, but
+the DOT FOLLOWS THE TELLING'S ANCHOR LEG, NOT THE ROW: under two live
+legs naming opposite sides a bare TO WIN can sit on the home row while
+the only marker points away. DD noted batch 196 ratified {n} with the
+sign unchecked. TV building the TeamName guard. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 555 - the NEITHER SWEEP
 MERGED (b19f5c9): 5 orienting sites untouched, 2 already guarded, 2 dots
 corrected to AnchorSide's null (a draw wears no dot), the Handicap
 double-swap fixed, and the sign gate proven green -> red -> green
