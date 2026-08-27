@@ -1,0 +1,41 @@
+# Register entries — batch 201 (2026-08-27)
+
+**The build is right and the pin reads 2. The strip is ruled — and the stale comment that cost TV a
+whole diagnostic cycle is STILL IN THE FILE, four hundred lines from the fix.**
+
+**Three rows.** **Destination tables:** TV (`T152-am3`, `T152-am4`) · Cross-surface (`C62`).
+
+**Build:** `83bd2f1`. **Six source reads at HEAD. Nothing measured.**
+
+---
+
+## The rows
+
+| T152-am3 | The batch-arity build ACCEPTED, the chalk-off floor RATIFIED — and the strip names NO ONE at arity above one | **RULED — DD 2026-08-27 batch 201, on `83bd2f1`.** **FOUR SITES, ONE ERROR, AND THE PIN READS 2: two quantities and two booleans all asked *what happened in this playback* and all answered about the batch's FIRST goal. **`BatchScorers` owning the orientation read and `BatchGoalsBy` owning the window — one question, one answer, three readers — is the right shape**, and it is why a fifth reader cannot disagree with the other three.** **THE CHALK-OFF FLOOR IS RATIFIED, AND IT IS NOT AN EXCEPTION TO THE UNIT RULE — IT IS THE RULE: `Mathf.Max(1, batchAmount)`. **A chalk-off reveals ZERO goals and still consumes a playback the player watched, so the FLOOR is the SCENE's unit and the INCREMENT is the GOAL's** — the same sentence, applied twice in one expression. And refusing to make VAR stop advancing the clock was right: **that would be a second, unruled behaviour change riding a arity fix.*** **`GoalHit` AND `PlayScorePunch` STAY ONE PER BATCH and are correct — recorded so a fifth site is not "fixed" wrongly. That is what the engine's batching buys.** **NOW THE STRIP, WHICH IS MINE AND WHICH TV CORRECTLY DID NOT TOUCH: `ScorerFor` returns `list[index]`, the batch's FIRST scorer, so on `[other, backed]` the strip names the other man. **THIS IS NOT A FOURTH INSTANCE OF THE UNIT ERROR — IT IS ITS MIRROR.** The other four were quantities computed with the wrong unit. The strip is a SCENE-unit artefact — one line per playback — being asked to carry a GOAL-unit fact, N scorers. **No loop fixes it; a unit cannot be changed into a sentence.*** **RULED: **AT ARITY 1 THE STRIP IS UNCHANGED. AT ARITY ABOVE 1 IT NAMES NO SCORER AND STATES THE COUNT — `{n} GOALS`.** Any single name is FALSE BY OMISSION when four goals landed, and this surface does not print a fact it must immediately qualify.** **AND THE TWO FACTS THE PLAYER ACTUALLY NEEDS ARE ALREADY CARRIED, WHICH IS WHY ONE STRING IS ENOUGH: **is my man in this** — the GOLD TIER, now driven by `BatchGoalsBy(...) > 0` and fixed in this very commit; **how many** — the LEG ROW's own count, `{scored} GOALS`. **Naming him on the strip as well would restate a fact already on the surface, which §7 bans in terms.** One new string, no new authority, and the gold does the work the name was doing badly | batch 201 |
+| T152-am4 | The reveal gate's two-line extension is SAFE AND INERT — and `T152`'s refusal of the binary is what made it safe, structurally rather than by care | **RULED — DD 2026-08-27 batch 201, taking the orchestrator's offer to separate it.** **WHAT CHANGED: `_scorerRevealed[li] = true` was gated on `MarketKind.AnytimeScorer` and is now written for any leg passing `BatchGoalsBy(...) > 0` — so a `PlayerMultiScorer` leg now sets it too.** **IT IS INERT, VERIFIED AT BOTH ENDS: `ScorerRevealed(i)` is read at **EXACTLY ONE SITE**, the `case MarketKind.AnytimeScorer:` arm. And `DescribePlayerMultiScorer` **never reads `ScorerRevealed` at all** — its outcome is `remaining <= 0` computed from the COUNT, and `ActiveLegInput.PlayerMultiScorer` derives `scorerRevealed: revealedGoals > 0` for itself. **The flag is written for a kind that has no reader.*** **AND IT IS WORTH A ROW *BECAUSE* IT IS HARMLESS TODAY: **a flag set for kinds that do not read it is a trap for the next reader**, who will find it true on a multi-scorer leg and reasonably conclude identity was revealed. **Either narrow the write to the kinds that read it, or rename the flag to what it now means** — *the backed man scored in this playback* — which is what `BatchGoalsBy` already answers and would make the array redundant rather than misleading.** **NOW THE PART WORTH RECORDING, because it is a near-miss that never happened: **had `DescribePlayerMultiScorer` read `ScorerRevealed`, this extension would have marked a `2+` leg `RevealedLegOutcome.Won` ON ONE GOAL** — and that outcome feeds `TicketCannotLose`, so **THE FOOTER WOULD HAVE READ `STAKE` ON A TICKET THAT COULD STILL LOSE.** `T152` refused AnytimeScorer's binary in terms — *at one goal on a `2+` leg the player HAS scored and the leg is NOT won* — **and it refused it IN THE MODEL, so the caller could not reintroduce it by widening a write.** A ruling built into the shape rather than into the caller's care is what made a careless-looking change safe | batch 201 |
+| C62 | CODE CITES RULINGS, AND CITATIONS GO STALE — the mirror of *rulings can cite stale code*, and the live instance cost a whole diagnostic cycle | **LAW — DD 2026-08-27 batch 201, register-level, on an instance measured this week.** **THE INSTANCE, STILL IN THE FILE: `TvSweatScreen`'s `CorrectScore` arm carries *"`SweatFlavor.PickedHomeForPresentation` returns true unconditionally for every kind that is not Moneyline or AnytimeScorer (`T152-am`), so picked IS home."* **`c24b32c` DELETED that kind table — the function is now one line delegating to `MatchModel.AnchorSide` — and the comment survived it, citing a ruling by ID and describing behaviour that no longer exists.*** **AND THE COST IS NOT HYPOTHETICAL: TV's orientation diagnosis (`route-counter-orientation-2026-08-25.md`) described exactly this behaviour, was routed to this seat as a blocking question, took batch 200 to refute, and was then retracted by the lane as *a remembered read*. **THE MEMORY HAD A SOURCE. It is four hundred lines from the code being fixed, and it is still there.*** **THE LAW: **A COMMENT ASSERTING WHAT A FUNCTION DOES IS A CITATION, AND IT MUST BE RE-CHECKED WHEN THAT FUNCTION CHANGES.** `C22`'s discipline runs both ways — the register may not cite stale code, and code may not cite stale rulings. **A stale comment is worse than a stale row, because a reader reaches it while already inside the file and has no reason to doubt it.*** **THE CHEAP INSTRUMENT, and it is the same shape as the register scan: when a function's behaviour changes, grep its NAME across the tree and read every comment that mentions it. `PickedHomeForPresentation` would have returned this one.** **AND ONE LIVE ITEM FALLS OUT, FLAGGED NOT RULED: that comment does not merely describe — **it JUSTIFIES**, concluding *so picked IS home* to explain why the arm passes `_ledger.Picked` as the home score. **The justification is dead even if the behaviour is right**, and whether it is right depends on how `ConfigureEndpoint` orients the ledger for a market with no side. **Right answer, dead reason, is how a latent defect looks the day before it bites** | batch 201 |
+
+---
+
+## For the orchestrator
+
+- **The build is accepted.** Nothing is owed back on the four sites or the chalk-off floor.
+- **One string for TV to build:** at arity above 1 the strip prints `{n} GOALS` and names no one.
+  The gold tier already carries whether the backed man is in it.
+- **One tidy-up, not urgent:** narrow or rename `_scorerRevealed` — it is written for a kind with
+  no reader.
+- **One deletion that should not wait:** the stale comment in the `CorrectScore` arm. It has already
+  cost one cycle and it is still live.
+- **One check for someone:** how `ConfigureEndpoint` orients the ledger for a sideless market.
+- **Files to stage, by explicit path:**
+  `docs/design/register-entries-2026-08-27-batch-201.md` and `docs/design/REGISTER.md`.
+
+## Limits
+
+- **Nothing measured.** `{n} GOALS` is unmeasured against the strip's box; it is shorter than every
+  scorer-name form it replaces, so `T143-am7` says a FITS conclusion would survive — but no such
+  conclusion is claimed here.
+- **The inertness of `_scorerRevealed` is a code read**, verified at both the write and the two
+  possible readers; I did not run it.
+- **The `ConfigureEndpoint` question is flagged unread.** I have not opened it, and it may well be
+  correct.
