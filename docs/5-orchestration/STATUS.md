@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 560 (23:36) - TV's hung
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 561 (23:40) - TV's
+handoff rotation MERGED (075ad52: lane state at ab6a882, the owed list
+in one place, three laws, five traps). TV building the multi-leg counter
+fixture (two live legs, two players, each count pinned to its own man,
+mutation-tested), then the TeamColor deletion. DD holding for the next
+merge. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 560 (23:36) - TV's hung
 process was interrupted and had exited; TV RE-SEATED by session ID in
 bypass, effort max, resuming the rotation section then the multi-leg
 fixture; watcher v63 on the new handle. Batch 206 LANDED: the ab6a882
