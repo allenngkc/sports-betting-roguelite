@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 561 (23:40) - TV's
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 562 (23:52) - the
+multi-leg counter fixture is built and MUTATION-PROVEN: green 155/127,
+then with the per-leg walk reverted, red on the assertion a single-leg
+pin could not make ('leg 1 backs Deke Gasket, who scored 1, counter
+peaked at 0' - the pre-T140-am8 defect verbatim); revert + full suite
+running, TeamColor deletion in the same commit. DD holding for the
+merge. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 561 (23:40) - TV's
 handoff rotation MERGED (075ad52: lane state at ab6a882, the owed list
 in one place, three laws, five traps). TV building the multi-leg counter
 fixture (two live legs, two players, each count pinned to its own man,
