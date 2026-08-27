@@ -3358,6 +3358,185 @@ namespace SBR.Tests.PlayMode
                 + "REPORT ONLY — no fix, no reading; routed.");
         }
 
+        /// <summary>`T140-am8`'s PER-LEG STRUCTURE, MET AT LAST — <b>two live legs on ONE telling,
+        /// each counting its own player.</b> This lane raised the gap and therefore owed the fixture.
+        ///
+        /// <para><b>Why the existing pin could not close it.</b>
+        /// <see cref="T169_am_the_multi_scorer_counter_is_driven_by_a_real_goal"/> drives a
+        /// SINGLE-LEG ticket, where `_stageLeg` IS the only leg — so `T140-am8`'s whole remedy (walk
+        /// `LegsOfFixtureContaining(_stageLeg)` rather than inspecting the anchor alone) is a
+        /// <b>no-op by construction</b>. It could never have failed on the structure it was fixing.
+        /// Correct for reasons nothing had tested is exactly what this suite has been burned by all
+        /// week.</para>
+        ///
+        /// <para><b>THE ASSERTION IS PER LEG AGAINST ITS OWN MAN, not "both counters moved."</b>
+        /// `C63`, applied before the fact this time: two legs both counting the SAME player would
+        /// satisfy the weak version while BEING the defect. Each count is pinned to the goals ITS
+        /// backed player actually scored, read off the sampled stat line.</para>
+        ///
+        /// <para><b>ONE MATCHUP, so one fixture, so one telling</b> — that is what makes both legs
+        /// live together and is asserted by matchup REFERENCE, the rule `TicketFixtures` groups by.
+        /// Two legs on two matchups would be two tellings and would test nothing about N-live.</para>
+        ///
+        /// <para>REPORT-then-ASSERT: the counts are logged before they are judged, so a green run
+        /// still shows what it saw.</para></summary>
+        [UnityTest]
+        public IEnumerator T140_am8_two_multi_scorer_legs_on_one_telling_count_their_own_players()
+        {
+            // ---- 1. SEARCH: one matchup, TWO different players who each score, BOTH offered as
+            // multi-scorer legs. Nothing lets a test choose who scores, so throwaway Runs are locked
+            // and their sampled stat lines read — the same technique the single-leg pin uses, and
+            // sound for the same reason: LockRound samples from Rng.Outcomes, a stream the betting
+            // path never draws from.
+            string foundSeed = null;
+            int foundMatchup = -1, idxA = -1, idxB = -1, goalsA = 0, goalsB = 0;
+            string nameA = null, nameB = null;
+            for (int s = 0; s < 80 && foundSeed == null; s++)
+            {
+                string seed = $"TWOMULTI-{s}";
+                var probe = new Run(seed);
+                probe.PlaceTicket(new List<Pick> { new Pick(0, Side.Home) }, 10);
+                probe.LockRound();
+                for (int m = 0; m < probe.CurrentSlate.Matchups.Count && foundSeed == null; m++)
+                {
+                    Matchup mu = probe.CurrentSlate.Matchups[m];
+                    if (mu.StatLine == null) continue;
+
+                    // Every player's REVEALED-side goal count on this match, keyed by the index
+                    // MarketSelection.PlayerMultiScorer takes (away roster first, then home).
+                    var goalsByIndex = new Dictionary<int, int>();
+                    for (int side = 0; side < 2; side++)
+                    {
+                        IReadOnlyList<Player> roster = side == 0 ? mu.Away.Players : mu.Home.Players;
+                        IReadOnlyList<Player> scorers = side == 0 ? mu.StatLine.AwayScorers : mu.StatLine.HomeScorers;
+                        for (int r = 0; r < roster.Count; r++)
+                        {
+                            int n = 0;
+                            foreach (Player sc in scorers) if (ReferenceEquals(sc, roster[r])) n++;
+                            if (n > 0) goalsByIndex[side == 0 ? r : mu.Away.Players.Count + r] = n;
+                        }
+                    }
+                    if (goalsByIndex.Count < 2) continue;
+
+                    // BOTH must be OFFERED — the board filters multi-scorer legs on the correct-score
+                    // floor, so a man who scored is not automatically bettable.
+                    var offered = new List<int>();
+                    foreach (MarketOffer o in mu.Markets)
+                        if (o.Selection.Kind == MarketKind.PlayerMultiScorer
+                            && goalsByIndex.ContainsKey(o.Selection.PlayerIndex))
+                            offered.Add(o.Selection.PlayerIndex);
+                    if (offered.Count < 2) continue;
+
+                    foundSeed = seed; foundMatchup = m;
+                    idxA = offered[0]; idxB = offered[1];
+                    goalsA = goalsByIndex[idxA]; goalsB = goalsByIndex[idxB];
+                    nameA = mu.PlayerAt(idxA).Name; nameB = mu.PlayerAt(idxB).Name;
+                }
+            }
+            Assert.IsNotNull(foundSeed,
+                "no seed in 80 gave ONE matchup with TWO different offered multi-scorer players who "
+                + "each scored. Without that there is no telling with two live counting legs, and "
+                + "this fixture would test the single-leg case the existing pin already covers — "
+                + "which is the gap it exists to close, not a smaller version of it.");
+            Debug.Log($"[TWOMULTI] seed '{foundSeed}' matchup {foundMatchup} :: "
+                + $"A=idx{idxA} '{nameA}' scores {goalsA} · B=idx{idxB} '{nameB}' scores {goalsB}");
+
+            // ---- 2. The room, pinned.
+            yield return LoadRoom();
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            var screen = UnityEngine.Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = UnityEngine.Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+            screen.TimeScaleOverride = 0.0001f;
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            director.StartNewRun(foundSeed);
+            Run run = director.Run;
+
+            // BOTH LEGS ON THE SAME MATCHUP — one fixture, one telling, both live together.
+            run.PlaceTicket(new List<Pick>
+            {
+                new Pick(foundMatchup, MarketSelection.PlayerMultiScorer(idxA)),
+                new Pick(foundMatchup, MarketSelection.PlayerMultiScorer(idxB)),
+            }, 10);
+            director.LockRound();
+
+            Ticket ticket = run.Tickets[0];
+            Assert.AreEqual(2, ticket.Legs.Count, "the ticket did not take both legs");
+            Assert.IsTrue(ReferenceEquals(ticket.Legs[0].Matchup, ticket.Legs[1].Matchup),
+                "the two legs are NOT on one matchup, so they are two tellings and this fixture would "
+                + "prove nothing about N live legs. Asserted by REFERENCE, the rule TicketFixtures "
+                + "groups by — never by index, which a re-seeded slate could satisfy while splitting "
+                + "the fixture.");
+
+            // The search's premise, RE-ASSERTED after placing a different ticket: if the stat line
+            // moved, every expected count below is about a different match than the one searched.
+            Matchup played = run.CurrentSlate.Matchups[foundMatchup];
+            int ActualGoals(int playerIndex)
+            {
+                Player p = played.PlayerAt(playerIndex);
+                int n = 0;
+                foreach (Player sc in played.StatLine.HomeScorers) if (ReferenceEquals(sc, p)) n++;
+                foreach (Player sc in played.StatLine.AwayScorers) if (ReferenceEquals(sc, p)) n++;
+                return n;
+            }
+            Assert.AreEqual(goalsA, ActualGoals(idxA), "the stat line MOVED between probe and room run (A)");
+            Assert.AreEqual(goalsB, ActualGoals(idxB), "the stat line MOVED between probe and room run (B)");
+
+            // ---- 3. Watch BOTH counters. Polled per frame at their MAX: BeginStageLeg resets the
+            // telling's legs together, so an end-of-run read would report the reset, not the count.
+            FieldInfo countField = typeof(TvSweatScreen).GetField(
+                "_pickedScorerGoals", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(countField, "TvSweatScreen._pickedScorerGoals not found — renamed? "
+                + "⚠ REFLECTED SEAM: the compiler does not check this name.");
+
+            int maxA = 0, maxB = 0, frames = 0;
+            bool sawBothLive = false;
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+
+            float start = Time.realtimeSinceStartup;
+            while (run.Phase == Phase.Sweat && Time.realtimeSinceStartup - start < 90f)
+            {
+                var counts = (int[])countField.GetValue(screen);
+                if (counts != null && counts.Length >= 2)
+                {
+                    if (counts[0] > maxA) maxA = counts[0];
+                    if (counts[1] > maxB) maxB = counts[1];
+                }
+                // THE STRUCTURE ITSELF: both rows live at once is what makes this a telling with two
+                // counting legs rather than two tellings in sequence.
+                if (screen.DebugLegIsLive(0) && screen.DebugLegIsLive(1)) sawBothLive = true;
+                frames++;
+                yield return null;
+            }
+            Assert.Greater(frames, 0, "C29: the sweat was never observed — the poll ran zero frames");
+            Assert.AreNotEqual(Phase.Sweat, run.Phase, "the sweat never finished inside 90s");
+
+            Debug.Log($"[TWOMULTI] leg0 '{nameA}' counted {maxA} (scored {goalsA}) · "
+                + $"leg1 '{nameB}' counted {maxB} (scored {goalsB}) · both-live seen {sawBothLive} "
+                + $"· {frames} frames");
+
+            // C29 WITH TEETH: if the two legs were never live TOGETHER this ran as two sequential
+            // single-leg cases and the per-leg structure was never exercised.
+            Assert.IsTrue(sawBothLive,
+                "the two legs were never LIVE at the same time, so this run did not meet T140-am8's "
+                + "structure — it met the single-leg case the existing pin already covers.");
+
+            // ---- 4. EACH COUNT AGAINST ITS OWN MAN. Not "both moved": two legs both counting the
+            // SAME player would satisfy that while BEING the defect.
+            Assert.AreEqual(goalsA, maxA,
+                $"leg 0 backs '{nameA}', who scored {goalsA}, and its counter peaked at {maxA}. Under "
+                + "the pre-T140-am8 code only the ANCHOR leg was inspected, so a non-anchor leg's "
+                + "counter never moved at all.");
+            Assert.AreEqual(goalsB, maxB,
+                $"leg 1 backs '{nameB}', who scored {goalsB}, and its counter peaked at {maxB}. This is "
+                + "the assertion the single-leg pin structurally could not make.");
+        }
+
         private static int UnusedMatchup(Run run, IReadOnlyList<Pick> used)
         {
             for (int i = 0; i < run.CurrentSlate.Matchups.Count; i++)
