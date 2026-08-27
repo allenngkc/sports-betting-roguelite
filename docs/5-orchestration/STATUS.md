@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 558 - RESTART at ~22:38:
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 559 heartbeat (23:31) -
+NETWORK CUT ~22:45-23:00: the DD lost its connection mid-batch 206
+twice (an HTTP 403 at a network edge, 3 minutes), TV's turn stalled at
+the same time. CI green on 625b32c. Batch 206 (the ab6a882 read + the
+TeamColor placement) is not on disk yet; DD nudged to write it. TV's
+rotation section + multi-leg fixture pending its recovery. WITH ALLEN:
+unchanged.**
+
+*(prior stamp, cycle 558 - RESTART at ~22:38:
 the orchestrator process restarted (monitors orphaned), the DD seat
 died, TV SURVIVED mid-turn. Re-armed heartbeat, re-seating the DD by
 session ID in bypass, watcher next. MERGED TV's TeamName guard
