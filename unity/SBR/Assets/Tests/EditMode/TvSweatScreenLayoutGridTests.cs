@@ -2630,7 +2630,10 @@ namespace SBR.Tests.EditMode
                                 + "reached (the row still falls to LegStatement's default:) or the string drifted "
                                 + $"from the ruling. Sheet name for comparison: '{sheet}'.");
 
-                            var copy = (SweatActiveLegModel.ActiveLegCopy)describe.Invoke(screen, new object[] { leg });
+                            // Leg index 0 — `T140-am8` added it (see the arm's own note). This
+                            // walk builds one leg at a time, so 0 is the leg under test.
+                            var copy = (SweatActiveLegModel.ActiveLegCopy)describe.Invoke(
+                                screen, new object[] { leg, 0 });
                             Assert.IsNotEmpty(copy.Need,
                                 $"{sel.Kind}'s NEED is blank — DescribeActiveLeg's default: returns the identity, "
                                 + "so a blank here means neither arm nor fallback ran.");
