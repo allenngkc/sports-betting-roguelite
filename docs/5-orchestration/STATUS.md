@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 552 - the NEITHER sweep
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 553 heartbeat - batch
+204 landed (d073c8e): D2 read, both moments hold, (c) refuted, T94's
+seam verified on frames; the bare-TO-WIN safeguard (G1-am7 rung 2) does
+NOT retire - a second reason exists under two live legs naming opposite
+sides, to be settled by the sweep's marker rule. TV: sweep commit
+pending PlayMode; then the handicap sign gate (its own flag,
+blocker-class). DD pre-read the sweep route, rules with the SHA; it
+noted batch 196 ratified {n} with the sign unchecked end to end. WITH
+ALLEN: unchanged.**
+
+*(prior stamp, cycle 552 - the NEITHER sweep
 built at TV (suites running): 5 orienting sites untouched, 2 naming sites
 already guarded, 2 naming sites FIXED (both ● dots put a draw's mark on
 the home club), and a REAL SHIPPED DEFECT found and fixed - TV's Handicap
