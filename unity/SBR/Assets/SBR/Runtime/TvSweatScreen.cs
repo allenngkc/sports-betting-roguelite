@@ -2442,9 +2442,28 @@ namespace SBR.Game
                 // own established word for it (§7.7's backed-player locator, T23), so the fact
                 // survives the rewrite intact — the strip states who scored and what he was to the
                 // ticket, which is strictly more information than the possessive carried.
-                _tFlavor.text = pickedScorer
-                    ? Surname(scorer.Name) + " STRIKES — THE BACKED SCORER"
-                    : Surname(scorer.Name) + " FINDS THE NET";
+                // ═══ AT ARITY ABOVE ONE THE STRIP NAMES NO ONE — `T152-am3` (DD batch 201).
+                //
+                // **THIS IS NOT A FIFTH INSTANCE OF THE UNIT ERROR. IT IS ITS MIRROR.** The other
+                // four were QUANTITIES computed with the wrong unit and a loop fixed each of them.
+                // The strip is a SCENE-unit artefact — one line per playback — being asked to carry
+                // a GOAL-unit fact, N scorers. **No loop fixes that; a unit cannot be turned into a
+                // sentence.** `ScorerFor` returns `list[start]`, so on a four-goal batch any single
+                // name is FALSE BY OMISSION, and this surface does not print a fact it must
+                // immediately qualify.
+                //
+                // ONE NEW STRING IS ENOUGH BECAUSE THE TWO FACTS THE PLAYER NEEDS ARE ALREADY
+                // CARRIED: **is my man in this** — the GOLD TIER above, driven by `BatchGoalsBy`;
+                // **how many** — the LEG ROW's own `{n} GOALS` count. Naming him here as well would
+                // restate a fact already on the surface, which §7 bans in terms.
+                //
+                // ARITY 1 IS UNCHANGED, deliberately: there the name is exact, and `T44`/`CF`'s
+                // authored forms below are ratified copy that this row does not reopen.
+                _tFlavor.text = batchAmount > 1
+                    ? $"{batchAmount} GOALS"
+                    : pickedScorer
+                        ? Surname(scorer.Name) + " STRIKES — THE BACKED SCORER"
+                        : Surname(scorer.Name) + " FINDS THE NET";
                 _flavorScale = 1.12f;
                 // SweatActiveLegModel's ScorerRevealed gate: true only at this exact causal
                 // identity payoff, matching the model's own documented contract.
@@ -3282,9 +3301,25 @@ namespace SBR.Game
                     // drawn-ending spec's §4 records as "nothing — the column is blank". The describer
                     // arm alone does not fix it; the SITE that knows the selection has to route here.
                     //
-                    // `_ledger.Picked`/`Opponent` are home/away for this kind:
-                    // SweatFlavor.PickedHomeForPresentation returns true unconditionally for every
-                    // kind that is not Moneyline or AnytimeScorer (T152-am), so picked IS home.
+                    // ⚠ THE JUSTIFICATION THAT STOOD HERE WAS DEAD AND IT COST A DIAGNOSTIC CYCLE —
+                    // `C62` (DD batch 201), the law this instance produced.
+                    //
+                    // It read: *"`SweatFlavor.PickedHomeForPresentation` returns true unconditionally
+                    // for every kind that is not Moneyline or AnytimeScorer (`T152-am`), so picked IS
+                    // home."* **`c24b32c` deleted that kind table** — the function is now the one
+                    // line `(MatchModel.AnchorSide(leg) ?? Side.Home) == Side.Home` — and the comment
+                    // survived it, citing a ruling by ID and describing behaviour that no longer
+                    // exists. It is where this lane's own retracted orientation diagnosis came from:
+                    // a remembered read that HAD a source, four hundred lines from the code it
+                    // misled about. **A stale comment is worse than a stale row — a reader reaches it
+                    // already inside the file and has no reason to doubt it.**
+                    //
+                    // WHAT IS TRUE NOW, and it is narrower: `CorrectScore` names no side, so
+                    // `AnchorSide` answers null for it and `PickedHomeForPresentation` collapses to
+                    // HOME through its `?? Side.Home`. So `_ledger.Picked` IS the home score here —
+                    // **the same conclusion, reached for a living reason.** Whether that collapse is
+                    // the right orientation for a sideless market is `T140-am2`'s ground and is
+                    // reported, not decided: see this commit's message.
                     return SweatActiveLegModel.Describe(SweatActiveLegModel.ActiveLegInput.CorrectScore(
                         leg.Selection.ScoreHome, leg.Selection.ScoreAway,
                         _ledger.Picked, _ledger.Opponent));
