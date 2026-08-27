@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 548 - batch 202 landed
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 549 - the strip build
+MERGED (d08672a: '{n} GOALS' at arity above one; the stale C62 comment
+replaced with the living reason; ConfigureEndpoint's answer in the
+commit message; EditMode 342/341/0/1, PlayMode 153/126/0/27). CI
+pending. TV on D2's frames: the crop check found one candidate TV set
+(anchor-window-2026-08-24, pre-seam, so at most the BEFORE half); TV is
+confirming it holds a resolve-beat frame before claiming it, then shoots
+per batch 197/198. The NEITHER sweep is third. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 548 - batch 202 landed
 (024b02a): TV's sideless-market read placed - it is T163's NEITHER (ruled
 batch 167), built in AnchorForTelling, NOT built in
 PickedHomeForPresentation whose ?? Side.Home collapse erases the ruled
