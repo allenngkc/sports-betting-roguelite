@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-27, cycle 551 - D2's FRAMES DOCKED
+**Keeper-era heartbeat stamp: 2026-08-27, cycle 552 - the NEITHER sweep
+built at TV (suites running): 5 orienting sites untouched, 2 naming sites
+already guarded, 2 naming sites FIXED (both ● dots put a draw's mark on
+the home club), and a REAL SHIPPED DEFECT found and fixed - TV's Handicap
+arm double-swapped the margin off the same dead C62 comment (CLEAR BY /
+TRAILING BY inverted on away-backed handicaps). RevealedLeg.TeamName left
+alone (laptop consumer, inert). Routed: route-neither-sweep-2026-08-27.md.
+D2 README was committed by TV directly in main-2 (a433e48) - correct
+content, noted as a side effect. DD reading D2. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 551 - D2's FRAMES DOCKED
 (fourth attempt; the second hit NUnit's 180s default after the trigger
 became honest, the third drew a seed where leg 0 lost so no boundary
 existed - TV now searches a fixture-f win through the engine's own
