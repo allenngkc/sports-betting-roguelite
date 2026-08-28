@@ -1,6 +1,18 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-28, cycle 567 heartbeat (00:21) -
+**Keeper-era heartbeat stamp: 2026-08-28, cycle 568 (21:45) - ORCA
+RESTART overnight (~00:30): every seat died; TV's KICK-OFF build
+(item 1.1) is UNCOMMITTED in the tv-theater worktree - its PlayMode was
+running when it died. Both leads re-seated by session ID in bypass,
+effort max; heartbeat + watcher v64 re-armed. ALLEN'S ORDER: wrap up
+tv-theater and merge it to main. State: tv-theater has NO unmerged
+commits (main == tv-theater at 9cc6011); the only outstanding work is
+the KICK-OFF commit -> merge -> CI -> the DD's closing read; after that
+the lane's list holds only the strip's arity>1 frame (wait for a sweat)
+and the lane can retire. TV finishing the commit now. WITH ALLEN:
+unchanged.**
+
+*(prior stamp, cycle 567 heartbeat (00:21) -
 TV's KICK-OFF line built with a three-assertion gate (boundary writes
 it; the first fixture does not; same-fixture re-entry does not
 re-announce) and its honest scope named ('the write is correct at a
