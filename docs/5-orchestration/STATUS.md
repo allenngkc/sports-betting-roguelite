@@ -1,6 +1,20 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-09-04, cycle 569 (15:20) - WEEK-LONG
+**Keeper-era heartbeat stamp: 2026-09-04, cycle 570 (15:55) - KICK-OFF is
+committed at TV (341247f): report (a) the pause numbers as configured
+values; report (b) THE BOARD IS SET at the first kick-off (observed
+live, its own retraction retracted on the record); both closers turn
+out ALREADY DONE in merged commits (MARGIN 1 at ca4f410; _scorerRevealed
+narrowed at b19f5c9) so no follow-up commit exists. Merge gated on TV
+stating a full-suite result on exactly that tree - it is running it
+now. FOUND in main-2: game-console.tests/ was moved to
+tools/game-console.tests/ UNCOMMITTED by an unknown session (CRLF-only
+copy; CI still points at the old path) - I restored the tracked files
+and left the tools/ copy untouched. WITH ALLEN: NEW - the console-tests
+move needs an owner (finish it with a CI path change, or delete the
+tools/ copy); the rest unchanged.**
+
+*(prior stamp, cycle 569 (15:20) - WEEK-LONG
 OUTAGE RECOVERED: a 403 killed TV's turn on 08-28 ~21:50, an Orca
 restart followed, and the seats were down until today. Repo unchanged
 through the gap (main == tv-theater at 9cc6011; KICK-OFF still
