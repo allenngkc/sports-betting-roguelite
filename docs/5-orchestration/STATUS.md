@@ -1,6 +1,19 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-09-04, cycle 571 (16:12) - KICK-OFF
+**Keeper-era heartbeat stamp: 2026-09-04, cycle 572 (16:40) - CI green on
+the KICK-OFF merge (b1676bf). Batch 209 LANDED (616646e), four rows:
+KICK-OFF ACCEPTED (boundary-only is a finding; THE BOARD IS SET stands);
+new law C66 (a gate can read the right slot at the wrong moment - form,
+reason, timing); _scorerRevealed narrowed, NO rename (C64 bounded);
+T170 - THE TV-THEATER LANE RETIRES, 42 families swept, with the
+not-closed stated plainly (pre-arc rows T96-vf, T67, T100, T153/T154
+neither closed nor confirmed open; the arity>1 strip frame waits on a
+natural sweat; the DD's gap-number ask withdrawn, not inherited). TV
+writing its FINAL handoff rotation; then the seat closes and the
+worktree drops. WITH ALLEN: the console-tests move still needs an
+owner; the rest unchanged.**
+
+*(prior stamp, cycle 571 (16:12) - KICK-OFF
 MERGED (341247f): the strip speaks at a fixture boundary only; suite run
 clean on exactly that tree per TV's gate answer. CI pending. The DD
 takes the CLOSING read of the lane on this SHA (it will also sweep the
