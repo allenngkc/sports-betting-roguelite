@@ -3537,6 +3537,109 @@ namespace SBR.Tests.PlayMode
                 + "the assertion the single-leg pin structurally could not make.");
         }
 
+        /// <summary>`T140-am11` (DD batch 208): <b>the strip SPEAKS AT KICK-OFF, and only at a
+        /// BOUNDARY.</b>
+        ///
+        /// <para><b>What it fixes:</b> the strip held the PREVIOUS match's result over the whole of
+        /// the next one — `LEG 1 — WON` unchanged across `1'`, `2'` and `4'` of the D2 set. Not stale
+        /// by bug: the strip carries the last statement written and <b>nothing spoke at a
+        /// kick-off</b>.</para>
+        ///
+        /// <para><b>TWO ASSERTIONS, AND THE SECOND IS THE ONE THAT CAN REGRESS QUIETLY.</b> That a
+        /// boundary WRITES the line is the feature. That the FIRST fixture does NOT is a FINDING —
+        /// `RenderPregame` already writes `THE BOARD IS SET` immediately before the first
+        /// `BeginStageLeg`, and the ruling made the scope depend on exactly that. A later seat
+        /// "simplifying" the guard to write on every kick-off would displace an authored line on its
+        /// own entrance frame, which `T87-am2` forbids in terms — and no other gate would notice.</para>
+        ///
+        /// <para>Driven through the SHIPPED method by reflection, on a real two-fixture ticket, so
+        /// the boundary is the one the sweat actually takes. ⚠ REFLECTED SEAM: the compiler does not
+        /// check these names.</para></summary>
+        [UnityTest]
+        public IEnumerator T140_am11_the_strip_speaks_at_a_fixture_boundary_but_not_at_the_first()
+        {
+            yield return LoadRoom();
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            var screen = UnityEngine.Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = UnityEngine.Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+            screen.TimeScaleOverride = 0.0001f;
+            couch.transitionDuration = 0.01f;
+
+            MethodInfo beginStageLeg = typeof(TvSweatScreen).GetMethod(
+                "BeginStageLeg", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(beginStageLeg, "TvSweatScreen.BeginStageLeg not found by reflection — "
+                + "renamed? This pin fails rather than silently checking nothing.");
+
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            director.StartNewRun("KICKOFF-A");
+            Run run = director.Run;
+            Assert.Greater(run.CurrentSlate.Matchups.Count, 1,
+                "this slate has fewer than two matchups, so there is no BOUNDARY to test — RE-SEED");
+
+            // Two legs on two DIFFERENT matchups: two fixtures, so one boundary between them.
+            run.PlaceTicket(new List<Pick>
+            {
+                new Pick(run.CurrentSlate.Matchups[0].Index, Side.Home),
+                new Pick(run.CurrentSlate.Matchups[1].Index, Side.Home),
+            }, 10);
+            director.LockRound();
+            Ticket ticket = run.Tickets[0];
+            Assert.IsFalse(ReferenceEquals(ticket.Legs[0].Matchup, ticket.Legs[1].Matchup),
+                "both legs landed on ONE matchup — no boundary exists in this ticket. Asserted by "
+                + "REFERENCE, the rule TicketFixtures groups by.");
+
+            // ---- THE FIRST FIXTURE, OBSERVED IN A LIVE RUN RATHER THAN INFERRED FROM SOURCE.
+            //
+            // ⚠ THE FIRST VERSION OF THIS PIN NEVER SAT DOWN, so the sweat never started, `_stageLeg`
+            // was still -1, and BOTH assertions read the pre-sweat TICKET-CARD line (`$n TO WIN $m`).
+            // **It was measuring the wrong MOMENT, not the wrong SLOT** — the source read was right
+            // all along, and at `_stageLeg == 0` the strip does carry `THE BOARD IS SET`.
+            //
+            // Recorded because the failure was convincing in the wrong direction: a live value that
+            // contradicts a source read looks like the source read being naive, and here it was the
+            // observation that had not waited. **A pin that reads a slot before the thing under test
+            // has run reports the previous state with total confidence.**
+            //
+            // So: sit, and wait until the surface is genuinely on the first telling — `_stageLeg`
+            // reaching 0 is the surface's own statement that `BeginStageLeg` has run for it.
+            FieldInfo stageLegField = typeof(TvSweatScreen).GetField(
+                "_stageLeg", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(stageLegField, "TvSweatScreen._stageLeg not found — renamed?");
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+            yield return WaitUntil(() => (int)stageLegField.GetValue(screen) == 0, 30f,
+                "the sweat never reached its FIRST telling, so nothing below is about a kick-off");
+            string atFirst = screen.DebugFlavorText;
+            Debug.Log($"[KICKOFF] at the FIRST fixture the strip carries '{atFirst}'");
+            Assert.AreNotEqual("KICK-OFF", atFirst,
+                "the FIRST fixture's kick-off wrote KICK-OFF, displacing the authored pregame line on "
+                + "its own entrance frame — T87-am2 forbids exactly that, and batch 208 scoped this "
+                + "line to a BOUNDARY because RenderPregame already speaks here.");
+
+            // ---- THE BOUNDARY: drive the shipped method onto the OTHER fixture's leg and require
+            // the line. Invoked directly rather than waiting out a sweat, so the assertion is about
+            // the WRITE and not about how long a match takes.
+            beginStageLeg.Invoke(screen, new object[] { 1, ticket.Legs[1], 0 });
+            string atBoundary = screen.DebugFlavorText;
+            Debug.Log($"[KICKOFF] crossing to fixture 2 the strip carries '{atBoundary}'");
+            Assert.AreEqual("KICK-OFF", atBoundary,
+                "crossing to a NEW fixture did not write the kick-off line, so the previous match's "
+                + "result keeps the slot — which is item 1.1's whole defect.");
+
+            // ---- AND RE-ENTRY FOR THE SAME FIXTURE IS NOT A BOUNDARY. RenderEvent re-calls
+            // BeginStageLeg when the beat count changes, which happens MID-MATCH; a guard keyed on
+            // "leg index differs" rather than "fixture differs" would re-announce kick-off there.
+            screen.DebugSetFlavorForTest("MID-MATCH SENTINEL");
+            beginStageLeg.Invoke(screen, new object[] { 1, ticket.Legs[1], 3 });
+            Assert.AreEqual("MID-MATCH SENTINEL", screen.DebugFlavorText,
+                "re-entering the SAME fixture announced KICK-OFF again. BeginStageLeg is re-called "
+                + "mid-match when the beat count changes, so the guard must ask whether the FIXTURE "
+                + "changed — not whether the leg index did.");
+        }
+
         private static int UnusedMatchup(Run run, IReadOnlyList<Pick> used)
         {
             for (int i = 0; i < run.CurrentSlate.Matchups.Count; i++)

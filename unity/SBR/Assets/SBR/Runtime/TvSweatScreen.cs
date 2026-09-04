@@ -3179,6 +3179,21 @@ namespace SBR.Game
         private void BeginStageLeg(int legIndex, Leg leg, int beatCount)
         {
             if (_stage == null) return;
+            // ═══ IS THIS A FIXTURE BOUNDARY? Computed BEFORE `_stageLeg` moves, because the question
+            // is *am I leaving a different match* and the answer is gone one line later.
+            //
+            // `_stageLeg < 0` is the SESSION START — `RenderPregame` calls this for leg 0 and there is
+            // no previous match to have left. Re-entry for the SAME fixture is not a boundary either:
+            // `RenderEvent` re-calls this when `_stageBeatCount` changes, which can happen mid-match.
+            // Asked through `LegsOfFixtureContaining`, the ticket's own grouping, so a same-match pair
+            // ([A,B,A]) counts as ONE telling exactly as `TicketFixtures` says it is.
+            bool leavingAnotherFixture = false;
+            if (_stageLeg >= 0)
+            {
+                leavingAnotherFixture = true;
+                foreach (int i in LegsOfFixtureContaining(_stageLeg))
+                    if (i == legIndex) { leavingAnotherFixture = false; break; }
+            }
             _stageLeg = legIndex;
             _stageBeatCount = beatCount;
             // FRESH TELLING = FRESH GATES AND FRESH COUNTS, for every leg riding this match, not
@@ -3234,6 +3249,43 @@ namespace SBR.Game
             RevealedView.BeginLeg(legIndex, leg);
             UpdateScorebug(leg);
             _tape?.Show(true); // T16
+
+            // ═══ THE STRIP SPEAKS AT KICK-OFF — `T140-am11` (DD batch 208), item `1.1`'s whole remedy.
+            //
+            // **THE BOUNDARY WANTS NO BEAT.** Nothing there is false: the column switches with the
+            // scorebug (`T94-cl`), the counter advances, every zone names the fixture on screen. What
+            // was wrong is that **the strip held the PREVIOUS match's result over the whole of the new
+            // one** — read across `M2` of the D2 set at 1', 2' and 4', forty frames, `LEG 1 — WON`
+            // unchanged. Not a flicker: four sim-minutes, until something happened in the new match.
+            //
+            // And it was not stale by BUG — it was HOLDING BY DESIGN. The strip carries the last
+            // statement written, `RevealBeatChrome` is the only thing that lands one, and **nothing
+            // spoke at a kick-off.** So the fix is a WRITE, not a guard, and it costs no sweat seconds
+            // against the 60–90s law.
+            //
+            // **`C65` IS WHY NOTHING IS BLANKED.** `LEG 1 — WON` over a new fixture is TRUE and
+            // legible — it names a LEG, not a match, and the column two zones away carries that leg
+            // with its `W`. `T94`'s criterion governs a claim about what is STILL TO COME; a settled
+            // result does not become false when the camera moves. **The fault is occupying a slot the
+            // current fixture needs, and that fault's fix is that something better goes there.**
+            //
+            // `KICK-OFF`, and nothing more: the scorebug already names the clubs and the counter
+            // already says which match, so a longer form would restate a fact on the surface (§7).
+            // `T87-am2` makes displacing the old line safe rather than a new race — it gave
+            // `LEG n — WON` its hold at the grade beat, and by kick-off that hold has long elapsed.
+            //
+            // ⚠ BOUNDARY ONLY, AND THAT IS A FINDING RATHER THAN A CHOICE. The ruling asked what the
+            // strip carries at the FIRST fixture's kick-off and said the answer decides the scope:
+            // blank → one line serves both; already speaking → boundary only. **It already speaks:**
+            // `RenderPregame` writes `THE BOARD IS SET` immediately before calling this for leg 0.
+            // Writing `KICK-OFF` there would displace an authored line on its own entrance frame,
+            // which is the exact defect `T87-am2` exists to forbid.
+            if (leavingAnotherFixture)
+            {
+                SetEventStrip(flavorColor);
+                _tFlavor.text = "KICK-OFF";
+                TraceFlavor("T140-am11 fixture kick-off", _tFlavor.text);
+            }
         }
 
         /// <summary>The theater scorebug (M-T3, playtest #10 finding #2 pulled forward from
@@ -4461,6 +4513,15 @@ namespace SBR.Game
         /// for multiple frames, BEFORE the grade" — a claim about frames that the frames themselves
         /// should be able to answer without a second instrument.</summary>
         public string DebugFlavorText => _tFlavor != null ? _tFlavor.text : string.Empty;
+
+        /// <summary>Test-only: plant a sentinel on the strip so a later write — or the ABSENCE of one
+        /// — is provable. `T140-am11`'s pin needs to show that re-entering the SAME fixture does NOT
+        /// re-announce kick-off, and "the text did not change" is only evidence if the text was
+        /// something distinctive first.</summary>
+        public void DebugSetFlavorForTest(string text)
+        {
+            if (_tFlavor != null) _tFlavor.text = text;
+        }
 
         private static void TraceFlavor(string site, string value)
         {
