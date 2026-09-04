@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-09-04, cycle 573 (17:02) - TV's FINAL
+**Keeper-era heartbeat stamp: 2026-09-04, cycle 574 heartbeat (17:25) -
+quiet hold. CI green on 520f53d. tv-theater retired and dropped; DD
+seated, holding for Allen's direction; markets-pregame worktree kept.
+WITH ALLEN: unchanged (console-tests move owner; T156 scope; T140-am2;
+Linear go; URP.png; B9).**
+
+*(prior stamp, cycle 573 (17:02) - TV's FINAL
 handoff MERGED (adcdb03, 0-ROT7: retires at 341247f; the not-closed
 rows in a table with 'a seat starts by establishing which'; six phantom
 files, five restore; the withdrawn ask recorded). Registry: tv-theater
