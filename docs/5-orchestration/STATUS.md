@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-28, cycle 568 (21:45) - ORCA
+**Keeper-era heartbeat stamp: 2026-09-04, cycle 569 (15:20) - WEEK-LONG
+OUTAGE RECOVERED: a 403 killed TV's turn on 08-28 ~21:50, an Orca
+restart followed, and the seats were down until today. Repo unchanged
+through the gap (main == tv-theater at 9cc6011; KICK-OFF still
+uncommitted in TV's worktree). Both leads re-seated by session ID in
+bypass, effort max; heartbeat + watcher v65 re-armed. Allen's standing
+order continues: wrap up tv-theater and merge - TV committing KICK-OFF
+now, then the two closers (MARGIN 1, _scorerRevealed), then the DD's
+closing read, then the lane retires. WITH ALLEN: unchanged.**
+
+*(prior stamp, 2026-08-28 cycle 568 (21:45) - ORCA
 RESTART overnight (~00:30): every seat died; TV's KICK-OFF build
 (item 1.1) is UNCOMMITTED in the tv-theater worktree - its PlayMode was
 running when it died. Both leads re-seated by session ID in bypass,
