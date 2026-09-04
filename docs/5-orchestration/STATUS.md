@@ -1,6 +1,9 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-09-04, cycle 588 heartbeat (23:15) -
+**Keeper-era heartbeat stamp: 2026-09-04, cycle 589 heartbeat (23:40) -
+quiet hold, no change. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 588 heartbeat (23:15) -
 quiet hold, no change. WITH ALLEN: unchanged.**
 
 *(prior stamp, cycle 587 heartbeat (22:50) -
