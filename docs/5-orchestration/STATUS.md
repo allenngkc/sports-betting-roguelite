@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-09-04, cycle 572 (16:40) - CI green on
+**Keeper-era heartbeat stamp: 2026-09-04, cycle 573 (17:02) - TV's FINAL
+handoff MERGED (adcdb03, 0-ROT7: retires at 341247f; the not-closed
+rows in a table with 'a seat starts by establishing which'; six phantom
+files, five restore; the withdrawn ask recorded). Registry: tv-theater
+RETIRED 2026-09-04. Seat closed, worktree dropped. Remaining studio
+state: markets-pregame worktree kept (seat empty, waits on B9), DD
+seated and holding. WITH ALLEN: the console-tests move needs an owner;
+the rest unchanged.**
+
+*(prior stamp, cycle 572 (16:40) - CI green on
 the KICK-OFF merge (b1676bf). Batch 209 LANDED (616646e), four rows:
 KICK-OFF ACCEPTED (boundary-only is a finding; THE BOARD IS SET stands);
 new law C66 (a gate can read the right slot at the wrong moment - form,

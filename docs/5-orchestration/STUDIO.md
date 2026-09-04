@@ -54,7 +54,7 @@ reverted.
 | Worktree | Branch | Lead | State |
 | --- | --- | --- | --- |
 | `main-2` | `main` | Orchestrator seat | Integration |
-| `tv-theater` | `tv-theater` | Claude (Opus 5) | Active (seated 2026-08-16 - the resolved-leg column spec + the consolidated C46 sweep; handoff `docs/handoffs/tv-theater.md`) |
+| `tv-theater` | `tv-theater` | Claude (Opus 5) | Retired 2026-09-04 (T170; handoff 0-ROT7; the arity>1 strip frame waits on a natural sweat) (seated 2026-08-16 - the resolved-leg column spec + the consolidated C46 sweep; handoff `docs/handoffs/tv-theater.md`) |
 | `surething-ui` | `surething-ui` | Claude (Opus 5) | Retired 2026-08-13 — Phase L merged and Design-verified; worktree deleted on Allen's order; baseline evidence preserved under `docs/design/evidence-of-record/` |
 | `surething-ui-2` | `surething-ui-2` | Claude (Opus 5) | Retired 2026-08-16 — same-game screens complete end to end and Design-verified; fully merged; worktree deleted on Allen's order |
 | `room-refinement` | `room-refinement` | Claude (Opus 5) | Retired 2026-08-14 — room arc closed cycle 219, fully merged, zero commits ahead; worktree deleted on Allen's order (T65 closed by V6, no room dependency remained) |
