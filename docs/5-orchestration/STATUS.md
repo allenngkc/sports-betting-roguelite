@@ -1,6 +1,9 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-09-04, cycle 574 heartbeat (17:25) -
+**Keeper-era heartbeat stamp: 2026-09-04, cycle 575 heartbeat (17:50) -
+quiet hold, no change. DD holding; board green. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 574 heartbeat (17:25) -
 quiet hold. CI green on 520f53d. tv-theater retired and dropped; DD
 seated, holding for Allen's direction; markets-pregame worktree kept.
 WITH ALLEN: unchanged (console-tests move owner; T156 scope; T140-am2;
