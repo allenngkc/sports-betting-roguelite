@@ -5,6 +5,120 @@
 
 ---
 
+## 0-ROT7. FINAL — THE LANE RETIRES 2026-09-04. READ THIS FIRST, THEN STOP.
+
+**This is the LAST rotation section. `T170` retires the lane; the seat closes and this worktree
+drops once this commit merges.** State is **`341247f`, merged** — the only lane commit since
+`0-ROT6`'s `5c96435`, alongside `9cc6011`'s handoff refresh. **EditMode 344/343/0/1 · PlayMode
+156/128/0/28, run on that exact commit** (`git diff HEAD --stat -- '*.cs'` empty before the run),
+**editor closed, procs 0 verified after.** Tree clean but the phantoms below and the untracked
+`artifacts/`.
+
+**Nothing of this lane's own is open.** What follows is the closing ruling, the one item that waits
+on a natural event, and — the part a next seat must not misread — **what this retirement does NOT
+close.**
+
+### THE CLOSING READ — DD batch 209 (`616646e`), four rows
+
+- **`T140-am12` — `KICK-OFF` ACCEPTED, and BOUNDARY-ONLY IS A FINDING, NOT A PREFERENCE.** Batch 208
+  conditioned the scope on a fact it had not read (*blank, and one line serves both; already
+  speaking, and it is boundary only*). **The first kick-off already speaks — `THE BOARD IS SET`,
+  observed live at `_stageLeg == 0`** — so the scope followed the fact, and **that copy stands as
+  authored**: `T87-am2` forbids displacing a statement on its own entrance frame. The guard asks
+  whether the **FIXTURE** changed, never whether the leg INDEX did — computed **before** `_stageLeg`
+  moves, through `LegsOfFixtureContaining`, so a same-match pair is ONE telling exactly as
+  `TicketFixtures` says, and session start is excluded because there is no previous match to leave.
+- **`T152-am6` — `_scorerRevealed` NARROWED (`b19f5c9`), and NO RENAME.** `T152-am4`'s two remedies
+  were ALTERNATIVES, not a sequence; the write is now guarded to the one kind that reads it, so the
+  name is no longer misleading and **renaming a correct field is churn.** And `C64` is bounded here
+  before it is over-applied: **it forbids a kind test standing in for a property that VARIES within a
+  kind — not one where the kind IS the question.** A seat deleting every `Kind ==` it finds would be
+  following the letter into the opposite defect.
+- **`C66` — NEW LAW: A GATE CAN READ THE RIGHT SLOT AT THE WRONG MOMENT.** The `KICK-OFF` pin's first
+  version never sat down, so the sweat never started, `_stageLeg` was −1, and **both assertions read
+  the pre-sweat ticket-card line with total confidence.** It was measuring the wrong **MOMENT**, not
+  the wrong slot. **The second-order cost is why it is a law: a live value contradicting a source
+  read LOOKS like the source read being naive, and this seat briefly RETRACTED A CORRECT ANSWER
+  because its own pin disagreed with it.** A wrongly-timed pin does not merely miss a defect — it
+  manufactures evidence against a correct reading. Three non-overlapping shapes now, all out of this
+  lane: **`C63` form · `C63-am` reason · `C66` timing.**
+- **`T170` — THE LANE RETIRES.** Swept at FAMILY level (`C22.1`/`C59-am`: a family's state is its
+  LATEST row's verdict), scoped to batch 130 and later: **42 families, all settled.**
+
+### ⚠ THE ONE ITEM STILL OWED — and it has no action even in principle
+
+**`T152-am3`'s arity>1 STRIP FRAME.** The strip is BUILT, not verified. It needs a sweat that
+**naturally** throws a stoppage batch of two or more goals, and **batch 203 forbids forcing or
+seed-hunting it.** It did not occur in the D2 shoot. **The watcher is already in the capture
+harness** — `WaitWatchingForMultiGoalStrip`, matching the rendered `^\d+ GOALS$` — so **any future
+capture run picks it up for free. Do not build a window for it; wait for one.**
+
+### ⚠ WHAT THIS RETIREMENT DOES **NOT** COVER — older rows, NEITHER CLOSED NOR CONFIRMED OPEN
+
+`T170` says this plainly, and it is the one thing most likely to be misread as covered. **Pre-arc TV
+rows were NOT adjudicated.** A row-level pass surfaced older rows carrying explicit owed frames:
+
+| row | the frame it names |
+|---|---|
+| `T96-vf` | a mid-match frame of a **draw-backed** leg |
+| `T67` | the **seated-camera** pair |
+| `T100` | the **populated count** row |
+| `T153` / `T154` | **count-at-1** |
+
+**At family level those debts sit in EARLIER members, and whether each survives its family's later
+rows needs a per-family read batch 209 did not do.** So: **they are neither closed nor confirmed
+open. A seat picking them up STARTS by establishing which — that read is the first task, not the
+capture.** Do not treat them as work; do not treat them as discharged. Batch 209's own limits section
+is explicit that the 86 pre-arc families were **counted, not adjudicated.**
+
+### AND ONE ASK IS WITHDRAWN, NOT INHERITED
+
+Batch 208 asked, *whenever convenient*, for the inter-fixture gap in sim-seconds. **It was answered
+in report and then CLOSED by batch 209, not carried** — the question it served was *should there ALSO
+be a pause*, `T140-am11` ruled no beat is required, and the boundary is now marked. Recorded here
+because **a retiring lane's unowned ask becomes an orphan, and an orphan is read by the next seat as
+work.** (The answer, for the record: the gap IS the resolve beat's own configured duration — won leg
+`0.3`, dead leg `1.3`, plus `1.0` on a drawn match. The `0.62` in `drawnEndingHoldDuration`'s note is
+the drawn-ending→grade window on `scene002`, **not** this gap.)
+
+### OPERATIONAL — SIX files go dirty on their own, and only FIVE of them restore
+
+**A run that changes no source still dirties all of them**, so *"the tree was clean before, therefore
+my checkout was a no-op"* is FALSE. The honest claim after restoring is *it touched no source*, never
+*it touched nothing*.
+
+| file | goes dirty after |
+|---|---|
+| `unity/SBR/ProjectSettings/ProjectSettings.asset` | any run (`scriptingDefineSymbols` comes and goes) |
+| `.../TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset` | any run that measures text |
+| `SBR/Resources/Tv/Fonts/EncodeSans Bold SDF.asset` | any run that measures text |
+| `SBR/Resources/Tv/Fonts/EncodeSansCondensed Bold SDF.asset` | any run that measures text |
+| `SBR/Resources/Tv/Fonts/EncodeSansCondensed SDF.asset` | any run that measures text (~6,500 lines) |
+
+**`git checkout --` those five after EVERY suite.** The sixth,
+`unity/SBR/Assets/TutorialInfo/Icons/URP.png`, **CANNOT be restored at all** — it is a JPEG under an
+LFS `*.png` attribute whose index entry is a raw blob, so the clean/smudge round-trip can never match
+and `git checkout --` REFUSES. **Dirty by construction; never commit it, and never ask a seat to
+"restore" it.** The two-line source fix (commit it as a real LFS pointer, or negate the attribute for
+that path) is a shared-file change, flagged to Allen 2026-08-27.
+
+**And this is why staging is BY EXPLICIT PATH ONLY** — a bare `git add -A` sweeps all six in.
+
+### THE ARC, IN ONE PARAGRAPH — what is worth carrying to another lane
+
+**Four of the five questions this seat routed up as NEW design calls were ALREADY RULED and
+findable** (`T163` for the sideless collapse, `T42` for `TeamColor`, `T143-am2` for the two-leg
+residual, `T87-am2` for the first kick-off). **The studio's expensive problem was not deciding; it
+was LOCATING.** And every defect the lane actually found was on no docket: a `C29` gate certifying
+the very defect it was meant to catch, one unit error in four places, two unguarded dots naming a
+club on a ticket that backed nobody, a shipped sign inversion telling the player he was clear while
+trailing, and one dead sentence copied into three sites. **Each surfaced because a lane fixing one
+thing looked at what it was standing on.** The trap list in `0-ROT6` below is the same lesson at
+instrument level and still applies to any seat on this surface — above all: **when a gate passes,
+read its log and ask what would have to change for it to fail.**
+
+---
+
 ## 0-ROT6. LANE STATE 2026-08-28 — READ THIS FIRST
 
 **Written on the orchestrator's order, not at a handover — the seat has not rotated.** State is
