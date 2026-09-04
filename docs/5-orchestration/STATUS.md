@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-09-04, cycle 570 (15:55) - KICK-OFF is
+**Keeper-era heartbeat stamp: 2026-09-04, cycle 571 (16:12) - KICK-OFF
+MERGED (341247f): the strip speaks at a fixture boundary only; suite run
+clean on exactly that tree per TV's gate answer. CI pending. The DD
+takes the CLOSING read of the lane on this SHA (it will also sweep the
+TV register section for incidentally-discharged rows). After its
+batch: the lane retires and the tv-theater worktree drops per Allen's
+order, with the arity>1 strip frame recorded as the one item that waits
+on a natural sweat. WITH ALLEN: the console-tests move (cycle 570) still
+needs an owner; the rest unchanged.**
+
+*(prior stamp, cycle 570 (15:55) - KICK-OFF is
 committed at TV (341247f): report (a) the pause numbers as configured
 values; report (b) THE BOARD IS SET at the first kick-off (observed
 live, its own retraction retracted on the record); both closers turn
