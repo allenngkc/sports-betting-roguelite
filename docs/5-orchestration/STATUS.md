@@ -1,6 +1,9 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-09-09, cycle 600 (10:25) - restart
+**Keeper-era heartbeat stamp: 2026-09-09, cycle 601 heartbeat (10:48) -
+quiet hold, no change. WITH ALLEN: unchanged.**
+
+*(prior stamp, cycle 600 - restart
 recovered after a 3-day quiet gap; Orca came back with NO terminals, so
 the DD seat is down. AUTONOMOUS DECISION, veto window open: the DD stays
 UNSEATED until work arrives - it closed batch 209 with backlog zero and
