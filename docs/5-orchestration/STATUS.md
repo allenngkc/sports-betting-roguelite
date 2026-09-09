@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-09-06, cycle 599 heartbeat (01:46) -
+**Keeper-era heartbeat stamp: 2026-09-09, cycle 600 (10:25) - restart
+recovered after a 3-day quiet gap; Orca came back with NO terminals, so
+the DD seat is down. AUTONOMOUS DECISION, veto window open: the DD stays
+UNSEATED until work arrives - it closed batch 209 with backlog zero and
+everything open is WITH ALLEN; re-seat by `claude --resume
+9f5a0cff-8e9a-4918-a069-b84a05edfbd8 --permission-mode
+bypassPermissions` in main-2 when needed. Watcher idle (no seats);
+heartbeat re-armed. Repo: main == origin/main at 664a362, CI green,
+tree quiet. WITH ALLEN: unchanged (T156 scope; T140-am2; Linear go;
+URP.png; B9; console-tests move owner).**
+
+*(prior stamp, cycle 599 heartbeat -
 quiet hold, no change. WITH ALLEN: unchanged.**
 
 *(prior stamp, cycle 598 heartbeat -
